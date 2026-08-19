@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc *)",
+      "Bash(timeout 15 npm view lucide-react version)",
+      "Bash(npm install *)",
+      "Bash(find / -maxdepth 6 -iname \"agent-skills\" -type d)",
+      "Bash(find / -maxdepth 8 -ipath \"*web-design*\" -type d)",
+      "Bash(node -e \"console.log\\(require\\('fs'\\).readFileSync\\('node_modules/cobe/dist/index.esm.js','utf8'\\)\\)\")",
+      "Bash(npx --yes vercel --version)",
+      "Bash(vercel whoami *)",
+      "Bash(npm run *)",
+      "Bash(vercel --yes)",
+      "Bash(vercel link *)",
+      "Bash(vercel --prod --yes)",
+      "Bash(xargs sed -i '' 's/fixed inset-0 bg-black\\\\/60 flex items-center justify-center z-10/fixed inset-0 bg-black\\\\/60 flex items-center justify-center z-10 p-4/g')"
+    ]
+  }
+}

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tellmefolio</title>
+    <!-- 테마 깜빡임(FOUC) 방지: 스타일시트/React가 로드되기 전에 저장된
+         테마를 먼저 적용합니다. -->
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem("tellmefolio-theme");
+          var theme =
+            stored === "light" || stored === "dark"
+              ? stored
+              : window.matchMedia("(prefers-color-scheme: light)").matches
+                ? "light"
+                : "dark";
+          if (theme === "light") document.documentElement.classList.add("light");
+        } catch (e) {}
+      })();
+    </script>
+    <!-- 제목용 서체: Gowun Batang (한글 지원, 시스템 기본값이 아닌 의도적 선택) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- 본문용 서체: Pretendard (Inter/시스템 기본값 대신 명시적으로 로드) -->
+    <link
+      rel="stylesheet"
+      as="style"
+      crossorigin
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css"
+    />
+  </head>
+  <body class="bg-neutral-950 text-neutral-100">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

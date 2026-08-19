@@ -1,0 +1,123 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 다크(기본)·라이트 두 테마의 neutral 스케일. 값 자체를 테마별로 다시
+   정의하고 클래스 이름(neutral-50~950)은 그대로 두는 방식이라, 컴포넌트
+   코드를 건드리지 않고도 전체 화면이 한 번에 전환됩니다. 라이트 테마는
+   차가운 회색이 아니라 원고지·잉크 느낌의 웜톤으로 골랐습니다. */
+:root {
+  --n50: 250 250 250;
+  --n100: 245 245 245;
+  --n200: 229 229 229;
+  --n300: 212 212 212;
+  --n400: 163 163 163;
+  --n500: 115 115 115;
+  --n600: 82 82 82;
+  --n700: 64 64 64;
+  --n800: 38 38 38;
+  --n900: 23 23 23;
+  --n950: 10 10 10;
+}
+
+:root.light {
+  --n950: 250 247 241;
+  --n900: 244 239 230;
+  --n800: 232 225 211;
+  --n700: 214 205 188;
+  --n600: 169 156 135;
+  --n500: 122 111 93;
+  --n400: 86 77 63;
+  --n300: 68 60 48;
+  --n200: 43 38 32;
+  --n100: 30 26 21;
+  --n50: 15 13 10;
+}
+
+body {
+  font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, sans-serif;
+  transition: background-color 150ms, color 150ms;
+}
+
+/* 제목은 본문과 다른 서체를 써서 "Inter/시스템 기본값 그대로"인 인상을 없앱니다. */
+h1,
+h2,
+h3 {
+  font-family: "Gowun Batang", serif;
+  letter-spacing: -0.01em;
+}
+
+/* components 레이어에 넣어야 컴포넌트 밖에서 text-red-400 같은 유틸리티
+   클래스로 오버라이드할 때 항상 유틸리티가 이깁니다(레이어 우선순위). */
+@layer components {
+  /* 화면의 기본 콘텐츠 단위. 뚜렷한 카드 하나하나로 구획을 나눠 어떤 정보가
+     어디까지인지 한눈에 보이게 합니다(단, 카드 안에 카드는 두지 않습니다). */
+  .entry {
+    @apply rounded-2xl border border-neutral-800 bg-neutral-900/50 p-6 transition-[border-color,transform,box-shadow] duration-150;
+  }
+
+  .entry-title {
+    @apply font-heading text-base text-neutral-100 mb-3 flex items-center gap-2;
+  }
+
+  .row {
+    @apply border-t border-neutral-800 py-3 first:border-t-0 first:pt-0;
+  }
+
+  /* 모달·팝오버용 카드. 살짝 그림자를 둬서 지면 위에 떠 있는 느낌을 줍니다. */
+  .surface {
+    @apply rounded-2xl border border-neutral-800 bg-neutral-900 p-6 shadow-xl shadow-black/30;
+  }
+
+  .field {
+    @apply w-full bg-neutral-900/60 border border-neutral-800 rounded-xl px-3.5 py-2.5 text-sm text-neutral-100
+      placeholder:text-neutral-600 focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/15 transition-colors duration-150;
+  }
+
+  .field-area {
+    @apply w-full bg-neutral-900/60 border border-neutral-800 rounded-xl px-3.5 py-2.5 text-sm text-neutral-100
+      placeholder:text-neutral-600 focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/15 transition-colors duration-150;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-medium text-white
+      hover:bg-brand-dark hover:shadow-lg hover:shadow-brand/20 hover:-translate-y-px active:translate-y-0 active:scale-[0.98]
+      transition-all duration-150;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-neutral-700 bg-neutral-900/40 px-4 py-2.5 text-sm font-medium text-neutral-200
+      hover:border-neutral-500 hover:bg-neutral-900 active:scale-[0.98] transition-all duration-150;
+  }
+
+  /* 배경색이 있는 배지에는 항상 그 색 계열의 진한 텍스트를 써서 회색 글자로
+     대비가 죽는 것을 막습니다. */
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+
+  /* 상태·안내 블록. 왼쪽 컬러 바 + 옅은 배경으로 "알림 카드"처럼 눈에
+     띄게 만듭니다. AI 요청 상태, 근거 확인, 주의사항 등에 공통 사용합니다. */
+  .note {
+    @apply flex items-start gap-3 rounded-xl border-l-4 border-neutral-700 bg-neutral-900/40 px-4 py-3;
+  }
+
+  /* 사이드바 내비게이션: 아이콘 + 라벨이 들어가는 필(pill) 버튼. */
+  .toc-link {
+    @apply flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all duration-150;
+  }
+
+  .toc-link-active {
+    @apply bg-brand/10 text-brand font-medium;
+  }
+
+  .toc-link-inactive {
+    @apply text-neutral-400 hover:bg-neutral-900 hover:text-neutral-100 hover:translate-x-0.5;
+  }
+
+  /* 단계·순서를 나타내는 원형 배지. */
+  .step-mark {
+    @apply inline-flex items-center justify-center w-10 h-10 rounded-full bg-brand/10 text-brand
+      font-heading text-sm shrink-0 tabular-nums;
+  }
+}
