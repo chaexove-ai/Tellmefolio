@@ -1,0 +1,11 @@
+{
+  "name": "Tellmefolio — AI 포트폴리오 제작 도구",
+  "short_name": "Tellmefolio",
+  "description": "내 경험을 직무 언어로 바꿔주는 AI 포트폴리오 제작 도구",
+  "lang": "ko",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#faf7f1",
+  "theme_color": "#faf7f1",
+  "icons": [{ "src": "/favicon.ico", "sizes": "any", "type": "image/x-icon" }]
+}

@@ -18,9 +18,20 @@ export default {
         // 의도적으로 고른 단일 액센트 색. 보라/파랑 그라데이션(가장 흔한 "AI 티")을
         // 피하고, "이야기하면 포트폴리오가 됩니다"라는 브랜드 톤에 맞춰
         // 손글씨·케이스 스터디 느낌의 클레이(테라코타) 톤을 사용합니다.
+        //
+        // [2026-08 수정] 기존 단일 hex(#c2703d)로는 대비율을 동시에 만족할 수 없었습니다.
+        //   - 라이트 배경(#faf7f1) 위 text-brand : 3.50:1  (기준 4.5:1 미달)
+        //   - 다크 배경(#0a0a0a) 위 text-brand   : 5.36:1  (통과)
+        //   - 흰 글자 + bg-brand 버튼            : 3.70:1  (기준 미달)
+        // 라이트에서 통과시키려면 어둡게 해야 하는데 그러면 다크에서 떨어집니다.
+        // → 액센트도 neutral처럼 테마별 CSS 변수로 분리했습니다.
+        //   brand        : 텍스트·아이콘용 (테마별로 다름)
+        //   brand-solid  : 흰 글자를 얹는 버튼 배경용 (양쪽 테마 공통, 4.95:1)
+        //   brand-dark   : hover 상태
         brand: {
-          DEFAULT: "#c2703d",
-          dark: "#8f4f27",
+          DEFAULT: withOpacityValue("--brand"),
+          dark: withOpacityValue("--brand-dark"),
+          solid: withOpacityValue("--brand-solid"),
         },
         neutral: {
           50: withOpacityValue("--n50"),

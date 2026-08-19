@@ -12,12 +12,22 @@
   --n200: 229 229 229;
   --n300: 212 212 212;
   --n400: 163 163 163;
-  --n500: 115 115 115;
+  /* [2026-08 수정] 115 → 125.
+     다크 배경(--n950 = 10 10 10) 위에서 115는 4.18:1 로 WCAG AA(4.5:1) 미달이었습니다.
+     125로 올리면 4.81:1. "핵심 기능", "이런 분께 맞습니다" 같은 섹션 제목이
+     이 값을 씁니다. */
+  --n500: 125 125 125;
   --n600: 82 82 82;
   --n700: 64 64 64;
   --n800: 38 38 38;
   --n900: 23 23 23;
   --n950: 10 10 10;
+
+  /* 액센트(다크 테마): 다크 배경 위 5.36:1 */
+  --brand: 194 112 61;
+  --brand-dark: 143 79 39;
+  /* 흰 글자를 얹는 버튼 배경. 양쪽 테마 공통. 흰 글자 대비 4.95:1 */
+  --brand-solid: 168 92 48;
 }
 
 :root.light {
@@ -32,6 +42,11 @@
   --n200: 43 38 32;
   --n100: 30 26 21;
   --n50: 15 13 10;
+
+  /* 액센트(라이트 테마): 라이트 배경(#faf7f1) 위 5.06:1 */
+  --brand: 160 88 41;
+  --brand-dark: 128 68 30;
+  --brand-solid: 168 92 48;
 }
 
 body {
@@ -45,6 +60,146 @@ h2,
 h3 {
   font-family: "Gowun Batang", serif;
   letter-spacing: -0.01em;
+}
+
+/* [2026-08 추가] 모션 감소 설정 전역 안전장치.
+   리빌 애니메이션이 콘텐츠를 opacity:0 에서 시작하기 때문에,
+   감소 모드에서 애니메이션만 끄고 초기 상태가 남으면 영구히 안 보이게 됩니다.
+   opacity:1 을 반드시 보장합니다. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .reveal,
+  .hero-eyebrow,
+  .hero-title,
+  .hero-sub,
+  .hero-cta,
+  .hero-globe {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* [2026-08 추가] 키보드 사용자용 본문 바로가기. 포커스될 때만 나타납니다. */
+.skip-link {
+  @apply absolute left-4 top-4 z-[100] -translate-y-24 rounded-xl bg-brand-solid px-4 py-2 text-sm text-white
+    transition-transform focus:translate-y-0;
+}
+
+/* [2026-08 추가] 전역 포커스 링. 키보드 탐색 시 현재 위치가 보이도록. */
+:focus-visible {
+  outline: 2px solid rgb(var(--brand));
+  outline-offset: 2px;
+}
+
+
+/* [2026-08 추가] FAQ 아코디언은 <details>/<summary> 를 그대로 씁니다.
+   기본 삼각형 마커만 숨깁니다(Safari/Chrome 각각 다른 선택자가 필요). */
+summary { list-style: none; }
+summary::-webkit-details-marker { display: none; }
+summary::marker { content: ""; }
+
+/* [2026-08 추가] 책장 — 커서를 올리면 책이 빠져나오는 인터랙션.
+   Tailwind 유틸리티만으로는 translateZ/rotateY 조합이 번거로워 여기에 둡니다.
+   Bookshelf.tsx 에서 .shelf / .book-spine / .book-title 을 씁니다. */
+.shelf {
+  perspective: 900px;
+  /* 소실점을 선반 바닥에 둡니다. 위쪽에 두면 책을 앞으로 당길 때
+     아랫부분이 아래로 밀려 스크롤 컨테이너에 잘립니다. */
+  perspective-origin: 50% 100%;
+}
+
+.book-spine {
+  transform-origin: 50% 100%;
+  transition:
+    transform 320ms cubic-bezier(0.2, 0.8, 0.25, 1),
+    box-shadow 320ms ease,
+    border-color 200ms ease;
+  will-change: transform;
+}
+
+/* 앞으로 당겨 나오면서 살짝 틀어지는 각도 — 책을 반쯤 빼낸 모습.
+   더 많이 나오게 하려면 translateZ 를, 덜 틀어지게 하려면 rotateY 를 조절하세요. */
+.book-spine:hover,
+.book-spine:focus-visible {
+  transform: translateY(-14px) translateZ(44px) rotateY(-24deg);
+  box-shadow: -10px 18px 28px rgb(0 0 0 / 0.35);
+  z-index: 10;
+}
+
+/* 책등 제목: 세로쓰기. nowrap + ellipsis 로 한 칸만 씁니다.
+   그냥 두면 긴 제목이 여러 칸으로 접혀 읽는 순서가 깨집니다. */
+.book-title {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 38px; /* 세로쓰기에서 line-height 는 칸 너비입니다 = 책등 폭 */
+  text-align: left;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .book-spine,
+  .book-spine:hover,
+  .book-spine:focus-visible {
+    transform: none;
+    transition: none;
+    box-shadow: none;
+  }
+}
+
+/* [2026-08 추가] 섹션 리듬 ------------------------------------------------
+   랜딩이 단조로웠던 원인은 모션 부재가 아니라 형태 반복이었습니다.
+   3열 카드 그리드가 연속 세 번 나오고, 섹션 제목이 전부 같은 회색 작은 글씨라
+   스크롤해도 섹션이 바뀐 게 느껴지지 않았습니다.
+   ① 배경 면을 교차시켜 경계를 만들고
+   ② 제목에 위계(라벨 + 큰 제목 + 설명)를 주고
+   ③ 섹션마다 레이아웃 형태를 바꿉니다(연결선 / 가로 스크롤 / 정의 목록).
+------------------------------------------------------------------------- */
+
+/* 밝은 면 — 기본 배경과 교차시켜 섹션 경계를 만듭니다 */
+.surface-alt {
+  background-image: linear-gradient(
+    180deg,
+    rgb(var(--n900) / 0.55),
+    rgb(var(--n900) / 0.25)
+  );
+  border-top: 1px solid rgb(var(--n800));
+  border-bottom: 1px solid rgb(var(--n800));
+}
+
+/* 3단계 — 스크롤에 따라 켜지는 마디 */
+.step-item.is-on .step-dot {
+  border-color: rgb(var(--brand));
+  color: rgb(var(--brand));
+  background-color: rgb(var(--brand) / 0.1);
+}
+
+/* 가로 스크롤 리스트 (갤러리) — 그리드 반복을 피하고 "더 있다"를 보여줍니다 */
+.h-rail {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding-bottom: 10px;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: thin;
+}
+.h-rail > * {
+  scroll-snap-align: start;
+  flex: 0 0 260px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #scroll-progress {
+    display: none;
+  }
 }
 
 /* components 레이어에 넣어야 컴포넌트 밖에서 text-red-400 같은 유틸리티
@@ -79,8 +234,10 @@ h3 {
       placeholder:text-neutral-600 focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/15 transition-colors duration-150;
   }
 
+  /* [2026-08 수정] bg-brand → bg-brand-solid.
+     흰 글자 기준 3.70:1 → 4.95:1 (WCAG AA 통과). 색상 인상은 거의 그대로입니다. */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-medium text-white
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-brand-solid px-4 py-2.5 text-sm font-medium text-white
       hover:bg-brand-dark hover:shadow-lg hover:shadow-brand/20 hover:-translate-y-px active:translate-y-0 active:scale-[0.98]
       transition-all duration-150;
   }
@@ -113,6 +270,21 @@ h3 {
 
   .toc-link-inactive {
     @apply text-neutral-400 hover:bg-neutral-900 hover:text-neutral-100 hover:translate-x-0.5;
+  }
+
+  /* 섹션 제목 위계: 작은 라벨 + 큰 제목 + 설명 한 줄.
+     기존에는 모든 섹션 제목이 text-sm text-neutral-500 하나뿐이라
+     위계가 없었습니다. */
+  .sec-eyebrow {
+    @apply text-[11px] tracking-[0.18em] uppercase text-brand mb-2.5;
+  }
+
+  .sec-title {
+    @apply font-heading text-[22px] sm:text-[23px] mb-2;
+  }
+
+  .sec-sub {
+    @apply text-sm text-neutral-500 mb-10;
   }
 
   /* 단계·순서를 나타내는 원형 배지. */

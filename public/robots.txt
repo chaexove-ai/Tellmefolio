@@ -1,0 +1,15 @@
+User-agent: *
+Allow: /
+Disallow: /settings
+Disallow: /library
+Disallow: /wizard
+
+# 네이버
+User-agent: Yeti
+Allow: /
+
+# 다음
+User-agent: Daum
+Allow: /
+
+Sitemap: https://tellmefolio-app.vercel.app/sitemap.xml
