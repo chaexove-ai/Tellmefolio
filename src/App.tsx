@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import AppLayout from "./components/AppLayout";
 import RouteFallback from "./components/RouteFallback";
+import RequireAuth from "./auth/RequireAuth";
 
 /**
  * 랜딩(/)만 정적으로 불러옵니다. 첫 진입 화면이라 지연 로딩할 이유가 없고,
@@ -55,7 +56,8 @@ export default function App() {
       {/* 로그인 이후 공통 레이아웃.
           Suspense 는 AppLayout 안쪽(Outlet 자리)에 있습니다. 여기서 감싸면
           페이지를 옮길 때마다 사이드바까지 같이 사라졌다 돌아옵니다. */}
-      <Route element={<AppLayout />}>
+      <Route element={<RequireAuth />}>
+        <Route element={<AppLayout />}>
         {/* 내 서재 */}
         <Route path="/library" element={<Dashboard />} />
         <Route path="/library/portfolios" element={<PortfolioList />} />
@@ -83,6 +85,7 @@ export default function App() {
         <Route path="/settings" element={<AccountSettings />} />
         <Route path="/settings/social" element={<SocialAccountManage />} />
         <Route path="/settings/data" element={<DataManage />} />
+        </Route>
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

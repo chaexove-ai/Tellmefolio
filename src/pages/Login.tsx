@@ -1,26 +1,49 @@
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import ThemeToggle from "../components/ThemeToggle";
 import SocialLoginButtons from "../components/SocialLoginButtons";
+import { useAuth } from "../auth/AuthProvider";
+import type { SocialProviderId } from "../components/BrandIcons";
 
 /**
- * [2026-08-20] 소셜 로그인 버튼에 각 사 브랜드 로고를 넣었습니다.
+ * [2026-08-20] 목업이던 로그인을 Supabase OAuth 로 바꿨습니다.
  *
- * 바뀐 것은 버튼 생김새뿐이고 로그인 흐름은 그대로입니다.
- *   - providers 배열 → BrandIcons.tsx 의 socialProviders 로 이동
- *     (라벨과 로고를 한곳에서 관리하려고 옮겼습니다)
- *   - 버튼 반복문 → <SocialLoginButtons /> 한 줄
- *   - handleLogin 은 손대지 않았습니다
+ * 버튼을 누르면 브라우저가 공급자 화면으로 넘어갔다가 /library 로
+ * 돌아옵니다. 돌아오는 주소는 AuthProvider 에서 origin 기준으로 만듭니다.
  *
- * 로고 색 원칙은 BrandIcons.tsx 주석에 적어두었습니다.
- * 요약하면 로고만 각 사 공식 색이고, 테두리·배경·글자는 전부
- * index.css 의 테마 변수를 씁니다.
+ * 환경변수가 없으면 예전처럼 목업으로 넘어갑니다. 설정 전에도 화면
+ * 흐름을 확인할 수 있게 남겨둔 것이고, 그 상태에서는 안내 문구가 뜹니다.
  */
 export default function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { signIn, session, configured } = useAuth();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // TODO: 실제 OAuth 연동. 지금은 목업으로 로그인 성공 시 내 서재로 이동합니다.
-  const handleLogin = (_provider: string) => {
-    navigate("/library");
+  // 이미 로그인한 사람이 /login 에 오면 되돌려 보냅니다.
+  useEffect(() => {
+    if (!session) return;
+    const from = (location.state as { from?: string } | null)?.from;
+    navigate(from ?? "/library", { replace: true });
+  }, [session, location.state, navigate]);
+
+  const handleLogin = async (provider: SocialProviderId) => {
+    if (!configured) {
+      navigate("/library");
+      return;
+    }
+
+    setBusy(true);
+    setError(null);
+
+    try {
+      await signIn(provider);
+      // 성공하면 브라우저가 공급자 화면으로 이동하므로 여기 아래는 실행되지 않습니다.
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "로그인에 실패했습니다. 잠시 후 다시 시도해 주세요.");
+      setBusy(false);
+    }
   };
 
   return (
@@ -35,7 +58,19 @@ export default function Login() {
           Google, GitHub, Figma 계정으로 시작하세요
         </p>
 
-        <SocialLoginButtons onSelect={handleLogin} />
+        <SocialLoginButtons onSelect={handleLogin} busy={busy} />
+
+        {error && (
+          <p role="alert" className="text-xs text-brand mt-4">
+            {error}
+          </p>
+        )}
+
+        {!configured && (
+          <p className="text-xs text-neutral-600 mt-4">
+            연동 준비 중입니다. 지금은 어느 버튼을 눌러도 둘러보기로 넘어갑니다.
+          </p>
+        )}
 
         <p className="text-xs text-neutral-600 mt-8">
           계속 진행하면 Tellmefolio 이용약관과 개인정보처리방침에 동의합니다

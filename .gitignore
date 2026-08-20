@@ -10,3 +10,6 @@ dist/
 .env.local
 .env*.local
 *.tsbuildinfo
+
+# 예시 파일은 저장소에 포함합니다
+!.env.example
