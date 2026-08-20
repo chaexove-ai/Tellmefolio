@@ -64,7 +64,12 @@ export default function BeforeAfterDemo() {
                 : "rounded-xl px-3.5 py-2 text-sm text-neutral-400 hover:text-neutral-100 hover:bg-neutral-900 transition-colors"
             }
           >
-            {v.job}
+            {/* [2026-08-20] 탭에도 같은 아이콘을 붙여, 몰입 구간(데스크톱)과
+                탭 위젯(모바일·모션 감소)에서 같은 기호를 보게 합니다. */}
+            <span className="inline-flex items-center gap-1.5">
+              <v.icon size={14} strokeWidth={1.5} aria-hidden="true" />
+              {v.job}
+            </span>
           </button>
         ))}
       </div>

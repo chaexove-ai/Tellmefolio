@@ -7,6 +7,9 @@
  *    실제 운영 방침으로 교체해 주세요.
  */
 
+import { Code, Compass, Target } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+
 /* ------------------------------------------------------------------
    1. Before / After 데모
    ------------------------------------------------------------------
@@ -27,6 +30,17 @@ export interface PerspectiveView {
   bullets: string[];
   /** 이 관점이 무엇을 앞세우는지 한 줄 해설 */
   lens: string;
+  /**
+   * [2026-08-20 추가] 직무 관점 아이콘.
+   *
+   * 세 관점이 전부 텍스트뿐이라 스크롤로 전환될 때 "무엇이 바뀌었는지"가
+   * 한눈에 안 잡혔습니다. 글을 읽어야만 알 수 있었습니다.
+   * 아이콘 하나가 앞에 붙으면 전환이 즉시 보입니다.
+   *
+   * 컴포넌트 참조만 담습니다. 렌더링 위치에서 크기·색을 정하므로
+   * 이 파일은 계속 "문구만 있는 파일"로 남습니다.
+   */
+  icon: LucideIcon;
 }
 
 export const demoSource = {
@@ -37,6 +51,7 @@ export const demoSource = {
 export const demoViews: PerspectiveView[] = [
   {
     key: "fe",
+    icon: Code,
     job: "프론트엔드 개발",
     lens: "무엇을 어떻게 구현했고, 그래서 무엇이 빨라졌는가",
     title: "회비 관리 웹 서비스 프론트엔드 구축",
@@ -50,6 +65,7 @@ export const demoViews: PerspectiveView[] = [
   },
   {
     key: "ux",
+    icon: Compass,
     job: "UX 디자인",
     lens: "어떤 문제를 발견했고, 무엇을 바꿔서 해결했는가",
     title: "회비 납부 확인 경험 재설계",
@@ -63,6 +79,7 @@ export const demoViews: PerspectiveView[] = [
   },
   {
     key: "pm",
+    icon: Target,
     job: "서비스 기획",
     lens: "왜 이 문제를 골랐고, 무엇을 기준으로 결정했는가",
     title: "동아리 회비 운영 프로세스 개선",

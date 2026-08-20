@@ -157,7 +157,16 @@ export default function PerspectiveScroller() {
               </span>
             ))}
           </div>
-          <p className="text-xs text-brand mb-3.5">{view.job} 관점</p>
+          {/* [2026-08-20] 현재 관점 표시 — 아이콘 배지를 앞에 둡니다.
+              스크롤로 관점이 넘어갈 때 글자만 바뀌면 변화가 눈에 안 띕니다.
+              아이콘은 글자보다 먼저 읽히므로 전환이 즉시 감지됩니다.
+              색은 text-brand 로 상속받아 라이트/다크에서 자동으로 맞습니다. */}
+          <div className="flex items-center gap-2 mb-3.5">
+            <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-brand/10 text-brand shrink-0">
+              <view.icon size={15} strokeWidth={1.5} aria-hidden="true" />
+            </span>
+            <p className="text-xs text-brand">{view.job} 관점</p>
+          </div>
 
           {/* 세 관점을 겹쳐 두고 시각적으로만 전환합니다 */}
           <div className="relative min-h-[230px]">

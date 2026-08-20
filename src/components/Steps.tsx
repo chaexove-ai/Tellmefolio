@@ -20,6 +20,10 @@ gsap.registerPlugin(ScrollTrigger);
  * 모션이 장식이 아니라 "순서"라는 의미를 그대로 표현합니다.
  */
 export default function Steps() {
+  // [2026-08-20 수정] HTMLDivElement → HTMLOListElement.
+  // 이 ref 는 아래에서 <ol> 에 붙는데 타입이 div 로 되어 있어
+  // `tsc -b` 가 TS2322 로 멈춥니다(빌드 스크립트가 tsc -b && vite build 라
+  // 여기서 배포가 막힙니다). 동작에는 영향이 없고 타입만 바로잡습니다.
   const root = useRef<HTMLOListElement>(null);
   const [reduced, setReduced] = useState(false);
 

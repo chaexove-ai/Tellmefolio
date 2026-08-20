@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, GraduationCap, Layers, Shuffle } from "lucide-react";
 import ThemeToggle from "../components/ThemeToggle";
 import HeroRewrite from "../components/HeroRewrite";
 import Reveal from "../components/Reveal";
@@ -16,10 +16,34 @@ import { galleryItems } from "../mockData";
 
 gsap.registerPlugin(ScrollTrigger);
 
+/**
+ * [2026-08-20] 대상 목록에 아이콘 추가.
+ *
+ * 정의 목록(dl/dt/dd)은 형태 반복을 피하는 데는 성공했지만,
+ * 세 항목이 전부 같은 크기의 회색 텍스트라 훑어볼 때 구분이 안 됐습니다.
+ * 각 항목 앞에 아이콘 하나를 두면 "나는 어디에 해당하나"를
+ * 문장을 다 읽지 않고도 찾을 수 있습니다.
+ *
+ * 아이콘은 모양만 lucide 를 쓰고 색은 text-brand — 즉 index.css 의
+ * --brand 변수를 그대로 상속받습니다. strokeWidth 1.5 로 얇게 가서
+ * Gowun Batang 제목의 가는 획과 무게를 맞췄습니다.
+ */
 const audiences = [
-  { title: "취업 준비생", desc: "여러 직무에 맞춰 같은 경험을 다양한 언어로 재해석하고 싶은 분" },
-  { title: "커리어 전환자", desc: "기존 프로젝트 경험을 새 직무 관점에서 설득력 있게 정리하고 싶은 분" },
-  { title: "개발자·디자이너", desc: "GitHub 리포지토리, Figma 작업물을 포트폴리오로 빠르게 구조화하고 싶은 분" },
+  {
+    icon: GraduationCap,
+    title: "취업 준비생",
+    desc: "여러 직무에 맞춰 같은 경험을 다양한 언어로 재해석하고 싶은 분",
+  },
+  {
+    icon: Shuffle,
+    title: "커리어 전환자",
+    desc: "기존 프로젝트 경험을 새 직무 관점에서 설득력 있게 정리하고 싶은 분",
+  },
+  {
+    icon: Layers,
+    title: "개발자·디자이너",
+    desc: "GitHub 리포지토리, Figma 작업물을 포트폴리오로 빠르게 구조화하고 싶은 분",
+  },
 ];
 
 const gallerySample = galleryItems.slice(0, 6);
@@ -218,14 +242,23 @@ export default function Landing() {
             </Reveal>
             <Reveal delay={0.06}>
               {/* 카드 대신 정의 목록 — 세 번째 카드 그리드를 없앱니다 */}
-              <dl className="grid grid-cols-1 sm:grid-cols-[170px_1fr] sm:gap-x-7">
-                {audiences.map((a) => (
-                  <div key={a.title} className="contents">
-                    <dt className="font-heading text-[15px] pt-5 sm:border-t border-neutral-800">
-                      {a.title}
+              {/* 첫 열을 170px → 190px 로 넓혔습니다. 아이콘이 앞에 붙으면서
+                  "개발자·디자이너" 가 두 줄로 깨지는 것을 막습니다.
+                  map 변수는 aud — <a.icon /> 은 앵커 태그와 헷갈립니다. */}
+              <dl className="grid grid-cols-1 sm:grid-cols-[190px_1fr] sm:gap-x-7">
+                {audiences.map((aud) => (
+                  <div key={aud.title} className="contents">
+                    <dt className="font-heading text-[15px] pt-5 sm:border-t border-neutral-800 flex items-center gap-2.5">
+                      <aud.icon
+                        size={17}
+                        strokeWidth={1.5}
+                        className="text-brand shrink-0"
+                        aria-hidden="true"
+                      />
+                      {aud.title}
                     </dt>
                     <dd className="text-sm text-neutral-400 pb-5 sm:pt-5 sm:border-t border-neutral-800 leading-relaxed">
-                      {a.desc}
+                      {aud.desc}
                     </dd>
                   </div>
                 ))}

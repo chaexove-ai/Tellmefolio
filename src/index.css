@@ -175,11 +175,35 @@ summary::marker { content: ""; }
   border-bottom: 1px solid rgb(var(--n800));
 }
 
-/* 3단계 — 스크롤에 따라 켜지는 마디 */
+/* 3단계 — 스크롤에 따라 켜지는 마디
+   [2026-08-20 수정] 숫자가 연결선에 가려지던 문제.
+
+   원인: 연결선(.step-rail-fill)은 원형 배지의 정확히 한가운데를 지나갑니다.
+     - 연결선  : ol 기준 left:19px, 폭 2px  → 19~21px
+     - 배지    : li 기준 -left:52px, 폭 40px → ol 기준 0~40px (중심 20px)
+   비활성 상태의 배지는 Tailwind `bg-neutral-950`(불투명)이라 선을 가렸지만,
+   is-on 이 되는 순간 아래 규칙이 background-color 를 알파 0.1 로 덮어써서
+   배지가 90% 투명해집니다. 그래서 스크롤해서 켜진 마디부터 선이 숫자를
+   관통해 보였습니다. z-index 문제가 아니라 알파 문제였습니다.
+
+   해결: 같은 톤을 유지하면서 불투명하게 만듭니다.
+     background-color 에 페이지 배경(--n950)을 깔고,
+     그 위에 브랜드 틴트를 background-image 로 한 겹 얹습니다.
+     → 보이는 색은 기존과 동일, 다만 뒤가 비치지 않습니다.
+   z-index 는 형제 순서가 바뀌어도 안전하도록 함께 넣어둡니다. */
+.step-dot {
+  position: absolute; /* Tailwind 의 absolute 와 동일 — z-index 적용을 위해 명시 */
+  z-index: 1;
+}
+
 .step-item.is-on .step-dot {
   border-color: rgb(var(--brand));
   color: rgb(var(--brand));
-  background-color: rgb(var(--brand) / 0.1);
+  background-color: rgb(var(--n950));
+  background-image: linear-gradient(
+    rgb(var(--brand) / 0.1),
+    rgb(var(--brand) / 0.1)
+  );
 }
 
 /* 가로 스크롤 리스트 (갤러리) — 그리드 반복을 피하고 "더 있다"를 보여줍니다 */
@@ -301,6 +325,30 @@ summary::marker { content: ""; }
   .btn-secondary {
     @apply inline-flex items-center justify-center gap-2 rounded-xl border border-neutral-700 bg-neutral-900/40 px-4 py-2.5 text-sm font-medium text-neutral-200
       hover:border-neutral-500 hover:bg-neutral-900 active:scale-[0.98] transition-all duration-150;
+  }
+
+  /* [2026-08-20 추가] 소셜 로그인 버튼.
+     .btn-secondary 와 비슷하지만 세 가지가 다릅니다.
+
+     ① w-full — 로그인 화면에서는 세 버튼이 세로로 쌓입니다.
+     ② 로고 자리 고정 — 로고를 왼쪽에 절대 배치하고 라벨은 버튼 중앙에
+        둡니다. justify-center 로 로고와 글자를 함께 가운데 두면
+        "Google로 로그인"(8자)과 "GitHub로 로그인"(9자)의 길이 차이만큼
+        로고 위치가 어긋나 세 버튼이 들쭉날쭉해 보입니다.
+        → 로고는 .btn-social-icon 으로 왼쪽 20px 에 고정합니다.
+     ③ py-3 — 소셜 로그인은 이 화면의 유일한 행동입니다. 조금 큽니다.
+
+     테두리·배경·호버는 전부 우리 테마 변수(--n700, --n900)를 씁니다.
+     로고만 각 사의 공식 색이고 나머지는 전부 Tellmefolio 톤입니다. */
+  .btn-social {
+    @apply relative w-full inline-flex items-center justify-center rounded-xl border border-neutral-700
+      bg-neutral-900/40 px-12 py-3 text-sm font-medium text-neutral-200
+      hover:border-neutral-500 hover:bg-neutral-900 active:scale-[0.99]
+      transition-all duration-150;
+  }
+
+  .btn-social-icon {
+    @apply absolute left-5 top-1/2 -translate-y-1/2 flex items-center justify-center;
   }
 
   /* 배경색이 있는 배지에는 항상 그 색 계열의 진한 텍스트를 써서 회색 글자로

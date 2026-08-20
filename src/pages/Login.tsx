@@ -1,12 +1,20 @@
 import { useNavigate } from "react-router-dom";
 import ThemeToggle from "../components/ThemeToggle";
+import SocialLoginButtons from "../components/SocialLoginButtons";
 
-const providers = [
-  { id: "google", label: "Google로 로그인" },
-  { id: "github", label: "GitHub로 로그인" },
-  { id: "figma", label: "Figma로 로그인" },
-];
-
+/**
+ * [2026-08-20] 소셜 로그인 버튼에 각 사 브랜드 로고를 넣었습니다.
+ *
+ * 바뀐 것은 버튼 생김새뿐이고 로그인 흐름은 그대로입니다.
+ *   - providers 배열 → BrandIcons.tsx 의 socialProviders 로 이동
+ *     (라벨과 로고를 한곳에서 관리하려고 옮겼습니다)
+ *   - 버튼 반복문 → <SocialLoginButtons /> 한 줄
+ *   - handleLogin 은 손대지 않았습니다
+ *
+ * 로고 색 원칙은 BrandIcons.tsx 주석에 적어두었습니다.
+ * 요약하면 로고만 각 사 공식 색이고, 테두리·배경·글자는 전부
+ * index.css 의 테마 변수를 씁니다.
+ */
 export default function Login() {
   const navigate = useNavigate();
 
@@ -26,17 +34,9 @@ export default function Login() {
         <p className="text-sm text-neutral-500 mb-8">
           Google, GitHub, Figma 계정으로 시작하세요
         </p>
-        <div className="space-y-2">
-          {providers.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => handleLogin(p.id)}
-              className="btn-secondary w-full"
-            >
-              {p.label}
-            </button>
-          ))}
-        </div>
+
+        <SocialLoginButtons onSelect={handleLogin} />
+
         <p className="text-xs text-neutral-600 mt-8">
           계속 진행하면 Tellmefolio 이용약관과 개인정보처리방침에 동의합니다
         </p>
