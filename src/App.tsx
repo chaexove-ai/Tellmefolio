@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import AppLayout from "./components/AppLayout";
 import RouteFallback from "./components/RouteFallback";
 import RequireAuth from "./auth/RequireAuth";
+import ScrollToTop from "./components/ScrollToTop";
 
 /**
  * 랜딩(/)만 정적으로 불러옵니다. 첫 진입 화면이라 지연 로딩할 이유가 없고,
@@ -41,7 +42,9 @@ const DataManage = lazy(() => import("./pages/account/DataManage"));
 
 export default function App() {
   return (
-    <Routes>
+    <>
+      <ScrollToTop />
+      <Routes>
       {/* 인증 및 온보딩 */}
       <Route path="/" element={<Landing />} />
       <Route
@@ -95,6 +98,7 @@ export default function App() {
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+      </Routes>
+    </>
   );
 }
