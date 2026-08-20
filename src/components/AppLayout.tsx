@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { LibraryBig, Sparkles, Repeat, Users, Settings, Menu, X } from "lucide-react";
 import AIUsageBadge from "./AIUsageBadge";
+import RouteFallback from "./RouteFallback";
 import ThemeToggle from "./ThemeToggle";
 
 const navItems = [
@@ -107,7 +108,10 @@ export default function AppLayout() {
       )}
 
       <main className="flex-1 min-w-0 px-4 py-6 pt-20 md:px-10 md:py-10 md:pt-10">
-        <Outlet />
+        {/* 라우트 청크를 내려받는 동안에도 사이드바는 그대로 남습니다. */}
+        <Suspense fallback={<RouteFallback />}>
+          <Outlet />
+        </Suspense>
       </main>
     </div>
   );

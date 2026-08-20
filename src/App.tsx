@@ -1,39 +1,60 @@
+import { lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import AppLayout from "./components/AppLayout";
+import RouteFallback from "./components/RouteFallback";
 
+/**
+ * 랜딩(/)만 정적으로 불러옵니다. 첫 진입 화면이라 지연 로딩할 이유가 없고,
+ * GSAP ScrollTrigger 를 쓰기 때문에 Suspense 로 한 번 걸렀다가 마운트되면
+ * 트리거 위치 계산이 어긋납니다.
+ *
+ * 나머지 라우트는 전부 로그인 이후 화면이라 첫 방문자가 내려받을 이유가
+ * 없습니다. React.lazy 로 분리해 실제로 들어갈 때만 청크를 받습니다.
+ */
 import Landing from "./pages/Landing";
-import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import PortfolioList from "./pages/PortfolioList";
-import VersionHistory from "./pages/VersionHistory";
 
-import WizardOverview from "./pages/wizard/WizardOverview";
-import SourceInput from "./pages/wizard/SourceInput";
-import AIDraftGeneration from "./pages/wizard/AIDraftGeneration";
-import PortfolioEditor from "./pages/wizard/PortfolioEditor";
-import TemplateStyle from "./pages/wizard/TemplateStyle";
-import Export from "./pages/wizard/Export";
+const Login = lazy(() => import("./pages/Login"));
 
-import JobSwitchRequest from "./pages/jobswitch/JobSwitchRequest";
-import JobSwitchResult from "./pages/jobswitch/JobSwitchResult";
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const PortfolioList = lazy(() => import("./pages/PortfolioList"));
+const VersionHistory = lazy(() => import("./pages/VersionHistory"));
 
-import Gallery from "./pages/gallery/Gallery";
-import GalleryDetail from "./pages/gallery/GalleryDetail";
-import ShareSettings from "./pages/gallery/ShareSettings";
-import VisitStats from "./pages/gallery/VisitStats";
+const WizardOverview = lazy(() => import("./pages/wizard/WizardOverview"));
+const SourceInput = lazy(() => import("./pages/wizard/SourceInput"));
+const AIDraftGeneration = lazy(() => import("./pages/wizard/AIDraftGeneration"));
+const PortfolioEditor = lazy(() => import("./pages/wizard/PortfolioEditor"));
+const TemplateStyle = lazy(() => import("./pages/wizard/TemplateStyle"));
+const Export = lazy(() => import("./pages/wizard/Export"));
 
-import AccountSettings from "./pages/account/AccountSettings";
-import SocialAccountManage from "./pages/account/SocialAccountManage";
-import DataManage from "./pages/account/DataManage";
+const JobSwitchRequest = lazy(() => import("./pages/jobswitch/JobSwitchRequest"));
+const JobSwitchResult = lazy(() => import("./pages/jobswitch/JobSwitchResult"));
+
+const Gallery = lazy(() => import("./pages/gallery/Gallery"));
+const GalleryDetail = lazy(() => import("./pages/gallery/GalleryDetail"));
+const ShareSettings = lazy(() => import("./pages/gallery/ShareSettings"));
+const VisitStats = lazy(() => import("./pages/gallery/VisitStats"));
+
+const AccountSettings = lazy(() => import("./pages/account/AccountSettings"));
+const SocialAccountManage = lazy(() => import("./pages/account/SocialAccountManage"));
+const DataManage = lazy(() => import("./pages/account/DataManage"));
 
 export default function App() {
   return (
     <Routes>
       {/* 인증 및 온보딩 */}
       <Route path="/" element={<Landing />} />
-      <Route path="/login" element={<Login />} />
+      <Route
+        path="/login"
+        element={
+          <Suspense fallback={<RouteFallback />}>
+            <Login />
+          </Suspense>
+        }
+      />
 
-      {/* 로그인 이후 공통 레이아웃 */}
+      {/* 로그인 이후 공통 레이아웃.
+          Suspense 는 AppLayout 안쪽(Outlet 자리)에 있습니다. 여기서 감싸면
+          페이지를 옮길 때마다 사이드바까지 같이 사라졌다 돌아옵니다. */}
       <Route element={<AppLayout />}>
         {/* 내 서재 */}
         <Route path="/library" element={<Dashboard />} />
