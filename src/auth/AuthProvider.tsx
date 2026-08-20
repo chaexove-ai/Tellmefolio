@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { getSupabase, isSupabaseConfigured } from "../lib/supabase";
+import { setGitHubToken } from "../lib/github";
 import type { SocialProviderId } from "../components/BrandIcons";
 
 /**
@@ -24,9 +25,24 @@ interface AuthValue {
   signOut: () => Promise<void>;
   /** Supabase 설정이 없는 상태인지 — 화면에서 안내를 띄울 때 씁니다. */
   configured: boolean;
+  /** GitHub 으로 로그인한 경우의 계정 이름. 그 외에는 null. */
+  githubLogin: string | null;
 }
 
 const AuthContext = createContext<AuthValue | null>(null);
+
+/**
+ * GitHub 공급자 토큰을 꺼내 메모리에 넘깁니다.
+ *
+ * 이 값은 로그인 직후 한 번만 들어 있고, 새로고침하면 사라집니다. Supabase
+ * 가 공급자 토큰을 세션에 보관하지 않기 때문입니다. 없으면 GitHub 호출이
+ * 권한 없는 요청으로 넘어가므로 기능이 멈추지는 않고 한도만 낮아집니다.
+ */
+function captureProviderToken(session: Session | null) {
+  const provider = session?.user?.app_metadata?.provider;
+  if (provider !== "github") return;
+  if (session?.provider_token) setGitHubToken(session.provider_token);
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -44,11 +60,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data } = await sb.auth.getSession();
       if (!alive) return;
       setSession(data.session);
+      captureProviderToken(data.session);
       setLoading(false);
 
       // 로그인, 로그아웃, 토큰 갱신을 모두 여기서 받습니다.
       const { data: sub } = sb.auth.onAuthStateChange((_event, next) => {
         setSession(next);
+        captureProviderToken(next);
         setLoading(false);
       });
       unsubscribe = () => sub.subscription.unsubscribe();
@@ -78,14 +96,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    setGitHubToken(null);
     const sb = await getSupabase();
     if (!sb) return;
     await sb.auth.signOut();
   };
 
+  const githubLogin =
+    session?.user?.app_metadata?.provider === "github"
+      ? ((session.user.user_metadata?.user_name as string | undefined) ?? null)
+      : null;
+
   return (
     <AuthContext.Provider
-      value={{ session, loading, signIn, signOut, configured: isSupabaseConfigured }}
+      value={{
+        session,
+        loading,
+        signIn,
+        signOut,
+        configured: isSupabaseConfigured,
+        githubLogin,
+      }}
     >
       {children}
     </AuthContext.Provider>

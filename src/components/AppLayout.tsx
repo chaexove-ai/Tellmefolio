@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { LibraryBig, Sparkles, Repeat, Users, Settings, Menu, X } from "lucide-react";
 import AIUsageBadge from "./AIUsageBadge";
 import RouteFallback from "./RouteFallback";
+import UserMenu from "./UserMenu";
 import ThemeToggle from "./ThemeToggle";
 
 const navItems = [
@@ -64,6 +65,7 @@ export default function AppLayout() {
         <div className="pt-6 border-t border-neutral-800 px-2 space-y-4">
           <AIUsageBadge />
           <ThemeToggle />
+          <UserMenu />
         </div>
       </aside>
 
@@ -102,6 +104,7 @@ export default function AppLayout() {
             <NavList onNavigate={() => setDrawerOpen(false)} />
             <div className="pt-6 border-t border-neutral-800 px-2 space-y-4">
               <AIUsageBadge />
+              <UserMenu onNavigate={() => setDrawerOpen(false)} />
             </div>
           </aside>
         </div>
