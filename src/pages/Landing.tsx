@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { ArrowRight, GraduationCap, Layers, Shuffle } from "lucide-react";
+import { GraduationCap, Layers, Shuffle } from "lucide-react";
 import ThemeToggle from "../components/ThemeToggle";
 import HeroRewrite from "../components/HeroRewrite";
 import Reveal from "../components/Reveal";
@@ -133,12 +133,6 @@ export default function Landing() {
       <header className="sticky top-0 z-50 flex items-center justify-between px-4 sm:px-8 py-4 sm:py-6 border-b border-neutral-800 bg-neutral-950/85 backdrop-blur-md supports-[backdrop-filter]:bg-neutral-950/70">
         <span className="text-base sm:text-lg font-heading">Tellmefolio</span>
         <nav className="flex items-center gap-2 sm:gap-6" aria-label="주요 메뉴">
-          <Link
-            to="/gallery"
-            className="hidden sm:inline text-sm text-neutral-400 hover:text-neutral-100 transition-colors"
-          >
-            갤러리
-          </Link>
           <ThemeToggle />
           <Link to="/login" className="btn-primary text-xs sm:text-sm px-3 sm:px-4">
             지금 시작하기
@@ -194,19 +188,13 @@ export default function Landing() {
         <section className="surface-alt px-4 sm:px-8 py-24">
           <div className="max-w-4xl mx-auto">
             <Reveal>
-              <div className="flex items-end justify-between gap-4">
-                <div>
-                  <p className="sec-eyebrow">결과물</p>
-                  <h2 className="sec-title">이렇게 만들어집니다</h2>
-                  <p className="sec-sub !mb-0">다른 사람들이 만든 포트폴리오를 먼저 보세요.</p>
-                </div>
-                <Link
-                  to="/gallery"
-                  className="shrink-0 text-sm text-brand hover:underline inline-flex items-center gap-1 pb-1"
-                >
-                  전체 보기
-                  <ArrowRight size={14} strokeWidth={2} aria-hidden="true" />
-                </Link>
+              {/* 커뮤니티는 로그인 뒤 영역이라, 여기서 링크를 걸면
+                  방문자가 로그인 화면으로 튕깁니다. 카드도 링크를 뗐습니다.
+                  보여주되 클릭을 유도하지는 않습니다. */}
+              <div>
+                <p className="sec-eyebrow">결과물</p>
+                <h2 className="sec-title">이렇게 만들어집니다</h2>
+                <p className="sec-sub !mb-0">다른 사람들이 만든 포트폴리오를 먼저 보세요.</p>
               </div>
             </Reveal>
             <Reveal delay={0.08}>
@@ -214,18 +202,14 @@ export default function Landing() {
                   "더 있다"는 것을 잘린 카드로 보여줍니다. */}
               <div className="h-rail mt-10">
                 {gallerySample.map((g) => (
-                  <Link
-                    key={g.id}
-                    to={`/gallery/${g.id}`}
-                    className="entry !p-4 hover:border-brand/50 hover:-translate-y-0.5"
-                  >
+                  <div key={g.id} className="entry !p-4">
                     <GrainCover seed={g.id} className="aspect-[4/3] rounded-xl mb-3.5" />
                     <span className="badge bg-brand/10 text-brand mb-3">{g.job}</span>
                     <h3 className="entry-title">{g.title}</h3>
                     <p className="text-sm text-neutral-400 leading-relaxed">
                       {g.structure} · {g.author} · {g.year}
                     </p>
-                  </Link>
+                  </div>
                 ))}
               </div>
             </Reveal>
@@ -298,9 +282,6 @@ export default function Landing() {
         <div className="max-w-4xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <span className="font-heading text-neutral-100">Tellmefolio</span>
           <nav className="flex flex-wrap items-center gap-x-5 gap-y-2" aria-label="푸터 메뉴">
-            <Link to="/gallery" className="hover:text-neutral-100 transition-colors">
-              갤러리
-            </Link>
             <Link to="/login" className="hover:text-neutral-100 transition-colors">
               로그인
             </Link>

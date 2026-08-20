@@ -13,7 +13,7 @@ const visits = [
 export default function VisitStats() {
   return (
     <div className="max-w-3xl space-y-6">
-      <Link to="/gallery/share" className="text-xs text-brand hover:underline">
+      <Link to="/community/share" className="text-xs text-brand hover:underline">
         공유 페이지 설정으로
       </Link>
       <h1 className="text-xl font-heading">방문 통계</h1>

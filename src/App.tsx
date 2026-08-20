@@ -75,11 +75,17 @@ export default function App() {
         <Route path="/job-switch" element={<JobSwitchRequest />} />
         <Route path="/job-switch/result" element={<JobSwitchResult />} />
 
-        {/* 커뮤니티 갤러리 및 공유 */}
-        <Route path="/gallery" element={<Gallery />} />
-        <Route path="/gallery/:id" element={<GalleryDetail />} />
-        <Route path="/gallery/share" element={<ShareSettings />} />
-        <Route path="/gallery/stats" element={<VisitStats />} />
+        {/* 커뮤니티 및 공유.
+            이름이 사이드바("커뮤니티")·랜딩("갤러리")·라우트(/gallery)로
+            갈려 있어서 /community 로 통일했습니다. 이미 배포된 주소가
+            있으니 옛 경로는 아래에서 넘겨줍니다. */}
+        <Route path="/community" element={<Gallery />} />
+        <Route path="/community/:id" element={<GalleryDetail />} />
+        <Route path="/community/share" element={<ShareSettings />} />
+        <Route path="/community/stats" element={<VisitStats />} />
+
+        <Route path="/gallery" element={<Navigate to="/community" replace />} />
+        <Route path="/gallery/*" element={<Navigate to="/community" replace />} />
 
         {/* 계정 및 데이터 관리 */}
         <Route path="/settings" element={<AccountSettings />} />

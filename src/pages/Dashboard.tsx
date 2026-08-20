@@ -37,10 +37,10 @@ const nextSteps = [
   },
   {
     icon: Users,
-    title: "커뮤니티 갤러리 탐색",
+    title: "커뮤니티 둘러보기",
     desc: "다른 사용자의 포트폴리오 구성 방식을 참고합니다.",
-    to: "/gallery",
-    cta: "갤러리 보기",
+    to: "/community",
+    cta: "커뮤니티 보기",
   },
 ];
 
@@ -58,7 +58,7 @@ export default function Dashboard() {
   return (
     <div className="max-w-3xl space-y-10">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-heading">내 서재</h1>
+        <h1 className="text-xl font-heading">홈</h1>
         <Link to="/library/portfolios" className="text-xs text-brand hover:underline">
           포트폴리오 목록 보기
         </Link>
@@ -67,21 +67,6 @@ export default function Dashboard() {
       <Reveal>
         <Bookshelf portfolios={portfolios} />
       </Reveal>
-
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        {stats.map((s, i) => (
-          <Reveal key={s.label} delay={i * 0.06}>
-            <div className="entry p-5">
-              <div className="w-9 h-9 rounded-full bg-brand/10 text-brand flex items-center justify-center mb-3">
-                <s.icon size={16} strokeWidth={2.25} />
-              </div>
-              <p className="text-2xl font-heading text-neutral-100">{statValues[i]}</p>
-              <p className="text-xs text-neutral-400 mt-1">{s.label}</p>
-              <p className="text-xs text-neutral-600">{s.sub}</p>
-            </div>
-          </Reveal>
-        ))}
-      </div>
 
       <div>
         <h2 className="text-sm text-neutral-500 mb-3">최근 작업</h2>
@@ -123,6 +108,27 @@ export default function Dashboard() {
                 <Link to={s.to} className="text-xs text-brand hover:underline">
                   {s.cta} →
                 </Link>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+
+      {/* 통계는 아래로 내렸습니다. 포트폴리오가 두세 개인 사용자에게
+          "전체 2, 공개 1"은 첫 화면에서 볼 이유가 없는 숫자입니다.
+          위쪽은 만들기와 최근 작업이 차지하는 게 맞습니다. */}
+      <div>
+        <h2 className="text-sm text-neutral-500 mb-3">현황</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {stats.map((s, i) => (
+            <Reveal key={s.label} delay={i * 0.06}>
+              <div className="entry p-5">
+                <div className="w-9 h-9 rounded-full bg-brand/10 text-brand flex items-center justify-center mb-3">
+                  <s.icon size={16} strokeWidth={2.25} />
+                </div>
+                <p className="text-2xl font-heading text-neutral-100">{statValues[i]}</p>
+                <p className="text-xs text-neutral-400 mt-1">{s.label}</p>
+                <p className="text-xs text-neutral-600">{s.sub}</p>
               </div>
             </Reveal>
           ))}

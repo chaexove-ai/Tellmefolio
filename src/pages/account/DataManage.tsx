@@ -118,7 +118,7 @@ export default function DataManage() {
             <ul className="text-xs text-neutral-500 mt-2 space-y-1">
               <li>· 포트폴리오 내용과 편집 이력이 삭제됩니다.</li>
               <li>· 공개 공유 URL이 즉시 비활성화됩니다.</li>
-              <li>· 커뮤니티 갤러리에서도 제거됩니다.</li>
+              <li>· 커뮤니티에서도 제거됩니다.</li>
             </ul>
             <div className="flex justify-end gap-2 mt-6">
               <button className="btn-secondary" onClick={() => setConfirmDelete(false)}>

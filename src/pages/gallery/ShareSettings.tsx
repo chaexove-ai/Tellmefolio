@@ -15,7 +15,7 @@ export default function ShareSettings() {
           <span>
             공개 상태
             <p className="text-xs text-neutral-500 mt-1">
-              공개로 설정하면 커뮤니티 갤러리와 고유 URL에서 누구나 이 포트폴리오를
+              공개로 설정하면 커뮤니티와 고유 URL에서 누구나 이 포트폴리오를
               열람할 수 있습니다.
             </p>
           </span>
@@ -50,13 +50,13 @@ export default function ShareSettings() {
             현재 공개 주소: <span className="text-brand">tellmefolio.com/{slug}</span>
           </span>
           <span className="block text-xs text-neutral-500 mt-1">
-            공개 상태에서는 커뮤니티 갤러리 목록에도 자동으로 노출됩니다.
+            공개 상태에서는 커뮤니티 목록에도 자동으로 노출됩니다.
           </span>
         </p>
       )}
 
       <div className="flex items-center justify-between">
-        <Link to="/gallery/stats" className="text-xs text-brand hover:underline">
+        <Link to="/community/stats" className="text-xs text-brand hover:underline">
           방문 통계 확인
         </Link>
         <button className="btn-primary">저장</button>

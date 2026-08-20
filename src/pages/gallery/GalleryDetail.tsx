@@ -8,8 +8,8 @@ export default function GalleryDetail() {
 
   return (
     <div className="max-w-3xl space-y-6">
-      <Link to="/gallery" className="text-xs text-brand hover:underline">
-        갤러리 목록으로
+      <Link to="/community" className="text-xs text-brand hover:underline">
+        커뮤니티 목록으로
       </Link>
 
       {/* [2026-08] 대표 이미지 자리 — 목록 카드와 같은 seed 라 같은 그림이 이어집니다 */}

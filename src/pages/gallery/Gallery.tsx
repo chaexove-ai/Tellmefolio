@@ -23,7 +23,7 @@ export default function Gallery() {
   return (
     <div className="max-w-4xl space-y-6">
       <div>
-        <h1 className="text-xl font-heading">커뮤니티 갤러리</h1>
+        <h1 className="text-xl font-heading">커뮤니티</h1>
         <p className="text-xs text-neutral-500 mt-1">
           다른 사용자의 포트폴리오는 열람만 가능하며, 내용을 복제하거나 자신의
           포트폴리오로 가져올 수 없습니다.
@@ -52,7 +52,7 @@ export default function Gallery() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {filtered.map((g, i) => (
           <Reveal key={g.id} delay={(i % 3) * 0.08}>
-            <Link to={`/gallery/${g.id}`} className="entry p-4 block hover:border-brand/40 hover:-translate-y-0.5 transition-all">
+            <Link to={`/community/${g.id}`} className="entry p-4 block hover:border-brand/40 hover:-translate-y-0.5 transition-all">
               {/* [2026-08] 빈 이미지 자리(ImageOff 아이콘) → 절차적 커버.
                   seed 가 g.id 라 같은 포트폴리오는 항상 같은 그림입니다. */}
               <GrainCover seed={g.id} className="aspect-[4/3] rounded-xl mb-3" />
