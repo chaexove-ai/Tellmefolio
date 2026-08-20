@@ -1,5 +1,5 @@
 import { Suspense, useEffect, useState } from "react";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { LibraryBig, Sparkles, Repeat, Users, Settings, Menu, X } from "lucide-react";
 import AIUsageBadge from "./AIUsageBadge";
 import RouteFallback from "./RouteFallback";
@@ -7,10 +7,10 @@ import UserMenu from "./UserMenu";
 import ThemeToggle from "./ThemeToggle";
 
 const navItems = [
-  { to: "/library", label: "내 서재", icon: LibraryBig },
+  { to: "/library", label: "홈", icon: LibraryBig },
   { to: "/wizard", label: "생성", icon: Sparkles },
   { to: "/job-switch", label: "직무 전환", icon: Repeat },
-  { to: "/gallery", label: "커뮤니티", icon: Users },
+  { to: "/community", label: "커뮤니티", icon: Users },
   { to: "/settings", label: "설정", icon: Settings },
 ];
 
@@ -60,7 +60,12 @@ export default function AppLayout() {
     <div className="min-h-screen flex bg-neutral-950">
       {/* 데스크톱 사이드바 */}
       <aside className="hidden md:flex w-60 shrink-0 border-r border-neutral-800 flex-col px-4 py-8">
-        <span className="text-lg font-heading text-neutral-100 px-2">Tellmefolio</span>
+        {/* 좌상단 로고는 홈으로 가는 버튼이라는 게 오래된 관습입니다.
+            span 으로 두면 눌러도 아무 일이 없어서, 사용자는 "안 눌린다"가
+            아니라 "다른 홈이 있나"로 해석합니다. */}
+        <Link to="/library" className="text-lg font-heading text-neutral-100 px-2 hover:text-brand transition-colors">
+          Tellmefolio
+        </Link>
         <NavList />
         <div className="pt-6 border-t border-neutral-800 px-2 space-y-4">
           <AIUsageBadge />
@@ -78,7 +83,7 @@ export default function AppLayout() {
         >
           <Menu size={22} />
         </button>
-        <span className="text-base font-heading text-neutral-100">Tellmefolio</span>
+        <Link to="/library" className="text-base font-heading text-neutral-100">Tellmefolio</Link>
         <ThemeToggle />
       </header>
 
@@ -92,7 +97,13 @@ export default function AppLayout() {
           />
           <aside className="absolute inset-y-0 left-0 w-72 max-w-[80%] bg-neutral-950 border-r border-neutral-800 flex flex-col px-4 py-6 overflow-y-auto">
             <div className="flex items-center justify-between px-2">
-              <span className="text-lg font-heading text-neutral-100">Tellmefolio</span>
+              <Link
+                to="/library"
+                onClick={() => setDrawerOpen(false)}
+                className="text-lg font-heading text-neutral-100"
+              >
+                Tellmefolio
+              </Link>
               <button
                 onClick={() => setDrawerOpen(false)}
                 aria-label="메뉴 닫기"
