@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import AIRequestStatus from "../../components/AIRequestStatus";
 import { aiUsage, type AIRequestStatus as Status } from "../../mockData";
 import type { RepoMaterial } from "../../lib/github";
+import { generateDraft, DraftError, type Draft } from "../../lib/draft";
 
 /** 앞 단계에서 넘겨준 재료. 주소로 바로 들어오면 비어 있습니다. */
 interface WizardState {
@@ -25,12 +26,37 @@ export default function AIDraftGeneration() {
   const [structure, setStructure] = useState<"결과 중심형" | "문제-실행-결과형">("결과 중심형");
   const [extra, setExtra] = useState("");
 
-  const limitReached = aiUsage.dailyUsed >= aiUsage.dailyLimit;
+  const [draft, setDraft] = useState<Draft | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const startGeneration = () => {
+  const limitReached = aiUsage.dailyUsed >= aiUsage.dailyLimit;
+  const hasMaterial = materials.length > 0 || note.trim().length > 0;
+
+  /**
+   * Edge Function 을 호출합니다. 키는 서버에만 있으므로 여기서는 재료만
+   * 넘깁니다. 실패하면 이유를 화면에 그대로 보여줍니다 — 조용히 실패하면
+   * 사용자는 다시 눌러보는 것 말고 할 수 있는 게 없습니다.
+   */
+  const startGeneration = async () => {
     setStatus("processing");
-    // 실제 연동 시 백엔드 응답으로 대체. 데모용으로 1.2초 후 완료 처리.
-    window.setTimeout(() => setStatus("completed"), 1200);
+    setErrorMessage(null);
+
+    try {
+      const { draft: result } = await generateDraft({
+        materials,
+        note,
+        job,
+        structure,
+        extra,
+      });
+      setDraft(result);
+      setStatus("completed");
+    } catch (e) {
+      setErrorMessage(
+        e instanceof DraftError ? e.message : "초안 생성 중 문제가 생겼습니다."
+      );
+      setStatus("failed");
+    }
   };
 
   return (
@@ -143,9 +169,31 @@ export default function AIDraftGeneration() {
         processingLabel="초안을 생성하고 있습니다... 원본 자료를 분석하고 있습니다."
         completedLabel="포트폴리오 초안이 준비되었습니다. 편집기에서 내용을 검토하고 수정할 수 있습니다."
         failedReason="요청 처리 중 오류가 발생했습니다. 원본 자료의 용량이 크거나 서버 요청이 일시적으로 실패했습니다."
-        onRetry={startGeneration}
+        onRetry={() => void startGeneration()}
         onCancel={() => setStatus("idle")}
       />
+
+      {errorMessage && (
+        <p role="alert" className="text-sm text-brand">
+          {errorMessage}
+        </p>
+      )}
+
+      {/* 모델이 자료 부족으로 못 쓴 부분을 그대로 보여줍니다. 결과가 얇을 때
+          사용자가 무엇을 보강해야 하는지 알 수 있는 유일한 단서입니다. */}
+      {draft && draft.gaps?.length > 0 && (
+        <div className="entry">
+          <h2 className="entry-title">자료가 부족했던 부분</h2>
+          <ul className="text-sm text-neutral-400 space-y-1 list-disc pl-4">
+            {draft.gaps.map((g, i) => (
+              <li key={i}>{g}</li>
+            ))}
+          </ul>
+          <p className="text-xs text-neutral-600 mt-2">
+            이전 단계의 메모 칸에 내용을 보태면 결과가 좋아집니다.
+          </p>
+        </div>
+      )}
 
       <div className="entry">
         <h2 className="entry-title">AI 사용량</h2>
@@ -171,15 +219,22 @@ export default function AIDraftGeneration() {
       {status === "idle" && (
         <button
           className="btn-primary disabled:opacity-40 disabled:cursor-not-allowed"
-          disabled={limitReached}
-          onClick={startGeneration}
+          disabled={limitReached || !hasMaterial}
+          onClick={() => void startGeneration()}
         >
-          {limitReached ? "오늘 AI 사용 한도를 초과했습니다" : "AI 초안 생성 요청"}
+          {limitReached
+            ? "오늘 AI 사용 한도를 초과했습니다"
+            : !hasMaterial
+              ? "생성할 자료가 없습니다"
+              : "AI 초안 생성 요청"}
         </button>
       )}
 
       {status === "completed" && (
-        <button className="btn-primary" onClick={() => navigate("/wizard/editor")}>
+        <button
+          className="btn-primary"
+          onClick={() => navigate("/wizard/editor", { state: { draft } })}
+        >
           편집기에서 열기
         </button>
       )}
