@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Info, RefreshCw, Star } from "lucide-react";
 import { useAuth } from "../../auth/AuthProvider";
 import {
+  fetchMaterials,
   fetchRepo,
   fetchUserRepos,
   parseRepoInput,
@@ -43,6 +44,9 @@ export default function SourceInput() {
   const [repoUrl, setRepoUrl] = useState("");
   const [repoAdding, setRepoAdding] = useState(false);
   const [repoAddError, setRepoAddError] = useState<string | null>(null);
+
+  const [collecting, setCollecting] = useState(false);
+  const [collectError, setCollectError] = useState<string | null>(null);
 
   const [linkUrl, setLinkUrl] = useState("");
   const [links, setLinks] = useState<LinkSource[]>([]);
@@ -110,6 +114,46 @@ export default function SourceInput() {
   };
 
   const hasSelection = selected.size > 0 || links.length > 0 || note.trim().length > 0;
+
+  /**
+   * 다음 단계로 넘어가기 전에 선택한 저장소의 README 와 언어 구성을 모읍니다.
+   *
+   * 여기서 모으는 이유는, 저장소 목록만으로는 AI 에 넘길 내용이 없기 때문입니다.
+   * 이름과 언어 한 줄로는 포트폴리오 문장이 나오지 않습니다.
+   *
+   * 일부가 실패해도 진행합니다. 다섯 개 중 하나가 막혔다고 전체를 되돌리면
+   * 사용자는 뭘 고쳐야 할지 알 수 없습니다. 어느 저장소가 빠졌는지만 알립니다.
+   */
+  const startDraft = async () => {
+    const chosen = repos.filter((r) => selected.has(r.id));
+
+    if (chosen.length === 0) {
+      navigate("/wizard/draft", { state: { materials: [], note, links } });
+      return;
+    }
+
+    setCollecting(true);
+    setCollectError(null);
+
+    try {
+      const { materials, failed } = await fetchMaterials(chosen);
+
+      if (materials.length === 0) {
+        setCollectError(
+          "선택한 저장소의 내용을 읽지 못했습니다. 잠시 후 다시 시도하거나 메모 칸을 이용해 주세요."
+        );
+        return;
+      }
+
+      navigate("/wizard/draft", { state: { materials, note, links, failed } });
+    } catch (e) {
+      setCollectError(
+        e instanceof GitHubError ? e.message : "자료를 모으는 중 문제가 생겼습니다."
+      );
+    } finally {
+      setCollecting(false);
+    }
+  };
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -281,13 +325,25 @@ export default function SourceInput() {
         </p>
       </div>
 
-      <button
-        className="btn-primary disabled:opacity-40 disabled:cursor-not-allowed"
-        disabled={!hasSelection}
-        onClick={() => navigate("/wizard/draft")}
-      >
-        AI 초안 생성 시작
-      </button>
+      <div>
+        <button
+          className="btn-primary disabled:opacity-40 disabled:cursor-not-allowed"
+          disabled={!hasSelection || collecting}
+          onClick={() => void startDraft()}
+        >
+          {collecting ? "자료를 읽는 중" : "AI 초안 생성 시작"}
+        </button>
+        {collecting && (
+          <p className="text-xs text-neutral-500 mt-2">
+            선택한 저장소의 README와 언어 구성을 가져오고 있습니다.
+          </p>
+        )}
+        {collectError && (
+          <p role="alert" className="text-xs text-brand mt-2">
+            {collectError}
+          </p>
+        )}
+      </div>
     </div>
   );
 }

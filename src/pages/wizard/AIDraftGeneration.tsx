@@ -1,12 +1,24 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import AIRequestStatus from "../../components/AIRequestStatus";
 import { aiUsage, type AIRequestStatus as Status } from "../../mockData";
+import type { RepoMaterial } from "../../lib/github";
+
+/** 앞 단계에서 넘겨준 재료. 주소로 바로 들어오면 비어 있습니다. */
+interface WizardState {
+  materials?: RepoMaterial[];
+  note?: string;
+  links?: { id: string; meta: string }[];
+  failed?: string[];
+}
 
 const jobOptions = ["프론트엔드 개발자", "백엔드 개발자", "UX/UI 디자이너", "프로덕트 매니저"];
 
 export default function AIDraftGeneration() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { materials = [], note = "", links = [], failed = [] } =
+    (location.state as WizardState | null) ?? {};
   const [status, setStatus] = useState<Status>("idle");
   const [title, setTitle] = useState("");
   const [job, setJob] = useState(jobOptions[0]);
@@ -30,13 +42,48 @@ export default function AIDraftGeneration() {
         <h1 className="text-xl font-heading mt-2">AI 포트폴리오 초안 생성</h1>
       </div>
 
+      {/* 앞 단계에서 실제로 읽어온 재료를 보여줍니다. README 를 못 읽은
+          저장소는 그 사실을 함께 알립니다. 조용히 빠지면 사용자는 결과가
+          부실한 이유를 모릅니다. */}
       <div className="entry">
         <h2 className="entry-title">선택된 원본 자료</h2>
-        <ul className="text-sm text-neutral-400 space-y-1">
-          <li>GitHub — portfolio-2024</li>
-          <li>PDF — 이력서_최종본.pdf</li>
-          <li>메모 — 프로젝트 회고 노트</li>
-        </ul>
+
+        {materials.length === 0 && note.trim().length === 0 && links.length === 0 ? (
+          <p className="text-sm text-neutral-500">
+            선택된 자료가 없습니다.{" "}
+            <Link to="/wizard/source" className="text-brand hover:underline">
+              이전 단계
+            </Link>
+            에서 저장소를 고르거나 메모를 적어주세요.
+          </p>
+        ) : (
+          <ul className="text-sm text-neutral-400 space-y-1">
+            {materials.map((m) => (
+              <li key={m.repo.id}>
+                GitHub — {m.repo.name}
+                {m.languages.length > 0 && (
+                  <span className="text-xs text-neutral-500"> · {m.languages.join(", ")}</span>
+                )}
+                {!m.readme && (
+                  <span className="text-xs text-neutral-600"> · README 없음</span>
+                )}
+                {m.readmeTruncated && (
+                  <span className="text-xs text-neutral-600"> · README 앞부분만</span>
+                )}
+              </li>
+            ))}
+            {links.map((l) => (
+              <li key={l.id}>웹 링크 — {l.meta}</li>
+            ))}
+            {note.trim().length > 0 && <li>메모 — 직접 작성한 내용</li>}
+          </ul>
+        )}
+
+        {failed.length > 0 && (
+          <p className="text-xs text-brand mt-3">
+            읽지 못한 저장소: {failed.join(", ")}
+          </p>
+        )}
       </div>
 
       <div className="entry space-y-4">

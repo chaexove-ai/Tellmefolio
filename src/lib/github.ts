@@ -43,6 +43,25 @@ export interface GitHubRepo {
   isFork: boolean;
 }
 
+/** 저장소 하나에서 실제로 AI 에 넘길 재료. */
+export interface RepoMaterial {
+  repo: GitHubRepo;
+  /** README 본문. 없으면 null. 아래 상한만큼 잘려 있을 수 있습니다. */
+  readme: string | null;
+  readmeTruncated: boolean;
+  /** 바이트 비율이 큰 순서의 언어 이름. 상위 6개까지. */
+  languages: string[];
+}
+
+/**
+ * README 길이 상한.
+ *
+ * 잘 쓴 프로젝트일수록 README 가 깁니다. 수만 자짜리를 그대로 AI 에 넘기면
+ * 저장소 다섯 개만 골라도 입력 토큰이 폭발합니다. 앞부분에 개요와 목적이
+ * 몰려 있고 뒤로 갈수록 설치법·라이선스라, 앞을 남기고 자릅니다.
+ */
+const README_LIMIT = 4000;
+
 /** 한도 초과처럼 사용자에게 그대로 보여줄 만한 오류를 구분하려고 씁니다. */
 export class GitHubError extends Error {
   constructor(message: string, readonly status: number) {
@@ -51,16 +70,19 @@ export class GitHubError extends Error {
   }
 }
 
-async function request<T>(path: string): Promise<T> {
+async function request<T>(path: string, accept = "application/vnd.github+json"): Promise<T> {
   const headers: Record<string, string> = {
-    Accept: "application/vnd.github+json",
+    Accept: accept,
     "X-GitHub-Api-Version": "2022-11-28",
   };
   if (providerToken) headers.Authorization = `Bearer ${providerToken}`;
 
   const res = await fetch(`${API}${path}`, { headers });
 
-  if (res.ok) return (await res.json()) as T;
+  if (res.ok) {
+    const body = accept.includes("raw") ? await res.text() : await res.json();
+    return body as T;
+  }
 
   // 한도 초과는 403 또는 429 로 오는데, 남은 횟수가 0 인지로 구분합니다.
   const remaining = res.headers.get("x-ratelimit-remaining");
@@ -148,4 +170,97 @@ export async function fetchRepo(owner: string, name: string): Promise<GitHubRepo
     `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}`
   );
   return toRepo(raw);
+}
+
+
+/**
+ * 한 번 읽은 저장소는 다시 읽지 않습니다.
+ *
+ * 토큰이 없는 상태(새로고침 뒤)에서는 시간당 60회가 한도입니다. 저장소당
+ * 2회를 쓰니 사용자가 선택을 몇 번 바꾸기만 해도 금방 바닥납니다. 화면을
+ * 벗어나면 사라지는 메모리 캐시라 최신성 문제는 크지 않습니다.
+ */
+const materialCache = new Map<number, RepoMaterial>();
+
+/**
+ * README 를 원문 그대로 받습니다.
+ *
+ * 기본 응답은 base64 로 감싸여 오는데, 한글이 섞이면 atob 만으로는 깨집니다.
+ * raw 미디어 타입으로 요청하면 GitHub 이 본문을 그대로 돌려주므로 디코딩할
+ * 일이 없습니다. README 가 없는 저장소는 404 이며, 이건 오류가 아닙니다.
+ */
+async function fetchReadme(owner: string, name: string): Promise<string | null> {
+  try {
+    return await request<string>(
+      `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/readme`,
+      "application/vnd.github.raw+json"
+    );
+  } catch (e) {
+    if (e instanceof GitHubError && e.status === 404) return null;
+    throw e;
+  }
+}
+
+/** 바이트 비율이 큰 순서로 언어 이름을 돌려줍니다. */
+async function fetchLanguages(owner: string, name: string): Promise<string[]> {
+  try {
+    const raw = await request<Record<string, number>>(
+      `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/languages`
+    );
+    return Object.entries(raw)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6)
+      .map(([lang]) => lang);
+  } catch (e) {
+    if (e instanceof GitHubError && e.status === 404) return [];
+    throw e;
+  }
+}
+
+/**
+ * 저장소 하나의 재료를 모읍니다. README 와 언어를 동시에 요청합니다.
+ * 저장소 이름에서 owner 를 꺼내야 하므로 fullName 을 씁니다.
+ */
+export async function fetchRepoMaterial(repo: GitHubRepo): Promise<RepoMaterial> {
+  const cached = materialCache.get(repo.id);
+  if (cached) return cached;
+
+  const [owner, name] = repo.fullName.split("/");
+  const [readmeRaw, languages] = await Promise.all([
+    fetchReadme(owner, name),
+    fetchLanguages(owner, name),
+  ]);
+
+  const truncated = Boolean(readmeRaw && readmeRaw.length > README_LIMIT);
+  const material: RepoMaterial = {
+    repo,
+    readme: readmeRaw ? readmeRaw.slice(0, README_LIMIT) : null,
+    readmeTruncated: truncated,
+    languages,
+  };
+
+  materialCache.set(repo.id, material);
+  return material;
+}
+
+/**
+ * 선택한 저장소들의 재료를 모읍니다.
+ *
+ * 하나가 실패해도 나머지는 살립니다. 저장소 다섯 개 중 하나가 README 조회에
+ * 실패했다고 전체를 되돌리면, 사용자는 뭘 고쳐야 할지 알 수 없습니다.
+ */
+export async function fetchMaterials(
+  repos: GitHubRepo[]
+): Promise<{ materials: RepoMaterial[]; failed: string[] }> {
+  const settled = await Promise.allSettled(repos.map((r) => fetchRepoMaterial(r)));
+
+  const materials: RepoMaterial[] = [];
+  const failed: string[] = [];
+
+  settled.forEach((result, i) => {
+    if (result.status === "fulfilled") materials.push(result.value);
+    else failed.push(repos[i].name);
+  });
+
+  return { materials, failed };
 }
