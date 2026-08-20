@@ -11,6 +11,7 @@ import Faq from "../components/Faq";
 import Steps from "../components/Steps";
 import ScrollProgress from "../components/ScrollProgress";
 import { scheduleScrollRefresh } from "../lib/scrollRefresh";
+import GrainCover from "../components/GrainCover";
 import { galleryItems } from "../mockData";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -192,8 +193,9 @@ export default function Landing() {
                   <Link
                     key={g.id}
                     to={`/gallery/${g.id}`}
-                    className="entry hover:border-brand/50 hover:-translate-y-0.5"
+                    className="entry !p-4 hover:border-brand/50 hover:-translate-y-0.5"
                   >
+                    <GrainCover seed={g.id} className="aspect-[4/3] rounded-xl mb-3.5" />
                     <span className="badge bg-brand/10 text-brand mb-3">{g.job}</span>
                     <h3 className="entry-title">{g.title}</h3>
                     <p className="text-sm text-neutral-400 leading-relaxed">

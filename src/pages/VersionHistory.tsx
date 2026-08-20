@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { versionHistory } from "../mockData";
+import GrainCover from "../components/GrainCover";
 
 export default function VersionHistory() {
   const { id } = useParams();
@@ -50,9 +51,12 @@ export default function VersionHistory() {
             <p className="text-sm font-medium mt-1 text-neutral-100">
               {current.timestamp} · {current.label}
             </p>
-            <div className="mt-3 h-32 border border-neutral-800 flex items-center justify-center text-xs text-neutral-600">
-              현재 작업본 미리보기
-            </div>
+            {/* [2026-08] 빈 미리보기 자리 → 절차적 커버.
+                seed 가 버전 id 라 두 미리보기가 서로 다른 그림이 됩니다 —
+                "다른 버전을 보고 있다"가 시각적으로 구분됩니다. */}
+            <GrainCover seed={current.id} className="mt-3 h-32 rounded-xl">
+              <span className="grain-cover-label">현재 작업본 미리보기</span>
+            </GrainCover>
           </div>
 
           <div className="entry">
@@ -60,9 +64,9 @@ export default function VersionHistory() {
             <p className="text-sm font-medium mt-1 text-neutral-100">
               {selectedEntry.timestamp} · {selectedEntry.label}
             </p>
-            <div className="mt-3 h-32 border border-neutral-800 flex items-center justify-center text-xs text-neutral-600">
-              선택 버전 미리보기
-            </div>
+            <GrainCover seed={selectedEntry.id} className="mt-3 h-32 rounded-xl">
+              <span className="grain-cover-label">선택 버전 미리보기</span>
+            </GrainCover>
           </div>
 
           <div className="entry">

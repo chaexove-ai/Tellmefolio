@@ -202,6 +202,62 @@ summary::marker { content: ""; }
   }
 }
 
+/* [2026-08 추가] 그라디언트 + 그레인 커버 -------------------------------
+   비어 있던 이미지 자리(갤러리 썸네일, 대표 이미지, 미리보기 영역)를
+   채우는 절차적 배경입니다. 이미지 파일이 없어 전송량 0, 어떤 크기에서도
+   깨지지 않습니다. 값은 GrainCover.tsx 가 seed 로부터 계산해 넣습니다.
+
+   구조: 크림 바탕 + 살구/앰버빛 블롭 4개(가장자리 밖으로 번짐) + 그레인 2겹
+------------------------------------------------------------------------- */
+.grain-cover {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background-color: hsl(var(--bh) 48% 95%);
+  background-image:
+    radial-gradient(ellipse var(--w1) var(--v1) at var(--x1) var(--y1),
+      hsl(var(--h1) 95% 66% / 0.95) 0%, hsl(var(--h1) 95% 66% / 0) 70%),
+    radial-gradient(ellipse var(--w2) var(--v2) at var(--x2) var(--y2),
+      hsl(var(--h2) 96% 72% / 0.9) 0%, hsl(var(--h2) 96% 72% / 0) 70%),
+    radial-gradient(ellipse var(--w3) var(--v3) at var(--x3) var(--y3),
+      hsl(var(--h3) 94% 78% / 0.85) 0%, hsl(var(--h3) 94% 78% / 0) 72%),
+    radial-gradient(ellipse var(--w4) var(--v4) at var(--x4) var(--y4),
+      hsl(var(--h4) 92% 70% / 0.75) 0%, hsl(var(--h4) 92% 70% / 0) 70%);
+}
+
+.grain-cover::before,
+.grain-cover::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* 굵은 결 */
+.grain-cover::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.42;
+  mix-blend-mode: multiply;
+}
+
+/* 미세한 밝은 알갱이 — 필름 느낌 */
+.grain-cover::after {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='m'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.6' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23m)'/%3E%3C/svg%3E");
+  opacity: 0.22;
+  mix-blend-mode: screen;
+}
+
+/* 커버 위에 얹는 라벨. 바탕이 밝으므로 글자는 어둡게 갑니다. */
+.grain-cover-label {
+  position: absolute;
+  inset: auto 0 0 0;
+  z-index: 1;
+  padding: 10px 14px;
+  font-size: 11.5px;
+  color: #3a2f24;
+  background-image: linear-gradient(180deg, transparent, rgb(255 255 255 / 0.55));
+}
+
 /* components 레이어에 넣어야 컴포넌트 밖에서 text-red-400 같은 유틸리티
    클래스로 오버라이드할 때 항상 유틸리티가 이깁니다(레이어 우선순위). */
 @layer components {

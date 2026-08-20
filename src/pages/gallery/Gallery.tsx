@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { SlidersHorizontal, ImageOff } from "lucide-react";
+import { SlidersHorizontal } from "lucide-react";
 import { galleryItems } from "../../mockData";
 import Reveal from "../../components/Reveal";
+import GrainCover from "../../components/GrainCover";
 
 export default function Gallery() {
   const [job, setJob] = useState("전체 직무");
@@ -52,9 +53,9 @@ export default function Gallery() {
         {filtered.map((g, i) => (
           <Reveal key={g.id} delay={(i % 3) * 0.08}>
             <Link to={`/gallery/${g.id}`} className="entry p-4 block hover:border-brand/40 hover:-translate-y-0.5 transition-all">
-              <div className="aspect-[4/3] rounded-xl bg-neutral-800/60 mb-3 flex items-center justify-center text-neutral-600">
-                <ImageOff size={22} strokeWidth={1.5} />
-              </div>
+              {/* [2026-08] 빈 이미지 자리(ImageOff 아이콘) → 절차적 커버.
+                  seed 가 g.id 라 같은 포트폴리오는 항상 같은 그림입니다. */}
+              <GrainCover seed={g.id} className="aspect-[4/3] rounded-xl mb-3" />
               <p className="font-medium text-neutral-100">{g.title}</p>
               <p className="text-xs text-neutral-500 mt-1">
                 {g.job} · {g.structure}

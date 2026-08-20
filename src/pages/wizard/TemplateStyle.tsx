@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import GrainCover from "../../components/GrainCover";
 
 const templates = [
   { id: "research", name: "연구노트", desc: "학술적이고 정제된 레이아웃" },
@@ -45,6 +46,9 @@ export default function TemplateStyle() {
                   : "border-neutral-800 hover:border-neutral-600"
               }`}
             >
+              {/* [2026-08] 템플릿마다 다른 썸네일. 이름만 나열돼 있어
+                  "무엇이 다른지" 가 전혀 보이지 않았습니다. */}
+              <GrainCover seed={`tpl-${t.id}`} className="h-16 rounded-sm mb-2.5" />
               <p className="font-medium text-neutral-100">{t.name}</p>
               <p className="text-xs text-neutral-400 mt-1">{t.desc}</p>
               <p className="text-xs mt-2">
@@ -133,9 +137,13 @@ export default function TemplateStyle() {
 
       <div className="entry">
         <h2 className="entry-title">실시간 미리보기</h2>
-        <div className="h-40 border border-neutral-800 flex items-center justify-center text-xs text-neutral-600">
-          현재 템플릿: {templates.find((t) => t.id === selectedTemplate)?.name}
-        </div>
+        {/* [2026-08] 템플릿을 바꾸면 커버도 함께 바뀝니다 —
+            선택이 결과에 반영된다는 감각이 생깁니다. */}
+        <GrainCover seed={`preview-${selectedTemplate}`} className="h-40 rounded-xl">
+          <span className="grain-cover-label">
+            현재 템플릿: {templates.find((t) => t.id === selectedTemplate)?.name}
+          </span>
+        </GrainCover>
       </div>
     </div>
   );

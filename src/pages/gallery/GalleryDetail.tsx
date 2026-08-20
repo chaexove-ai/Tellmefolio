@@ -1,5 +1,6 @@
 import { Link, useParams } from "react-router-dom";
 import { galleryItems } from "../../mockData";
+import GrainCover from "../../components/GrainCover";
 
 export default function GalleryDetail() {
   const { id } = useParams();
@@ -11,9 +12,10 @@ export default function GalleryDetail() {
         갤러리 목록으로
       </Link>
 
-      <div className="h-48 border border-neutral-800 flex items-center justify-center text-xs text-neutral-600">
-        포트폴리오 대표 이미지
-      </div>
+      {/* [2026-08] 대표 이미지 자리 — 목록 카드와 같은 seed 라 같은 그림이 이어집니다 */}
+      <GrainCover seed={item.id} className="h-48 rounded-2xl">
+        <span className="grain-cover-label">포트폴리오 대표 이미지</span>
+      </GrainCover>
 
       <div>
         <p className="text-xs text-neutral-500">
@@ -34,9 +36,9 @@ export default function GalleryDetail() {
 
       <div className="entry">
         <h2 className="entry-title">케이스 스터디 미리보기</h2>
-        <div className="h-40 border border-neutral-800 flex items-center justify-center text-xs text-neutral-600">
-          케이스 스터디 콘텐츠 영역
-        </div>
+        <GrainCover seed={`${item.id}-case`} className="h-40 rounded-xl">
+          <span className="grain-cover-label">케이스 스터디 콘텐츠 영역</span>
+        </GrainCover>
       </div>
 
       <p className="text-xs text-neutral-600">
