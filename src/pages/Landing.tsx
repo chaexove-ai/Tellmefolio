@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { GraduationCap, Layers, Shuffle } from "lucide-react";
+import { GraduationCap, Layers, Shuffle, Sparkles } from "lucide-react";
 import ThemeToggle from "../components/ThemeToggle";
 import HeroRewrite from "../components/HeroRewrite";
 import Reveal from "../components/Reveal";
@@ -142,8 +142,26 @@ export default function Landing() {
 
       <main id="main">
         {/* ── 히어로 (기본 면) ───────────────────────────────── */}
-        <section id="hero-section" className="px-4 sm:px-8 pt-20 sm:pt-24 pb-20">
-          <div className="max-w-2xl mx-auto text-center">
+        <section
+          id="hero-section"
+          className="relative overflow-hidden px-4 sm:px-8 pt-20 sm:pt-24 pb-20"
+        >
+          {/* [2026-09] 장식용 배경. 히어로가 텍스트 두 줄 + 버튼뿐이라 첫
+              화면이 밋밋하다는 피드백을 받았습니다. 이미지 대신 --brand 토큰
+              기반의 은은한 글로우와 큰 아이콘 워터마크로 채웠습니다 — 새
+              이미지 자산을 늘리지 않고, 라이트/다크 양쪽에서 저절로
+              맞는 색을 씁니다. 순수 장식이라 aria-hidden 과
+              pointer-events-none 을 둡니다. */}
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0">
+            <div className="absolute -top-24 left-1/2 h-[560px] w-[560px] -translate-x-1/2 rounded-full bg-brand/15 blur-[110px]" />
+            <Sparkles
+              size={340}
+              strokeWidth={0.75}
+              className="absolute -right-14 -top-10 hidden text-brand/[0.08] sm:block"
+            />
+          </div>
+
+          <div className="relative z-10 max-w-2xl mx-auto text-center">
             <p className="hero-eyebrow sec-eyebrow">Tellmefolio</p>
             <h1 className="hero-title text-3xl sm:text-4xl font-heading leading-[1.4] sm:leading-[1.5]">
               내 경험을 직무 언어로,
@@ -158,7 +176,7 @@ export default function Landing() {
               지금 시작하기
             </Link>
           </div>
-          <div className="hero-motion mt-14">
+          <div className="hero-motion relative z-10 mt-14">
             <HeroRewrite />
           </div>
         </section>

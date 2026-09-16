@@ -10,9 +10,24 @@ const templates = [
 ];
 
 const recommendations = [
-  { id: "r1", name: "심플 다크", desc: "다크 배경, Pretendard Bold, 2단열" },
-  { id: "r2", name: "뉴트럴 라이트", desc: "밝은 배경, Noto Sans KR, 단열 중앙" },
+  { id: "r1", name: "심플 다크", desc: "다크 배경, Pretendard Bold, 2단 레이아웃" },
+  { id: "r2", name: "뉴트럴 라이트", desc: "밝은 배경, Noto Sans KR, 1단 중앙 정렬" },
   { id: "r3", name: "테크 모노", desc: "코드 스타일, Spoqa Han Sans, 혼합 레이아웃" },
+];
+
+/** [2026-09] 서체 목록 확장. 기본 3종(Pretendard·Noto Sans KR·Spoqa Han Sans)만
+ * 있어 선택지가 좁다는 피드백을 받았습니다. 모두 한글을 지원하는 무료 웹폰트로
+ * 골랐고, Gowun Batang 은 이 앱의 제목 서체를 본문에도 쓸 수 있게 넣었습니다.
+ * TODO: 실제 폰트 로딩(각 서체 CSS 적용)은 아직 연결되지 않았습니다 — 이
+ * 셀렉트 자체가 목업이라, 실제 미리보기에 반영하려면 별도 작업이 필요합니다. */
+const fontOptions = [
+  "Pretendard",
+  "Noto Sans KR",
+  "Spoqa Han Sans",
+  "IBM Plex Sans KR",
+  "Gothic A1",
+  "Nanum Gothic",
+  "Gowun Batang (세리프)",
 ];
 
 export default function TemplateStyle() {
@@ -109,16 +124,18 @@ export default function TemplateStyle() {
           <div>
             <label className="text-xs text-neutral-500">서체</label>
             <select className="field mt-1">
-              <option className="bg-neutral-900">Pretendard</option>
-              <option className="bg-neutral-900">Noto Sans KR</option>
-              <option className="bg-neutral-900">Spoqa Han Sans</option>
+              {fontOptions.map((f) => (
+                <option key={f} className="bg-neutral-900">
+                  {f}
+                </option>
+              ))}
             </select>
           </div>
           <div>
             <label className="text-xs text-neutral-500">레이아웃 방향</label>
             <select className="field mt-1">
-              <option className="bg-neutral-900">단열</option>
-              <option className="bg-neutral-900">2단열</option>
+              <option className="bg-neutral-900">1단 — 한 줄로 이어보기</option>
+              <option className="bg-neutral-900">2단 — 좌우로 나눠보기</option>
             </select>
           </div>
           <div>

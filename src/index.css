@@ -105,32 +105,115 @@ summary { list-style: none; }
 summary::-webkit-details-marker { display: none; }
 summary::marker { content: ""; }
 
-/* [2026-08 추가] 책장 — 커서를 올리면 책이 빠져나오는 인터랙션.
-   Tailwind 유틸리티만으로는 translateZ/rotateY 조합이 번거로워 여기에 둡니다.
-   Bookshelf.tsx 에서 .shelf / .book-spine / .book-title 을 씁니다. */
-.shelf {
-  perspective: 900px;
-  /* 소실점을 선반 바닥에 둡니다. 위쪽에 두면 책을 앞으로 당길 때
-     아랫부분이 아래로 밀려 스크롤 컨테이너에 잘립니다. */
-  perspective-origin: 50% 100%;
-}
-
-.book-spine {
-  transform-origin: 50% 100%;
+/* [2026-08 추가, 2026-09 갱신] 책장 — 커서를 올리면 책이 넓어지며 책등 대신
+   "표지"가 보이는 인터랙션. 폭(width)이 실제로 늘어나는 flex 아이템이라
+   옆 책들이 자리를 비켜줍니다(선반에서 책을 반쯤 빼내면 옆 책들이 그만큼
+   밀리는 느낌).
+   ── 왜 두 면을 3D로 맞대 돌리지 않고 폭만 늘렸는가 ──────────────
+   처음엔 책등 면과 표지 면을 실제 3D 로 맞대 돌리는 방식(rotateY 로 서로
+   반대로 회전)을 썼는데, 두 가지 문제가 있었습니다.
+     1. 두 면의 회전 기준점/방향이 정확히 일치하지 않으면 두 면이 3D 공간에서
+        서로 뚫고 지나가며 글자가 겹쳐 보입니다.
+     2. 표지(GrainCover)에 mix-blend-mode 를 쓰는 그레인 레이어가 있는데,
+        격리(isolation) 없이 3D 로 겹치면 그 블렌드가 뒤에 있는 책등 내용과
+        섞여 마치 투명한 것처럼 비쳐 보였습니다.
+     3. position:absolute 라 레이아웃 흐름에서 빠지므로 옆 책이 전혀
+        밀리지 않았습니다 — 표지가 옆 책 위에 그냥 겹쳐 보였습니다.
+   폭 자체를 늘리는 지금 방식은 실제 레이아웃이 바뀌므로 옆 책이 자연히
+   밀리고, 책등/표지는 같은 자리에서 opacity 로만 교차 전환되므로 두 얼굴이
+   3D로 겹칠 일 자체가 없습니다.
+   Bookshelf.tsx 에서 .shelf / .book / .book-face / .book-face-spine /
+   .book-face-cover / .book-title 을 씁니다.
+   ── rotateY 틸트를 뺀 이유 ──────────────────────────────────────
+   처음엔 평소에도 책이 살짝 기울어 있다가(rotateY(-8deg)) hover 시
+   똑바로 서는(rotateY(0deg)) 연출을 같이 넣었는데, 폭이 늘어나는
+   width 전환과 3D 회전이 동시에 일어나니 마우스가 책 가장자리 근처에
+   있을 때 hover 판정 영역이 매 프레임 미묘하게 달라져 깜빡이듯
+   흔들렸습니다(회전된 요소의 히트테스트가 perspective 아래에서
+   불안정). width + translateY 만 남기니 사라졌습니다. */
+.book {
+  position: relative;
+  width: 38px;
+  flex-shrink: 0;
   transition:
-    transform 320ms cubic-bezier(0.2, 0.8, 0.25, 1),
-    box-shadow 320ms ease,
-    border-color 200ms ease;
-  will-change: transform;
+    width 380ms cubic-bezier(0.2, 0.8, 0.25, 1),
+    transform 380ms cubic-bezier(0.2, 0.8, 0.25, 1),
+    box-shadow 380ms ease;
+  will-change: width, transform;
 }
 
-/* 앞으로 당겨 나오면서 살짝 틀어지는 각도 — 책을 반쯤 빼낸 모습.
-   더 많이 나오게 하려면 translateZ 를, 덜 틀어지게 하려면 rotateY 를 조절하세요. */
-.book-spine:hover,
-.book-spine:focus-visible {
-  transform: translateY(-14px) translateZ(44px) rotateY(-24deg);
-  box-shadow: -10px 18px 28px rgb(0 0 0 / 0.35);
+/* 책이 넓어지며(width) 앞으로 살짝 떠오릅니다. 옆 책들은 이 폭 변화를
+   실제 레이아웃으로 느끼고 자리를 비켜줍니다. */
+.book:hover,
+.book:focus-visible {
+  width: 112px;
+  transform: translateY(-12px);
+  box-shadow: -10px 20px 30px rgb(0 0 0 / 0.35);
   z-index: 10;
+}
+
+.book-face {
+  position: absolute;
+  inset: 0;
+  transition: opacity 260ms ease;
+}
+
+/* 책등 면 — 평소 보이는 얼굴. hover 시 서서히 사라지며 표지에 자리를 내줍니다. */
+.book-face-spine {
+  opacity: 1;
+}
+
+.book:hover .book-face-spine,
+.book:focus-visible .book-face-spine {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* 표지 면 — 평소엔 투명해서 안 보이다가 hover 시 서서히 나타납니다.
+   isolation: isolate 로 감싸는 이유 — 안에 쓰는 GrainCover 는
+   mix-blend-mode 로 그레인 질감을 냅니다. 격리해 두지 않으면 그 블렌드가
+   전환 도중 뒤에 있는(사라지는 중인) 책등 글자와 섞여 비쳐 보입니다. */
+.book-face-cover {
+  opacity: 0;
+  isolation: isolate;
+}
+
+.book:hover .book-face-cover,
+.book:focus-visible .book-face-cover {
+  opacity: 1;
+}
+
+/* GrainCover(표지 배경)는 테마와 무관하게 항상 크림톤입니다 — 라이트모드
+   배경과는 잘 어울리지만, 다크모드의 검은 화면 위에서는 카드 하나만
+   튀어서 화면에 구멍이 난 것처럼 보입니다. 다크모드에서만 어두운
+   스크림을 한 겹 얹어 톤을 낮추고(그레인의 따뜻한 색감은 은은하게
+   남깁니다), 글자색도 그에 맞춰 밝게 바꿉니다. 라이트모드에서는
+   스크림을 끄고 원래 크림/짙은 갈색 글자 조합을 그대로 씁니다. */
+.book-cover-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgb(var(--n950) / 0.74);
+  pointer-events: none;
+}
+
+:root.light .book-cover-scrim {
+  display: none;
+}
+
+.book-cover-title {
+  color: #3a2f24;
+}
+
+.book-cover-meta {
+  color: #6b5847;
+}
+
+:root:not(.light) .book-cover-title {
+  color: rgb(var(--n50));
+}
+
+:root:not(.light) .book-cover-meta {
+  color: rgb(var(--n400));
 }
 
 /* 책등 제목: 세로쓰기. nowrap + ellipsis 로 한 칸만 씁니다.
@@ -146,12 +229,28 @@ summary::marker { content: ""; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .book-spine,
-  .book-spine:hover,
-  .book-spine:focus-visible {
+  .book,
+  .book:hover,
+  .book:focus-visible {
+    width: 38px;
     transform: none;
     transition: none;
     box-shadow: none;
+  }
+
+  .book-face-spine,
+  .book:hover .book-face-spine,
+  .book:focus-visible .book-face-spine {
+    opacity: 1;
+  }
+
+  /* 폭이 안 늘어나니 표지를 그대로 두면 책등과 겹쳐 보입니다.
+     이 환경에서는 표지 면 자체를 감추고, 테두리 강조만 남깁니다. */
+  .book-face-cover,
+  .book:hover .book-face-cover,
+  .book:focus-visible .book-face-cover {
+    opacity: 0;
+    display: none;
   }
 }
 

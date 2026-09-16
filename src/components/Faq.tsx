@@ -13,16 +13,20 @@ export default function Faq() {
     <div className="divide-y divide-neutral-800 border-t border-b border-neutral-800">
       {faqs.map((f) => (
         <details key={f.q} className="group">
-          <summary className="flex items-center justify-between gap-4 cursor-pointer list-none py-4 text-sm text-neutral-100 marker:hidden">
+          <summary className="flex items-center justify-between gap-4 cursor-pointer list-none py-4 text-[15px] font-medium text-neutral-50 marker:hidden">
             <span>{f.q}</span>
             <ChevronDown
               size={16}
               strokeWidth={2}
               aria-hidden="true"
-              className="shrink-0 text-neutral-400 transition-transform duration-150 group-open:rotate-180"
+              className="shrink-0 text-brand transition-transform duration-150 group-open:rotate-180"
             />
           </summary>
-          <p className="pb-4 text-sm text-neutral-400 leading-relaxed">{f.a}</p>
+          <div className="pb-4">
+            <p className="rounded-lg bg-neutral-900/50 px-3.5 py-3 text-sm text-neutral-400 leading-relaxed">
+              {f.a}
+            </p>
+          </div>
         </details>
       ))}
     </div>
