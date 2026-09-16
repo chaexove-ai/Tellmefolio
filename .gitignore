@@ -13,3 +13,5 @@ dist/
 
 # 예시 파일은 저장소에 포함합니다
 !.env.example
+vite.config.ts.timestamp-*.mjs
+supabase/.temp/
