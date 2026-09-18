@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { Check } from "lucide-react";
 import GrainCover from "../../components/GrainCover";
 
 const templates = [
@@ -363,14 +364,32 @@ export default function TemplateStyle() {
           </p>
           <div className="flex gap-2">
             <button
-              className="btn-secondary disabled:opacity-40"
+              className="btn-secondary disabled:opacity-40 disabled:grayscale disabled:cursor-not-allowed"
               disabled={!isDirty}
               onClick={handleRevert}
             >
               변경 사항 되돌리기
             </button>
-            <button className="btn-primary disabled:opacity-40" disabled={!isDirty} onClick={handleSave}>
-              스타일 저장
+            {/* [2026-09] 저장 완료 상태에서 btn-primary(진한 브랜드색)가
+                disabled:opacity-40 만으로는 여전히 "눌러도 되는" 색으로
+                보인다는 피드백을 받았습니다 — 옆의 btn-secondary(원래
+                옅은 색)는 흐려지면 확실히 꺼진 티가 나는데, 진한 색은
+                40% 로 낮춰도 여전히 선명해 보였습니다. 저장 완료 시
+                라벨과 아이콘 자체를 바꿔서("저장됨" + 체크) 눌러도
+                되는 상태인지 색만으로 판단하지 않아도 되게 했습니다. */}
+            <button
+              className="btn-primary disabled:bg-neutral-700 disabled:text-neutral-400 disabled:shadow-none disabled:hover:translate-y-0 disabled:cursor-not-allowed"
+              disabled={!isDirty}
+              onClick={handleSave}
+            >
+              {isDirty ? (
+                "스타일 저장"
+              ) : (
+                <>
+                  <Check size={14} strokeWidth={2.5} aria-hidden="true" />
+                  저장됨
+                </>
+              )}
             </button>
           </div>
         </div>
