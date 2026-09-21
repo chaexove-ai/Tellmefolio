@@ -241,98 +241,103 @@ export default function StylePanel({
       </button>
 
       {open && (
+        // 패널이 남는 폭을 전부 가져가면서 넓어졌기 때문에, 라벨/값을
+        // 세로로 쌓는 대신 가로로 흘리고 폭이 모자랄 때만 줄바꿈합니다.
+        // 세로로 쌓으면 넓은 화면에서 오른쪽이 비고 미리보기가 그만큼
+        // 아래로 밀립니다.
         <div className="space-y-3">
-          <Field label="템플릿">
-            <div className="grid grid-cols-2 gap-1.5">
-              {templates.map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => update({ template_id: t.id })}
-                  aria-pressed={draft.template_id === t.id}
-                  className={`rounded-lg border px-2 py-1.5 text-[11px] text-left transition-colors ${
-                    draft.template_id === t.id
-                      ? "border-brand/60 bg-brand/[0.08] text-brand"
-                      : "border-neutral-800 text-neutral-400 hover:border-neutral-700"
-                  }`}
-                >
-                  {t.name}
-                </button>
-              ))}
-            </div>
-          </Field>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2.5">
+            <Group label="템플릿">
+              <div className="flex flex-wrap gap-1.5">
+                {templates.map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => update({ template_id: t.id })}
+                    aria-pressed={draft.template_id === t.id}
+                    title={t.desc}
+                    className={`rounded-lg border px-2.5 py-1 text-[11px] transition-colors ${
+                      draft.template_id === t.id
+                        ? "border-brand/60 bg-brand/[0.08] text-brand"
+                        : "border-neutral-800 text-neutral-400 hover:border-neutral-700"
+                    }`}
+                  >
+                    {t.name}
+                  </button>
+                ))}
+              </div>
+            </Group>
 
-          <Field label="색">
-            <Segmented
-              value={draft.color_theme}
-              options={[
-                { value: "dark", label: "다크" },
-                { value: "light", label: "라이트" },
-              ]}
-              onChange={(v) => update({ color_theme: v as ColorTheme })}
-            />
-          </Field>
+            <Group label="색">
+              <Segmented
+                value={draft.color_theme}
+                options={[
+                  { value: "dark", label: "다크" },
+                  { value: "light", label: "라이트" },
+                ]}
+                onChange={(v) => update({ color_theme: v as ColorTheme })}
+              />
+            </Group>
 
-          <Field label="서체">
-            <select
-              className="field w-full text-xs py-1.5"
-              value={draft.font}
-              onChange={(e) => update({ font: e.target.value })}
-            >
-              {fontOptions.map((f) => (
-                <option key={f} value={f}>
-                  {f === "Spoqa Han Sans" ? `${f} (로딩 준비 중)` : f}
-                </option>
-              ))}
-            </select>
-          </Field>
+            <Group label="레이아웃">
+              <Segmented
+                value={draft.layout}
+                options={[
+                  { value: "1col", label: "1단" },
+                  { value: "2col", label: "2단" },
+                ]}
+                onChange={(v) => update({ layout: v as LayoutDirection })}
+              />
+            </Group>
 
-          <Field label="레이아웃">
-            <Segmented
-              value={draft.layout}
-              options={[
-                { value: "1col", label: "1단" },
-                { value: "2col", label: "2단" },
-              ]}
-              onChange={(v) => update({ layout: v as LayoutDirection })}
-            />
-          </Field>
+            <Group label="서체">
+              <select
+                className="field w-[150px] text-xs py-1"
+                value={draft.font}
+                onChange={(e) => update({ font: e.target.value })}
+              >
+                {fontOptions.map((f) => (
+                  <option key={f} value={f}>
+                    {f === "Spoqa Han Sans" ? `${f} (준비 중)` : f}
+                  </option>
+                ))}
+              </select>
+            </Group>
 
-          <Field label="표지">
-            <div className="flex items-center gap-2">
+            <Group label="표지">
               {coverPreview ? (
                 <img
                   src={coverPreview}
                   alt=""
-                  className="h-9 w-14 rounded object-cover border border-neutral-800 shrink-0"
+                  className="h-8 w-12 rounded object-cover border border-neutral-800 shrink-0"
                 />
               ) : (
-                <span className="h-9 w-14 rounded border border-dashed border-neutral-800 shrink-0" />
+                <span className="h-8 w-12 rounded border border-dashed border-neutral-800 shrink-0" />
               )}
               <input
                 ref={fileInputRef}
                 type="file"
                 accept="image/*"
                 onChange={pickCover}
-                className="block w-full text-[11px] text-neutral-500 file:mr-2 file:rounded file:border-0 file:bg-neutral-800 file:px-2 file:py-1 file:text-[11px] file:text-neutral-300"
+                className="block w-[160px] text-[11px] text-neutral-500 file:mr-2 file:rounded file:border-0 file:bg-neutral-800 file:px-2 file:py-1 file:text-[11px] file:text-neutral-300"
               />
-            </div>
-          </Field>
+            </Group>
 
-          <Field label="프리셋">
-            <div className="flex flex-wrap gap-1.5">
-              {presets.map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => update(p.style)}
-                  className="rounded-full border border-neutral-800 px-2.5 py-1 text-[11px] text-neutral-400 hover:border-brand/50 hover:text-brand transition-colors"
-                >
-                  {p.name}
-                </button>
-              ))}
-            </div>
-          </Field>
+            <Group label="프리셋">
+              <div className="flex flex-wrap gap-1.5">
+                {presets.map((pr) => (
+                  <button
+                    key={pr.id}
+                    type="button"
+                    onClick={() => update(pr.style)}
+                    className="rounded-full border border-neutral-800 px-2.5 py-1 text-[11px] text-neutral-400 hover:border-brand/50 hover:text-brand transition-colors"
+                  >
+                    {pr.name}
+                  </button>
+                ))}
+              </div>
+            </Group>
+          </div>
 
           {saveError && (
             <p role="alert" className="text-[11px] text-brand">
@@ -340,7 +345,7 @@ export default function StylePanel({
             </p>
           )}
 
-          <div className="flex items-center justify-between gap-2 pt-0.5">
+          <div className="flex items-center justify-between gap-2 mt-1 pt-2.5 border-t border-neutral-800/70">
             <span className="text-[11px] text-neutral-600 truncate">
               마지막 저장: {formatRelativeTime(lastSavedAt)}
             </span>
@@ -374,10 +379,10 @@ export default function StylePanel({
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Group({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-[46px_1fr] items-center gap-2">
-      <span className="text-[11px] text-neutral-600">{label}</span>
+    <div className="flex items-center gap-2">
+      <span className="text-[11px] text-neutral-600 shrink-0">{label}</span>
       {children}
     </div>
   );

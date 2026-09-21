@@ -765,8 +765,11 @@ export default function PortfolioEditor() {
         </div>
       </div>
 
+      {/* 미리보기 패널을 고정 폭(420/560px)으로 두니 넓은 모니터에서
+          오른쪽이 계속 비었습니다. 왼쪽 폼과 같이 flex-1 로 두면 폼이
+          max-w-3xl 에 걸린 뒤 남는 폭을 이쪽이 전부 가져갑니다. */}
       {isWide && (
-        <aside className="sticky top-6 shrink-0 w-[420px] 2xl:w-[560px] space-y-3">
+        <aside className="sticky top-6 flex-1 min-w-[380px] space-y-3">
           {stylePanel}
           {/* 토글이 감추는 것은 미리보기뿐입니다 — 스타일 패널까지 같이
               사라지면 "미리보기 숨기기"라는 이름과 동작이 어긋납니다. */}

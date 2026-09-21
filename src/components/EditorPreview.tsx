@@ -26,6 +26,9 @@ const BASE_WIDTH = 720;
  *  끊깁니다. 손을 멈춘 뒤에만 갱신합니다. */
 const DEBOUNCE_MS = 250;
 
+/** 미리보기 확대 상한. */
+const MAX_ZOOM = 1.5;
+
 interface Props {
   portfolio: PortfolioRow;
   projects: PortfolioProjectRow[];
@@ -52,7 +55,11 @@ export default function EditorPreview({ portfolio, projects, coverUrl }: Props) 
     if (!el) return;
     const ro = new ResizeObserver((entries) => {
       const w = entries[0]?.contentRect.width ?? 0;
-      if (w > 0) setZoom(Math.min(1, w / BASE_WIDTH));
+      // 1 을 넘겨도 됩니다 — 같은 720px 레이아웃을 키워 그리는 것이라
+      // 줄바꿈은 그대로고 글자만 커집니다. 넓은 모니터에서 미리보기가
+      // 720px 에 멈춰 있으면 오른쪽이 그만큼 빕니다. 상한을 두는 건
+      // 과하게 커져서 한 화면에 몇 줄 안 들어오는 걸 막기 위해서입니다.
+      if (w > 0) setZoom(Math.min(MAX_ZOOM, w / BASE_WIDTH));
     });
     ro.observe(el);
     return () => ro.disconnect();
@@ -79,7 +86,7 @@ export default function EditorPreview({ portfolio, projects, coverUrl }: Props) 
             왼쪽에 내용을 채우면 여기에 바로 반영됩니다.
           </p>
         ) : (
-          <div style={{ width: BASE_WIDTH, zoom }}>
+          <div className="mx-auto" style={{ width: BASE_WIDTH, zoom }}>
             <PortfolioRenderer
               portfolio={shown.portfolio}
               projects={shown.projects}
