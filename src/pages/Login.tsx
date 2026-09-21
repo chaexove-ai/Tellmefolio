@@ -57,21 +57,17 @@ export default function Login() {
        lg 미만에서는 위아래로 쌓입니다. 로그인은 데스크탑 전용 게이트
        바깥이라 휴대폰에서도 열립니다. */
     <div className="min-h-screen lg:grid lg:grid-cols-[1.1fr_1fr]">
+      {/* [2026-09] 왼쪽에서 글을 걷어냈습니다.
+          양쪽에 제목이 하나씩 있으니(왼 44px / 오른 34px) 읽을 곳이 두
+          군데가 되어 시선이 갈렸습니다. 행동은 오른쪽에 있으므로 글도
+          오른쪽으로 모으고, 이쪽은 "읽는 면"이 아니라 "바라보는 면"으로
+          둡니다 — 워드마크와 맨 아래 한 줄만 남깁니다. 둘 다 훑고
+          지나가는 것이지 읽고 판단할 내용이 아닙니다.
+
+          면을 없애지 않은 이유: 화면에 무게를 주는 역할은 그대로입니다.
+          이게 빠지면 크림 바탕에 폼 하나가 떠 있던 예전으로 돌아갑니다. */}
       <div className="surface-invert flex flex-col justify-between px-8 py-12 lg:px-16 lg:py-20">
-        <div>
-          <p className="text-xs tracking-[0.2em] text-brand uppercase mb-6 lg:mb-10">
-            Tellmefolio
-          </p>
-          <h1 className="font-heading text-2xl lg:text-[44px] leading-snug lg:leading-[1.3]">
-            이야기하면
-            <br />
-            포트폴리오가 됩니다
-          </h1>
-          <p className="mt-4 lg:mt-7 text-sm lg:text-base text-neutral-400 leading-relaxed max-w-[42ch]">
-            GitHub 저장소와 메모를 맥락 · 문제 · 실행 · 성과 · 회고의 케이스
-            스터디로 바꿉니다.
-          </p>
-        </div>
+        <p className="text-xs tracking-[0.2em] text-brand uppercase">Tellmefolio</p>
 
         <p className="hidden lg:block text-xs text-neutral-600 leading-relaxed max-w-[44ch]">
           공개 저장소만 읽습니다. 비공개 코드에 접근하는 권한은 요청하지
@@ -80,19 +76,24 @@ export default function Login() {
       </div>
 
       <div className="flex items-center justify-center px-6 py-14 lg:px-16">
-        {/* [2026-09] max-w-sm(384px)에서 520px 로. 오른쪽 면이 화면
-            절반인데 내용이 384px 이면 양옆 여백이 내용보다 넓어 작아
-            보입니다. 그렇다고 면 전체를 채우면 버튼이 가로로 길쭉해지니,
-            버튼이 버튼으로 보이는 선까지만 넓힙니다. */}
+        {/* 읽는 순서가 한 줄입니다 — 제목 → 설명 → 버튼. 시선이 위에서
+            아래로 한 번만 흐르고 끝에서 행동에 닿습니다. */}
         <div className="w-full max-w-sm lg:max-w-[520px]">
-          <h2 className="font-heading text-xl lg:text-[34px] lg:leading-tight mb-1.5 lg:mb-3">
-            로그인하기
-          </h2>
-          <p className="text-sm lg:text-base text-neutral-500 mb-8 lg:mb-10">
-            Google, GitHub, Figma 계정으로 시작하세요
+          <h1 className="font-heading text-2xl lg:text-[40px] lg:leading-[1.3]">
+            이야기하면
+            <br />
+            포트폴리오가 됩니다
+          </h1>
+          <p className="mt-4 lg:mt-5 text-sm lg:text-base text-neutral-500 leading-relaxed">
+            GitHub 저장소와 메모를 케이스 스터디로 바꿉니다.
+            <br className="hidden lg:block" />
+            <span className="lg:hidden"> </span>
+            Google, GitHub, Figma 계정으로 시작하세요.
           </p>
 
-          <SocialLoginButtons onSelect={handleLogin} busy={busy} />
+          <div className="mt-10 lg:mt-12">
+            <SocialLoginButtons onSelect={handleLogin} busy={busy} />
+          </div>
 
           {error && (
             <p role="alert" className="text-xs text-brand mt-4">
