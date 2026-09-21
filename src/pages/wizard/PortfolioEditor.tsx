@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { Check, Info, LoaderCircle } from "lucide-react";
+import { Check, Info, LoaderCircle, Plus, Trash2 } from "lucide-react";
 import {
   getPortfolioWithProjects,
   updatePortfolioProject,
+  createPortfolioProject,
+  deletePortfolioProject,
   PortfolioError,
   type PortfolioProjectRow,
   type PortfolioRow,
@@ -76,6 +78,12 @@ export default function PortfolioEditor() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
+
+  const [addingProject, setAddingProject] = useState(false);
+  const [addProjectError, setAddProjectError] = useState<string | null>(null);
+  const [deleteConfirming, setDeleteConfirming] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteProjectError, setDeleteProjectError] = useState<string | null>(null);
 
   const loadProject = (index: number, list: PortfolioProjectRow[]) => {
     const p = list[index];
@@ -223,6 +231,62 @@ export default function PortfolioEditor() {
     loadProject(index, projects);
   };
 
+  /** 빈 프로젝트 행을 하나 만들고 바로 그 탭으로 전환합니다. AI 초안이
+   *  뽑아준 프로젝트 개수가 실제와 다를 때(하나 더 있었다거나, 초안 없이
+   *  손으로 새로 쓰고 싶을 때) 쓰라고 만든 버튼입니다.
+   *
+   *  position 은 projects.length 가 아니라 "지금 있는 것 중 가장 큰
+   *  position + 1"로 계산합니다 — 중간 프로젝트를 삭제한 적이 있으면
+   *  length 와 실제 최댓값이 어긋나서, length 를 그대로 쓰면 이미 있는
+   *  position 과 겹쳐 정렬이 꼬입니다. */
+  const handleAddProject = async () => {
+    if (!portfolio) return;
+    setAddingProject(true);
+    setAddProjectError(null);
+    try {
+      await saveCurrentProject();
+      const nextPosition = projects.reduce((max, p) => Math.max(max, p.position), -1) + 1;
+      const created = await createPortfolioProject(portfolio.id, nextPosition);
+      const next = [...projects, created];
+      setProjects(next);
+      loadProject(next.length - 1, next);
+    } catch (e) {
+      setAddProjectError(e instanceof PortfolioError ? e.message : "프로젝트를 추가하지 못했습니다.");
+    } finally {
+      setAddingProject(false);
+    }
+  };
+
+  /** 지금 탭의 프로젝트를 삭제합니다. 되돌릴 수 없는 동작이라 버튼을 바로
+   *  두지 않고, 누르면 "정말 삭제할까요?" 확인 상태로 한 번 더 거칩니다. */
+  const handleDeleteProject = async () => {
+    if (!currentProject) return;
+    setDeleting(true);
+    setDeleteProjectError(null);
+    try {
+      await deletePortfolioProject(currentProject.id);
+      const next = projects.filter((_, i) => i !== projectIndex);
+      setProjects(next);
+      setDeleteConfirming(false);
+      if (next.length > 0) {
+        loadProject(Math.min(projectIndex, next.length - 1), next);
+      } else {
+        setProjectIndex(0);
+        setTitleField("");
+        setContext("");
+        setRole("");
+        setProblem("");
+        setExecution("");
+        setOutcome("");
+        setReflection("");
+      }
+    } catch (e) {
+      setDeleteProjectError(e instanceof PortfolioError ? e.message : "프로젝트를 삭제하지 못했습니다.");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="max-w-3xl">
@@ -272,11 +336,53 @@ export default function PortfolioEditor() {
       <div className="entry space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="entry-title mb-0">프로젝트 개요</h2>
-          {portfolio.summary && <span className="badge bg-brand/10 text-brand">AI 초안 반영됨</span>}
+          <div className="flex items-center gap-2">
+            {portfolio.summary && <span className="badge bg-brand/10 text-brand">AI 초안 반영됨</span>}
+            {currentProject && !deleteConfirming && (
+              <button
+                type="button"
+                onClick={() => setDeleteConfirming(true)}
+                className="inline-flex items-center gap-1 text-xs text-neutral-600 hover:text-brand"
+              >
+                <Trash2 size={12} strokeWidth={1.75} />이 프로젝트 삭제
+              </button>
+            )}
+          </div>
         </div>
 
-        {projects.length > 1 && (
-          <div className="flex flex-wrap gap-2">
+        {deleteConfirming && (
+          <div className="flex items-center justify-between rounded-lg border border-brand/30 bg-brand/[0.06] px-3.5 py-2.5 text-xs">
+            <span className="text-neutral-300">
+              "{currentProject?.name || "제목 없음"}"을(를) 정말 삭제할까요? 되돌릴 수 없습니다.
+            </span>
+            <div className="flex items-center gap-2 shrink-0 ml-3">
+              <button
+                type="button"
+                className="text-neutral-400 hover:underline"
+                onClick={() => setDeleteConfirming(false)}
+                disabled={deleting}
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                className="font-medium text-brand hover:underline disabled:opacity-40"
+                onClick={() => void handleDeleteProject()}
+                disabled={deleting}
+              >
+                {deleting ? "삭제하는 중" : "삭제"}
+              </button>
+            </div>
+          </div>
+        )}
+        {deleteProjectError && (
+          <p role="alert" className="text-xs text-brand">
+            {deleteProjectError}
+          </p>
+        )}
+
+        {projects.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
             {projects.map((p, i) => (
               <button
                 key={p.id}
@@ -291,16 +397,41 @@ export default function PortfolioEditor() {
                 {p.name || "제목 없음"}
               </button>
             ))}
+            <button
+              type="button"
+              onClick={() => void handleAddProject()}
+              disabled={addingProject}
+              className="inline-flex items-center gap-1 rounded-full border border-dashed border-neutral-700 px-3.5 py-1.5 text-xs text-neutral-400 hover:border-neutral-500 hover:text-neutral-200 disabled:opacity-40"
+            >
+              <Plus size={13} strokeWidth={2} />
+              {addingProject ? "추가하는 중" : "새 프로젝트"}
+            </button>
           </div>
         )}
 
         {projects.length === 0 && (
-          <p className="text-sm text-neutral-500">
-            프로젝트가 없습니다.{" "}
-            <Link to="/wizard/source" className="text-brand hover:underline">
-              원본 자료 입력
-            </Link>
-            부터 다시 시작해 주세요.
+          <div className="space-y-2">
+            <p className="text-sm text-neutral-500">
+              프로젝트가 없습니다.{" "}
+              <Link to="/wizard/source" className="text-brand hover:underline">
+                원본 자료 입력
+              </Link>
+              부터 다시 시작하거나, 아래에서 빈 프로젝트를 직접 추가할 수 있습니다.
+            </p>
+            <button
+              type="button"
+              onClick={() => void handleAddProject()}
+              disabled={addingProject}
+              className="inline-flex items-center gap-1 rounded-full border border-dashed border-neutral-700 px-3.5 py-1.5 text-xs text-neutral-400 hover:border-neutral-500 hover:text-neutral-200 disabled:opacity-40"
+            >
+              <Plus size={13} strokeWidth={2} />
+              {addingProject ? "추가하는 중" : "새 프로젝트"}
+            </button>
+          </div>
+        )}
+        {addProjectError && (
+          <p role="alert" className="text-xs text-brand">
+            {addProjectError}
           </p>
         )}
 

@@ -155,6 +155,51 @@ export async function updatePortfolioProject(
   }
 }
 
+/**
+ * [2026-09] 빈 프로젝트 행을 하나 추가합니다.
+ *
+ * 지금까지 portfolio_projects 행은 createPortfolioFromDraft(AI 초안) 한
+ * 경로로만 생겼습니다 — 실제 포트폴리오는 보통 프로젝트가 여러 개인데,
+ * 에디터에서 사람이 직접 "이것도 하나 추가"할 방법이 없었습니다. name 등은
+ * 전부 빈 문자열로 시작하고, PortfolioEditor 의 기존 필드 입력 흐름을
+ * 그대로 타고 채워집니다.
+ */
+export async function createPortfolioProject(
+  portfolioId: string,
+  position: number
+): Promise<PortfolioProjectRow> {
+  const sb = await requireClient();
+  const { data, error } = await sb
+    .from("portfolio_projects")
+    .insert({
+      portfolio_id: portfolioId,
+      position,
+      name: "",
+      context: "",
+      role: "",
+      problem: "",
+      execution: "",
+      outcome: "",
+      reflection: "",
+      stack: [],
+    })
+    .select()
+    .single();
+
+  if (error || !data) {
+    throw new PortfolioError("프로젝트를 추가하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+  }
+  return data as PortfolioProjectRow;
+}
+
+export async function deletePortfolioProject(id: string): Promise<void> {
+  const sb = await requireClient();
+  const { error } = await sb.from("portfolio_projects").delete().eq("id", id);
+  if (error) {
+    throw new PortfolioError("프로젝트를 삭제하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+  }
+}
+
 export async function updatePortfolioStyle(
   id: string,
   patch: Partial<
@@ -244,6 +289,47 @@ function toLibraryPortfolio(p: PortfolioRow): LibraryPortfolio {
     updatedAt: p.updated_at,
     jobColor: p.job_color,
   };
+}
+
+/**
+ * [2026-09] "직무 색상 설정"을 실제로 저장되게 합니다.
+ *
+ * 색상은 직무별로 따로 테이블을 두지 않고, 그 직무를 가진 포트폴리오들의
+ * job_color 컬럼을 한 번에 같은 값으로 바꾸는 방식을 씁니다 — 애초에
+ * job_color 가 포트폴리오마다 있는 컬럼이라, "직무 색상"이라는 개념은
+ * "같은 job 값을 가진 포트폴리오들의 job_color 를 통일한다"와 같습니다.
+ * 새 테이블 없이 기존 스키마로 됩니다.
+ */
+export async function updateJobColor(userId: string, job: string, color: string): Promise<void> {
+  const sb = await requireClient();
+  const { error } = await sb
+    .from("portfolios")
+    .update({ job_color: color })
+    .eq("user_id", userId)
+    .eq("job", job);
+  if (error) {
+    throw new PortfolioError("직무 색상을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+  }
+}
+
+/**
+ * [2026-09] "직무 태그는 수정 불가한거 같은데" — 서재 카드의 직무 배지가
+ * 그냥 <span> 이라 클릭해도 아무 일도 없었습니다. 이 함수로 개별
+ * 포트폴리오 한 건의 job 값만 바꿉니다(updateJobColor 는 "같은 job 이름을
+ * 가진 모든 포트폴리오의 색"을 바꾸는 것과 대상이 다릅니다 — 이건 그
+ * 포트폴리오 한 건의 직무 이름 자체를 바꿉니다). 빈 문자열을 넘기면
+ * null 로 저장해 "직무 미지정" 표시로 돌아가게 합니다.
+ */
+export async function updatePortfolioJob(id: string, job: string): Promise<void> {
+  const sb = await requireClient();
+  const trimmed = job.trim();
+  const { error } = await sb
+    .from("portfolios")
+    .update({ job: trimmed || null })
+    .eq("id", id);
+  if (error) {
+    throw new PortfolioError("직무를 수정하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+  }
 }
 
 /** 로그인한 사용자의 포트폴리오 전체를 최근 수정순으로. */
