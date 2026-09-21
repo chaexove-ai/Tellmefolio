@@ -136,12 +136,42 @@ export default function Dashboard() {
           그게 이 페이지의 주인공처럼 보입니다. 라벨과 숫자만 남긴 얇은
           띠로 줄이면 "현재 상태"로 읽히고, 아래 책장이 주인공 자리를
           되찾습니다. */}
+      {/* [2026-09] 숫자만 색을 달리했더니 카드 넷이 같은 상자로 보였습니다.
+          면과 테두리까지 그 색을 옅게 입혀 카드마다 정체성을 줍니다.
+
+          알파를 아주 낮게(면 7%, 테두리 28%) 잡은 이유 — 크림 바탕 위에서
+          네 칸을 진하게 칠하면 알록달록한 대시보드가 되고, 이 앱이 잡아온
+          원고지·잉크 톤과 싸웁니다. 테두리를 면보다 진하게 두면 색은
+          분명히 읽히면서 바탕은 조용합니다.
+
+          아이콘도 되살렸습니다. stats 배열에 icon 이 이미 있었는데 얇은
+          띠로 줄이면서 안 쓰고 있었습니다 — 색만으로 구분하면 색을
+          구별하기 어려운 사람에게는 넷이 똑같은 칸입니다. */}
       <div className="grid grid-cols-4 gap-4">
         {stats.map((s, i) => (
-          <div key={s.label} className="entry p-5">
-            <p className="text-xs tracking-wide text-neutral-500">{s.label}</p>
+          <div
+            key={s.label}
+            className="entry p-5"
+            style={{
+              // brand 는 CSS 변수(RGB 트리플)라 hex 알파 접미사를 못 씁니다.
+              // 인라인 스타일에서도 변수는 그대로 읽히므로 rgb(var(--brand) / a)
+              // 형태로 씁니다 — 넷 중 하나만 흰 칸이면 그 칸만 빠져 보입니다.
+              backgroundColor: s.accent ? `${s.accent}12` : "rgb(var(--brand) / 0.07)",
+              borderColor: s.accent ? `${s.accent}47` : "rgb(var(--brand) / 0.3)",
+            }}
+          >
+            <div className="flex items-center gap-2">
+              <s.icon
+                size={15}
+                strokeWidth={1.75}
+                aria-hidden="true"
+                className={s.accent ? undefined : "text-brand"}
+                style={s.accent ? { color: s.accent } : undefined}
+              />
+              <p className="text-xs tracking-wide text-neutral-500">{s.label}</p>
+            </div>
             <p
-              className="mt-2 text-[26px] leading-none font-heading text-neutral-100"
+              className="mt-2.5 text-[30px] leading-none font-heading text-neutral-100"
               style={s.accent ? { color: s.accent } : undefined}
             >
               {statValues[i]}
