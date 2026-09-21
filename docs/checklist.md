@@ -9,20 +9,20 @@
 
 배포된 사이트가 코드와 다른 상태입니다. 아래 두 개는 `git push` 로 따라가지 않습니다.
 
-- [ ] **Edge Function 2개 배포** — `generate-draft`, `translate-portfolio`
+- [x] **Edge Function 2개 배포** — `generate-draft`, `translate-portfolio`
   현재 로컬 코드에만 있습니다. 배포 안 하면 AI 초안 생성이 배포판에서 동작하지 않습니다.
   ```bash
   npx supabase link --project-ref tswxxqqnzqexwxkgpajg
   npx supabase functions deploy generate-draft
   npx supabase functions deploy translate-portfolio
   ```
-- [ ] **`density` 마이그레이션 실행** — `supabase/migrations/20260921_portfolio_density.sql`
+- [x] **`density` 마이그레이션 실행** — `supabase/migrations/20260921_portfolio_density.sql`
   `portfolioTheme.byDensity()` 에 `?? normal` 폴백을 넣어놔서 지금은 조용히 넘어가지만,
   여백 설정을 바꿔도 저장이 안 됩니다. (이미 실행했다면 체크)
   ```bash
   npx supabase db push
   ```
-- [ ] 배포 후 실제 URL에서 초안 생성 1회, 여백 변경 1회 확인
+- [ ] 배포 후 실제 URL에서 초안 생성 1회, 여백 변경 1회 확인 ← 남음
 
 ---
 
@@ -30,7 +30,13 @@
 
 기능이 없는 것보다, **있다고 말해놓고 없는 것**이 더 위험합니다.
 
-- [ ] **`/terms`, `/privacy` 페이지 만들기** ⚠️ 가장 급함
+> **2026-09-21 결정 — 약관/방침은 맨 마지막으로.** 사업자 등록이 아직이고
+> 베타라 실사용자가 없어서, 푸터 링크가 홈으로 튕기는 현재 상태를 그대로
+> 두기로 했습니다. 외부에 공개하고 사람을 받는 시점 **전까지**는 반드시
+> 있어야 합니다 — 개인정보처리방침 의무는 사업자 등록 여부와 무관하게
+> "개인정보처리자"에게 붙습니다.
+
+- [ ] **`/terms`, `/privacy` 페이지 만들기** — 🕓 **맨 마지막 (사업자 등록 후)**
   - 푸터(`Landing.tsx:365-366`)가 두 링크를 걸어놨는데 라우트가 없어서 `*` → `/` 로 튕깁니다
   - 로그인 화면(`Login.tsx:111`)은 이미 "계속 진행하면 이용약관과 개인정보처리방침에 동의합니다"라고 말하고 있습니다
   - 개인정보처리방침은 개인정보보호법상 **의무**입니다 (온라인 서비스 운영자)
