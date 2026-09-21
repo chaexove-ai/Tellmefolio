@@ -35,7 +35,7 @@ const fieldLabelsByLang: Record<"ko" | "en", Array<{ key: FieldKey; label: strin
  * 무채색(grayscale)으로 눌러서 튀지 않게 — "여백이 주인공"이라는
  * 컨셉을 색이 방해하지 않게 하려는 선택입니다.
  */
-export default function MinimalTemplate({ portfolio, projects, coverUrl, images = {}, bodyFontStack, lang = "ko" }: PortfolioTemplateProps) {
+export default function MinimalTemplate({ portfolio, projects, coverUrl, images = {}, eagerImages, bodyFontStack, lang = "ko" }: PortfolioTemplateProps) {
   const palette = getPortfolioPalette(portfolio.color_theme);
   const visible = visibleProjects(projects, images);
   const d = portfolio.density;
@@ -94,6 +94,7 @@ export default function MinimalTemplate({ portfolio, projects, coverUrl, images 
               <ProjectImages
                 projectId={p.id}
                 images={images}
+                eager={eagerImages}
                 borderColor={palette.border}
                 captionColor={palette.textFaint}
                 rounded="rounded-none"

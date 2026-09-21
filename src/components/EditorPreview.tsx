@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
+import { Maximize2 } from "lucide-react";
 import PortfolioRenderer from "./portfolio-templates/PortfolioRenderer";
-import { hasContent } from "./portfolio-templates/types";
+import { visibleProjects } from "./portfolio-templates/types";
+import type { ProjectImageMap } from "./portfolio-templates/types";
 import { FONT_STACKS, DEFAULT_FONT } from "../lib/portfolioTheme";
 import type { PortfolioProjectRow, PortfolioRow } from "../lib/portfolios";
 
@@ -33,9 +35,13 @@ interface Props {
   portfolio: PortfolioRow;
   projects: PortfolioProjectRow[];
   coverUrl: string | null;
+  /** [2026-09-22] 프로젝트별 이미지. */
+  images?: ProjectImageMap;
+  /** 전체화면으로 크게 보기. 없으면 버튼을 그리지 않습니다. */
+  onExpand?: () => void;
 }
 
-export default function EditorPreview({ portfolio, projects, coverUrl }: Props) {
+export default function EditorPreview({ portfolio, projects, coverUrl, images = {}, onExpand }: Props) {
   const frameRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(1);
   const [shown, setShown] = useState({ portfolio, projects });
@@ -66,15 +72,27 @@ export default function EditorPreview({ portfolio, projects, coverUrl }: Props) 
   }, []);
 
   const bodyFontStack = FONT_STACKS[shown.portfolio.font] ?? FONT_STACKS[DEFAULT_FONT];
-  const filled = shown.projects.filter(hasContent);
+  const filled = visibleProjects(shown.projects, images);
 
   return (
     <div className="space-y-2">
-      <div className="flex items-baseline justify-between">
+      <div className="flex items-baseline justify-between gap-3">
         <h2 className="text-xs font-medium text-neutral-400">미리보기</h2>
-        <span className="text-xs text-neutral-600">
-          내보내면 이 모양 그대로 저장됩니다
-        </span>
+        <div className="flex items-baseline gap-3">
+          <span className="text-xs text-neutral-600">
+            내보내면 이 모양 그대로 저장됩니다
+          </span>
+          {onExpand && (
+            <button
+              type="button"
+              onClick={onExpand}
+              className="inline-flex items-center gap-1 text-xs text-neutral-500 hover:text-brand transition-colors"
+            >
+              <Maximize2 size={12} aria-hidden="true" />
+              크게 보기
+            </button>
+          )}
+        </div>
       </div>
 
       <div
@@ -91,6 +109,7 @@ export default function EditorPreview({ portfolio, projects, coverUrl }: Props) 
               portfolio={shown.portfolio}
               projects={shown.projects}
               coverUrl={coverUrl}
+              images={images}
               bodyFontStack={bodyFontStack}
             />
           </div>

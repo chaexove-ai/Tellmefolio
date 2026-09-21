@@ -23,7 +23,7 @@ const fieldLabels: Array<{ key: "context" | "problem" | "execution" | "outcome" 
  * 세리프 제목 + 여백으로 "정제된" 인상을 만듭니다 — 카드나 배지 없이
  * 가로줄(rule)만으로 구획을 나눕니다.
  */
-export default function ResearchTemplate({ portfolio, projects, images = {}, bodyFontStack, lang = "ko" }: PortfolioTemplateProps) {
+export default function ResearchTemplate({ portfolio, projects, images = {}, eagerImages, bodyFontStack, lang = "ko" }: PortfolioTemplateProps) {
   const palette = getPortfolioPalette(portfolio.color_theme);
   const d = portfolio.density;
   const isTwoCol = portfolio.layout === "2col";
@@ -127,6 +127,7 @@ export default function ResearchTemplate({ portfolio, projects, images = {}, bod
               <ProjectImages
                 projectId={p.id}
                 images={images}
+                eager={eagerImages}
                 borderColor={palette.border}
                 captionColor={palette.textFaint}
                 className={byDensity(d, { roomy: "mb-7", normal: "mb-5", tight: "mb-3" })}

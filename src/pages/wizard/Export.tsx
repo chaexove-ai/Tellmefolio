@@ -4,6 +4,7 @@ import { LoaderCircle } from "lucide-react";
 import {
   getPortfolioWithProjects,
   getCoverImageUrl,
+  listProjectImages,
   updatePortfolioVisibility,
   updatePortfolioListed,
   PortfolioError,
@@ -15,6 +16,7 @@ import { FONT_STACKS, DEFAULT_FONT } from "../../lib/portfolioTheme";
 import { exportNodeToPdf } from "../../lib/exportPdf";
 import { translatePortfolioToEnglish, TranslateError } from "../../lib/translate";
 import PortfolioRenderer from "../../components/portfolio-templates/PortfolioRenderer";
+import type { ProjectImageMap } from "../../components/portfolio-templates/types";
 
 /**
  * [2026-09] "적용 템플릿" 줄이 항상 "라이브에디터"로 고정돼 있던 걸 고친 게
@@ -37,6 +39,7 @@ export default function Export() {
   const [portfolio, setPortfolio] = useState<PortfolioRow | null>(null);
   const [projects, setProjects] = useState<PortfolioProjectRow[]>([]);
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
+  const [images, setImages] = useState<ProjectImageMap>({});
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -77,6 +80,22 @@ export default function Export() {
         if (!alive) return;
         setPortfolio(p);
         setProjects(ps);
+
+        // 이미지도 함께 읽습니다. 미리보기에 보이는 것이 곧 PDF 이므로
+        // 여기서 빠지면 파일에서도 빠집니다.
+        void (async () => {
+          try {
+            const rows = await listProjectImages(ps.map((x) => x.id));
+            const map: ProjectImageMap = {};
+            for (const r of rows) {
+              const url = await getCoverImageUrl(r.storage_path);
+              (map[r.project_id] ??= []).push({ id: r.id, url, caption: r.caption });
+            }
+            if (alive) setImages(map);
+          } catch {
+            // 이미지를 못 읽어도 글은 내보낼 수 있어야 합니다.
+          }
+        })();
         if (p.cover_image_path) {
           getCoverImageUrl(p.cover_image_path)
             .then((url) => {
@@ -421,6 +440,8 @@ export default function Export() {
                 portfolio={displayPortfolio ?? portfolio}
                 projects={displayProjects}
                 coverUrl={coverUrl}
+                images={images}
+                eagerImages
                 bodyFontStack={bodyFontStack}
                 lang={lang === "영어" ? "en" : "ko"}
               />

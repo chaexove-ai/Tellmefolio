@@ -1,19 +1,32 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { Check, Info, LoaderCircle, Plus, Trash2, X } from "lucide-react";
+import { Check, GripVertical, ImagePlus, Info, LoaderCircle, Plus, Trash2, X } from "lucide-react";
 import {
   getPortfolioWithProjects,
   updatePortfolioProject,
   createPortfolioProject,
   deletePortfolioProject,
   getCoverImageUrl,
+  listProjectImages,
+  uploadProjectImage,
+  deleteProjectImage,
+  reorderProjectImages,
+  updateProjectImageCaption,
+  MAX_PROJECT_IMAGES,
   PortfolioError,
   type PortfolioProjectRow,
   type PortfolioRow,
+  type ProjectDepth,
+  type ProjectImageRow,
 } from "../../lib/portfolios";
 import { formatRelativeTime } from "../../lib/formatRelativeTime";
 import EditorPreview from "../../components/EditorPreview";
 import StylePanel from "../../components/StylePanel";
+import PortfolioRenderer from "../../components/portfolio-templates/PortfolioRenderer";
+import type { ProjectImageMap } from "../../components/portfolio-templates/types";
+import { FONT_STACKS, DEFAULT_FONT } from "../../lib/portfolioTheme";
+import { shrinkImage } from "../../lib/images";
+import { useAuth } from "../../auth/AuthProvider";
 
 interface EvidenceItem {
   id: string;
@@ -78,6 +91,7 @@ function useIsWide(): boolean {
 }
 
 export default function PortfolioEditor() {
+  const { session } = useAuth();
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
 
@@ -102,6 +116,10 @@ export default function PortfolioEditor() {
    *  있었습니다. */
   const [stack, setStack] = useState<string[]>([]);
   const [stackInput, setStackInput] = useState("");
+  /** [2026-09-22] 이 프로젝트를 얼마나 깊게 보여줄지. 설계는
+   *  docs/editor-redesign.md 3절. 바꿔도 다른 칸의 값은 지우지 않습니다 —
+   *  화면에서 접힐 뿐이라 되돌리면 쓰던 글이 그대로 돌아옵니다. */
+  const [depth, setDepth] = useState<ProjectDepth>("full");
 
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -118,6 +136,15 @@ export default function PortfolioEditor() {
   // 되돌리기가 후자를 복원합니다.
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const [savedCoverUrl, setSavedCoverUrl] = useState<string | null>(null);
+
+  /** 프로젝트 id → 이미지들. 행(storage_path 포함)과 화면에 쓸 URL 을 함께
+   *  들고 있습니다 — 삭제할 때 경로가 필요하고, 그릴 때는 URL 이 필요합니다. */
+  const [projectImages, setProjectImages] = useState<Record<string, Array<ProjectImageRow & { url: string }>>>({});
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  /** 미리보기 전체화면. */
+  const [expanded, setExpanded] = useState(false);
   /** 미리보기는 xl(1280px) 이상에서만 자리가 납니다. 그 아래에서는 폼과
    *  미리보기가 둘 다 좁아져 양쪽 다 못 쓰게 되므로 감추고, 스타일 패널만
    *  왼쪽 열로 내려보냅니다(안 그러면 좁은 화면에서 스타일을 바꿀 방법이
@@ -141,6 +168,27 @@ export default function PortfolioEditor() {
     setReflection(p?.reflection ?? "");
     setStack(p?.stack ?? []);
     setStackInput("");
+    // depth 컬럼이 없던 시절 행은 undefined 로 옵니다 — 프런트는 자동
+    // 배포되고 마이그레이션은 손으로 돌리니, 그 틈에 죽지 않게 full 로 봅니다.
+    setDepth(p?.depth ?? "full");
+    setImageError(null);
+  };
+
+  /** 이미지 행을 읽고 화면에 쓸 URL 까지 붙여 상태에 담습니다. */
+  const loadImages = async (projectIds: string[]) => {
+    try {
+      const rows = await listProjectImages(projectIds);
+      const withUrls = await Promise.all(
+        rows.map(async (r) => ({ ...r, url: await getCoverImageUrl(r.storage_path) }))
+      );
+      const grouped: Record<string, Array<ProjectImageRow & { url: string }>> = {};
+      for (const r of withUrls) {
+        (grouped[r.project_id] ??= []).push(r);
+      }
+      setProjectImages(grouped);
+    } catch {
+      // 이미지를 못 읽어도 글은 편집할 수 있어야 합니다.
+    }
   };
 
   /** 쉼표로 여러 개를 한 번에 붙여넣는 경우까지 받습니다. 중복과 빈 값은
@@ -159,6 +207,123 @@ export default function PortfolioEditor() {
     setStackInput("");
   };
 
+  // 전체화면 미리보기는 ESC 로 닫힙니다. 오버레이 클릭으로도 닫히지만,
+  // 안쪽을 클릭해도 닫히지 않게 막아둬서 키보드 경로가 필요합니다.
+  useEffect(() => {
+    if (!expanded) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setExpanded(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [expanded]);
+
+  /* ---------------- 프로젝트 이미지 ---------------- */
+
+  // currentProject 는 아래(359줄 근처)에서 따로 선언돼 있지만, 이미지
+  // 핸들러들이 그보다 위에 있어서 id 만 여기서 한 번 더 꺼냅니다.
+  const currentProjectId = projects[projectIndex]?.id ?? null;
+  const currentImages = currentProjectId ? (projectImages[currentProjectId] ?? []) : [];
+
+  const addImages = async (files: FileList | null) => {
+    const projectId = currentProjectId;
+    const userId = session?.user?.id;
+    if (!files || files.length === 0 || !projectId || !id) return;
+    if (!userId) {
+      setImageError("로그인 정보를 확인할 수 없어 이미지를 올릴 수 없습니다.");
+      return;
+    }
+
+    const room = MAX_PROJECT_IMAGES - currentImages.length;
+    if (room <= 0) {
+      setImageError(`이미지는 프로젝트당 ${MAX_PROJECT_IMAGES}장까지입니다.`);
+      return;
+    }
+
+    setUploadingImage(true);
+    setImageError(null);
+    const picked = Array.from(files).slice(0, room);
+    const overflow = files.length - picked.length;
+
+    try {
+      for (let i = 0; i < picked.length; i += 1) {
+        // 반드시 줄여서 올립니다. 8장 × 4MB 가 그대로 올라가면 공개 링크가
+        // 폰에서 안 열립니다(설계문서 4.3).
+        const shrunk = await shrinkImage(picked[i]);
+        const row = await uploadProjectImage({
+          userId,
+          portfolioId: id,
+          projectId,
+          file: shrunk.file,
+          position: currentImages.length + i,
+        });
+        const url = await getCoverImageUrl(row.storage_path);
+        setProjectImages((prev) => ({
+          ...prev,
+          [projectId]: [...(prev[projectId] ?? []), { ...row, url }],
+        }));
+      }
+      if (overflow > 0) {
+        setImageError(`${MAX_PROJECT_IMAGES}장까지만 올릴 수 있어 ${overflow}장은 제외했습니다.`);
+      }
+    } catch (e) {
+      setImageError(e instanceof PortfolioError ? e.message : "이미지를 올리지 못했습니다.");
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const removeImage = async (img: ProjectImageRow & { url: string }) => {
+    const projectId = currentProjectId;
+    if (!projectId) return;
+    // 화면에서 먼저 지웁니다 — 서버를 기다리는 동안 남아 있으면 두 번
+    // 누르게 됩니다. 실패하면 다시 넣습니다.
+    const before = projectImages[projectId] ?? [];
+    setProjectImages((prev) => ({
+      ...prev,
+      [projectId]: before.filter((x) => x.id !== img.id),
+    }));
+    try {
+      await deleteProjectImage(img);
+    } catch (e) {
+      setProjectImages((prev) => ({ ...prev, [projectId]: before }));
+      setImageError(e instanceof PortfolioError ? e.message : "이미지를 삭제하지 못했습니다.");
+    }
+  };
+
+  const dropImage = async (toIndex: number) => {
+    const projectId = currentProjectId;
+    if (dragIndex === null || !projectId || dragIndex === toIndex) {
+      setDragIndex(null);
+      return;
+    }
+    const list = [...(projectImages[projectId] ?? [])];
+    const [moved] = list.splice(dragIndex, 1);
+    list.splice(toIndex, 0, moved);
+    const renumbered = list.map((x, i) => ({ ...x, position: i }));
+    setProjectImages((prev) => ({ ...prev, [projectId]: renumbered }));
+    setDragIndex(null);
+    try {
+      await reorderProjectImages(renumbered);
+    } catch (e) {
+      setImageError(e instanceof PortfolioError ? e.message : "순서를 저장하지 못했습니다.");
+    }
+  };
+
+  const saveCaption = async (img: ProjectImageRow & { url: string }, caption: string) => {
+    const projectId = currentProjectId;
+    if (!projectId || caption === img.caption) return;
+    setProjectImages((prev) => ({
+      ...prev,
+      [projectId]: (prev[projectId] ?? []).map((x) => (x.id === img.id ? { ...x, caption } : x)),
+    }));
+    try {
+      await updateProjectImageCaption(img.id, caption);
+    } catch {
+      // 설명은 부가 정보라 실패해도 되돌리지 않습니다.
+    }
+  };
+
   useEffect(() => {
     if (!id) {
       setLoadError("포트폴리오 id가 없습니다.");
@@ -174,6 +339,12 @@ export default function PortfolioEditor() {
         setPortfolio(p);
         setProjects(ps);
         if (ps.length > 0) loadProject(0, ps);
+
+        // 이미지는 한 번에 다 읽습니다 — 탭을 옮길 때마다 부르면 그때마다
+        // 기다려야 하고, 미리보기는 어차피 전체 프로젝트를 그립니다.
+        if (ps.length > 0) {
+          void loadImages(ps.map((x) => x.id));
+        }
         setLastSavedAt(new Date(p.updated_at).getTime());
         if (p.cover_image_path) {
           // 표지를 못 불러와도 나머지 미리보기는 그려져야 하므로 조용히
@@ -210,7 +381,7 @@ export default function PortfolioEditor() {
     () =>
       projects.map((p, i) =>
         i === projectIndex
-          ? { ...p, name: titleField, context, role, problem, execution, outcome, reflection, stack }
+          ? { ...p, name: titleField, context, role, problem, execution, outcome, reflection, stack, depth }
           : p
       ),
     [
@@ -224,8 +395,18 @@ export default function PortfolioEditor() {
       outcome,
       reflection,
       stack,
+      depth,
     ]
   );
+
+  /** 템플릿에 넘길 모양으로. 행에서 화면에 필요한 것만 추립니다. */
+  const previewImages: ProjectImageMap = useMemo(() => {
+    const out: ProjectImageMap = {};
+    for (const [pid, list] of Object.entries(projectImages)) {
+      out[pid] = list.map((i) => ({ id: i.id, url: i.url, caption: i.caption }));
+    }
+    return out;
+  }, [projectImages]);
 
   /** "프로젝트 개요"의 7칸을 순서 있는 케이스 스터디 흐름으로 보여주기 위한
    *  메타데이터입니다. 예전에는 placeholder 텍스트가 곧 라벨이라 필드를 다
@@ -314,6 +495,7 @@ export default function PortfolioEditor() {
         outcome,
         reflection,
         stack,
+        depth,
       };
       await updatePortfolioProject(current.id, patch);
       setProjects((prev) => prev.map((p, i) => (i === projectIndex ? { ...p, ...patch } : p)));
@@ -555,6 +737,123 @@ export default function PortfolioEditor() {
           )}
 
           {currentProject && (
+            <div className="rounded-lg border border-neutral-800 p-3 space-y-3">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                <span className="text-xs font-medium text-neutral-200">이 프로젝트는</span>
+                <div className="inline-flex rounded-md border border-neutral-800 p-0.5">
+                  {([
+                    { v: "brief", label: "간단히" },
+                    { v: "full", label: "케이스 스터디" },
+                  ] as const).map((o) => (
+                    <button
+                      key={o.v}
+                      type="button"
+                      onClick={() => setDepth(o.v)}
+                      aria-pressed={depth === o.v}
+                      className={`rounded px-2.5 py-1 text-xs transition-colors ${
+                        depth === o.v
+                          ? "bg-brand/15 text-brand"
+                          : "text-neutral-500 hover:text-neutral-300"
+                      }`}
+                    >
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+                <span className="text-xs text-neutral-600">
+                  {depth === "brief"
+                    ? "제목 · 한 줄 설명 · 이미지만 보여줍니다"
+                    : "다섯 단계를 모두 써서 깊게 보여줍니다"}
+                </span>
+              </div>
+              <p className="text-xs text-neutral-600">
+                대표작 2~3개만 케이스 스터디로 쓰고 나머지는 간단히 두면, 읽는
+                사람이 어디를 봐야 할지 압니다. 바꿔도 써둔 글은 지워지지
+                않습니다 — 접혀 있다가 돌아옵니다.
+              </p>
+            </div>
+          )}
+
+          {/* [2026-09-22] 프로젝트별 이미지. "간단히" 에서는 이 영역이
+              사실상 본문이라 툴·키워드보다 위에 둡니다. */}
+          {currentProject && (
+            <div className="space-y-2">
+              <div className="flex items-baseline justify-between gap-3">
+                <span className="text-xs font-medium text-neutral-200">
+                  이미지
+                  <span className="text-neutral-600 font-normal">
+                    {" "}· {currentImages.length}/{MAX_PROJECT_IMAGES}
+                  </span>
+                </span>
+                <label className="text-xs text-brand hover:underline cursor-pointer inline-flex items-center gap-1">
+                  <ImagePlus size={12} aria-hidden="true" />
+                  {uploadingImage ? "올리는 중…" : "이미지 추가"}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    disabled={uploadingImage || currentImages.length >= MAX_PROJECT_IMAGES}
+                    onChange={(e) => {
+                      void addImages(e.target.files);
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+              </div>
+
+              {currentImages.length === 0 && (
+                <p className="text-xs text-neutral-600">
+                  화면 캡처, 결과물 사진, 다이어그램을 올리면 템플릿 안에 함께
+                  들어갑니다. 올릴 때 자동으로 줄여서 저장합니다.
+                </p>
+              )}
+
+              {currentImages.length > 0 && (
+                <ul className="grid grid-cols-4 gap-2">
+                  {currentImages.map((img, i) => (
+                    <li
+                      key={img.id}
+                      draggable
+                      onDragStart={() => setDragIndex(i)}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={() => void dropImage(i)}
+                      className={`group relative rounded-md overflow-hidden border ${
+                        dragIndex === i ? "border-brand" : "border-neutral-800"
+                      }`}
+                    >
+                      <img src={img.url} alt="" className="aspect-[4/3] w-full object-cover" />
+                      <span className="absolute left-1 top-1 rounded bg-black/60 p-0.5 text-neutral-300 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab">
+                        <GripVertical size={12} aria-hidden="true" />
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => void removeImage(img)}
+                        aria-label="이미지 삭제"
+                        className="absolute right-1 top-1 rounded bg-black/60 p-0.5 text-neutral-300 opacity-0 group-hover:opacity-100 transition-opacity hover:text-red-400"
+                      >
+                        <X size={12} aria-hidden="true" />
+                      </button>
+                      <input
+                        defaultValue={img.caption}
+                        onBlur={(e) => void saveCaption(img, e.target.value.trim())}
+                        placeholder="설명 (선택)"
+                        className="w-full border-0 bg-neutral-900/80 px-1.5 py-1 text-[11px] text-neutral-300 placeholder:text-neutral-600 focus:outline-none"
+                      />
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {imageError && (
+                <p role="alert" className="text-xs text-brand">
+                  {imageError}
+                </p>
+              )}
+            </div>
+          )}
+
+          {currentProject && (
             <div className="space-y-1.5">
               <label htmlFor="proj-stack" className="text-xs font-medium text-neutral-200">
                 사용한 툴 · 키워드
@@ -649,12 +948,18 @@ export default function PortfolioEditor() {
               </div>
 
               <div className="border-t border-neutral-800 pt-4">
+                {/* [2026-09-22] "간단히" 에서는 한 줄 설명만 남기고 나머지를
+                    접습니다. 삭제가 아니라 접힘이라는 것이 보여야 합니다 —
+                    안 그러면 사용자가 글이 날아갔다고 생각합니다. */}
                 <p className="text-xs text-neutral-500 mb-4">
-                  아래 5가지는 케이스 스터디 흐름 순서(맥락 → 문제 → 실행 → 성과 → 회고)대로
-                  적으면 자연스럽게 이어집니다.
+                  {depth === "brief"
+                    ? "간단히 보여줄 프로젝트입니다. 한 줄 설명과 이미지만 들어갑니다."
+                    : "아래 5가지는 케이스 스터디 흐름 순서(맥락 → 문제 → 실행 → 성과 → 회고)대로 적으면 자연스럽게 이어집니다."}
                 </p>
                 <div className="space-y-5">
-                  {storyFields.map((f, i) => (
+                  {storyFields
+                    .filter((f) => depth === "full" || f.key === "context")
+                    .map((f, i) => (
                     <div key={f.key} className="flex gap-3">
                       <div className="flex flex-col items-center pt-0.5">
                         <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-neutral-800 text-xs font-medium text-neutral-400">
@@ -696,6 +1001,14 @@ export default function PortfolioEditor() {
                     </div>
                   ))}
                 </div>
+
+                {depth === "brief" && (
+                  <p className="text-xs text-neutral-600 mt-4 border-l-2 border-l-neutral-800 pl-3">
+                    문제 정의 · 실행 내용 · 핵심 성과 · 배운 점은 접혀 있습니다.
+                    지워진 것이 아니라 그대로 남아 있어서, 케이스 스터디로
+                    바꾸면 다시 나타납니다.
+                  </p>
+                )}
               </div>
             </>
           )}
@@ -872,8 +1185,46 @@ export default function PortfolioEditor() {
             portfolio={portfolio}
             projects={previewProjects}
             coverUrl={coverUrl}
+            images={previewImages}
+            onExpand={() => setExpanded(true)}
           />
         </aside>
+      )}
+
+      {/* [2026-09-22] 전체화면 미리보기.
+          오른쪽 칼럼의 미리보기는 폭에 맞춰 눌려 있어서 "내보내면 이렇게
+          나온다"를 확인하기엔 작습니다. 같은 PortfolioRenderer 를 씁니다 —
+          별도 뷰를 만들면 내보내기와 어긋나는 순간이 옵니다. */}
+      {expanded && portfolio && (
+        <div
+          className="fixed inset-0 z-20 bg-black/80 overflow-y-auto"
+          onClick={() => setExpanded(false)}
+        >
+          <div className="sticky top-0 z-10 flex justify-end p-3">
+            <button
+              type="button"
+              onClick={() => setExpanded(false)}
+              className="rounded-md bg-neutral-900/90 border border-neutral-700 px-3 py-1.5 text-xs text-neutral-300 hover:text-brand inline-flex items-center gap-1.5"
+            >
+              <X size={13} aria-hidden="true" />
+              닫기
+            </button>
+          </div>
+          <div
+            className="mx-auto max-w-[820px] pb-16 px-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="rounded-xl overflow-hidden">
+              <PortfolioRenderer
+                portfolio={portfolio}
+                projects={previewProjects}
+                coverUrl={coverUrl}
+                images={previewImages}
+                bodyFontStack={FONT_STACKS[portfolio.font] ?? FONT_STACKS[DEFAULT_FONT]}
+              />
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

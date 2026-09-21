@@ -39,12 +39,15 @@ export default function ProjectImages({
   // 남는데, 그 한 장만 전체폭으로 늘려 빈칸이 생기지 않게 합니다.
   const single = list.length === 1;
 
+  // 폰에서는 2열이 너무 좁습니다 — 템플릿이 좌우 여백을 크게 쓰기 때문에
+  // 375px 화면에서 한 칸이 140px 밖에 안 됩니다. 공개 링크가 열리는 주
+  // 기기라 좁을 때는 한 줄에 하나씩 둡니다.
   return (
-    <div className={`${single ? "" : "grid grid-cols-2 gap-3"} ${className}`}>
+    <div className={`${single ? "" : "grid grid-cols-1 sm:grid-cols-2 gap-3"} ${className}`}>
       {list.map((img, i) => {
         const isLastOdd = !single && list.length % 2 === 1 && i === list.length - 1;
         return (
-          <figure key={img.id} className={isLastOdd ? "col-span-2" : undefined}>
+          <figure key={img.id} className={isLastOdd ? "sm:col-span-2" : undefined}>
             <img
               src={img.url}
               alt={img.caption || ""}

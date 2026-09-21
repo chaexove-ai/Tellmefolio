@@ -21,6 +21,10 @@ export interface PortfolioTemplateProps {
   coverUrl: string | null;
   /** [2026-09-22] 프로젝트별 이미지. 없으면 빈 객체. */
   images?: ProjectImageMap;
+  /** 이미지를 lazy 가 아니라 즉시 받습니다. PDF 내보내기에서 반드시 true —
+   *  html2canvas 는 아직 안 받아진 이미지를 빈칸으로 캡처합니다. 공개
+   *  링크처럼 사람이 스크롤하며 보는 화면에서는 끄는 편이 빠릅니다. */
+  eagerImages?: boolean;
   /** "직접 편집"에서 고른 서체 — 본문에 적용합니다. 템플릿별 강조 타이포
    *  (연구노트의 세리프 제목, 라이브에디터의 모노스페이스 라벨 등)는
    *  이 값과 별개로 각 템플릿이 자체적으로 얹습니다. */
