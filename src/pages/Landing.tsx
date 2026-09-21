@@ -197,7 +197,7 @@ export default function Landing() {
         </section>
 
         {/* ── 작동 방식 (기본 면 · 세로 연결선) ─────────────────── */}
-        <section className="px-4 sm:px-8 py-24">
+        <section id="how" className="px-4 sm:px-8 py-24 scroll-mt-20">
           <div className="max-w-3xl lg:max-w-4xl mx-auto">
             <Reveal>
               <p className="sec-eyebrow">작동 방식</p>
@@ -279,7 +279,7 @@ export default function Landing() {
         </section>
 
         {/* ── FAQ (밝은 면 · 좁은 폭) ─────────────────────────── */}
-        <section className="surface-alt px-4 sm:px-8 py-24">
+        <section id="faq" className="scroll-mt-20 surface-alt px-4 sm:px-8 py-24">
           <div className="max-w-2xl mx-auto">
             <Reveal>
               <p className="sec-eyebrow">FAQ</p>
@@ -314,22 +314,66 @@ export default function Landing() {
         </section>
       </main>
 
-      {/* TODO: /terms, /privacy 페이지를 만든 뒤 아래 주석을 풀어주세요. */}
-      {/* 배너 아래에 크림 푸터가 오면 마침표를 찍고 한 줄을 더 붙인
-          꼴이 됩니다. 푸터도 같은 어둠으로 이어 붙여 하나의 바닥으로
-          읽히게 합니다. */}
-      <footer className="surface-invert px-4 sm:px-8 py-10 border-t border-neutral-800 text-sm text-neutral-400">
-        <div className="max-w-4xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <span className="font-heading text-neutral-100">Tellmefolio</span>
-          <nav className="flex flex-wrap items-center gap-x-5 gap-y-2" aria-label="푸터 메뉴">
-            <Link to="/login" className="hover:text-neutral-100 transition-colors">
-              로그인
-            </Link>
-            {/*
-            <Link to="/terms" className="hover:text-neutral-100 transition-colors">이용약관</Link>
-            <Link to="/privacy" className="hover:text-neutral-100 transition-colors">개인정보처리방침</Link>
-            */}
+      {/* [2026-09] 푸터를 늘리면서 배경을 다시 아이보리로 되돌렸습니다.
+          CTA 배너와 붙여 어둡게 뒀던 것은 배너가 얇을 때의 선택이었는데,
+          푸터가 길어지면 어두운 면이 화면 절반을 먹어 배너의 마침표
+          효과가 사라집니다. 어두운 띠는 한 덩어리로 짧게 끝나는 편이
+          강합니다.
+
+          ⚠️ /terms, /privacy 링크는 아직 주석입니다. 페이지가 없는데
+          링크만 걸면 404 로 보내는 셈이고, 그건 링크가 없는 것보다
+          나쁩니다. 로그인 화면이 이미 "계속 진행하면 이용약관과
+          개인정보처리방침에 동의합니다"라고 말하고 있어서, 두 문서는
+          있어야 합니다 — 개인정보처리방침은 법적 의무이기도 합니다. */}
+      <footer className="px-4 sm:px-8 py-14 border-t border-neutral-800 text-sm text-neutral-500">
+        <div className="max-w-4xl lg:max-w-5xl mx-auto grid gap-10 sm:grid-cols-[1.4fr_1fr_1fr]">
+          <div>
+            <p className="font-heading text-lg text-neutral-100">Tellmefolio</p>
+            <p className="mt-2.5 leading-relaxed">
+              이야기하면 포트폴리오가 됩니다.
+              <br />
+              GitHub 저장소와 메모를 케이스 스터디로 바꿉니다.
+            </p>
+          </div>
+
+          <nav aria-label="서비스">
+            <p className="text-neutral-300 mb-3">서비스</p>
+            <ul className="space-y-2">
+              <li>
+                <Link to="/login" className="hover:text-brand transition-colors">
+                  로그인
+                </Link>
+              </li>
+              <li>
+                <a href="#how" className="hover:text-brand transition-colors">
+                  작동 방식
+                </a>
+              </li>
+              <li>
+                <a href="#faq" className="hover:text-brand transition-colors">
+                  자주 묻는 질문
+                </a>
+              </li>
+            </ul>
           </nav>
+
+          <nav aria-label="정책">
+            <p className="text-neutral-300 mb-3">정책</p>
+            <ul className="space-y-2">
+              {/*
+              <li><Link to="/terms" className="hover:text-brand transition-colors">이용약관</Link></li>
+              <li><Link to="/privacy" className="hover:text-brand transition-colors">개인정보처리방침</Link></li>
+              */}
+              <li className="text-neutral-600">준비 중</li>
+            </ul>
+          </nav>
+        </div>
+
+        <div className="max-w-4xl lg:max-w-5xl mx-auto mt-12 pt-6 border-t border-neutral-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs">
+          <span className="text-neutral-600">© 2026 Tellmefolio</span>
+          <span className="text-neutral-600">
+            공개 저장소만 읽습니다. 비공개 코드에 접근하는 권한은 요청하지 않습니다.
+          </span>
         </div>
       </footer>
     </div>
