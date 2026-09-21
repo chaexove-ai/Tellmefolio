@@ -15,3 +15,6 @@ dist/
 !.env.example
 vite.config.ts.timestamp-*.mjs
 supabase/.temp/
+
+# 작업 중 산출물 임시 폴더 (커밋하지 않습니다)
+Claude outputs/
