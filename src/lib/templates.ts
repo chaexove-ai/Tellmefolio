@@ -1,7 +1,7 @@
 import type { TemplateId } from "./portfolios";
 
 /**
- * 디자인 템플릿 목록. TemplateStyle.tsx(선택 화면)와 Export.tsx(반영 확인
+ * 디자인 템플릿 목록. StylePanel.tsx(선택 UI)와 Export.tsx(반영 확인
  * 문구)가 같은 목록을 봐야 해서 하나로 뺐습니다 — 전에는 Export.tsx 쪽이
  * "라이브에디터"로 고정 문자열이라 실제 선택과 항상 어긋났습니다.
  */

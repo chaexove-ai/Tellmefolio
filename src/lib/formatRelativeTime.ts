@@ -1,4 +1,4 @@
-/** "n분 전" 같은 상대 시간 문구. TemplateStyle·PortfolioEditor 저장 표시가 같이 씁니다. */
+/** "n분 전" 같은 상대 시간 문구. StylePanel·PortfolioEditor 저장 표시가 같이 씁니다. */
 export function formatRelativeTime(ms: number | null): string {
   if (ms === null) return "아직 저장하지 않음";
   const diffSec = Math.max(0, Math.round((Date.now() - ms) / 1000));

@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useParams } from "react-router-dom";
 import AppLayout from "./components/AppLayout";
 import RouteFallback from "./components/RouteFallback";
 import RequireAuth from "./auth/RequireAuth";
@@ -25,7 +25,6 @@ const WizardOverview = lazy(() => import("./pages/wizard/WizardOverview"));
 const SourceInput = lazy(() => import("./pages/wizard/SourceInput"));
 const AIDraftGeneration = lazy(() => import("./pages/wizard/AIDraftGeneration"));
 const PortfolioEditor = lazy(() => import("./pages/wizard/PortfolioEditor"));
-const TemplateStyle = lazy(() => import("./pages/wizard/TemplateStyle"));
 const Export = lazy(() => import("./pages/wizard/Export"));
 
 const JobSwitchRequest = lazy(() => import("./pages/jobswitch/JobSwitchRequest"));
@@ -39,6 +38,11 @@ const VisitStats = lazy(() => import("./pages/gallery/VisitStats"));
 const AccountSettings = lazy(() => import("./pages/account/AccountSettings"));
 const SocialAccountManage = lazy(() => import("./pages/account/SocialAccountManage"));
 const DataManage = lazy(() => import("./pages/account/DataManage"));
+
+function StyleRedirect() {
+  const { id } = useParams<{ id: string }>();
+  return <Navigate to={id ? `/wizard/editor/${id}` : "/wizard"} replace />;
+}
 
 export default function App() {
   return (
@@ -75,7 +79,11 @@ export default function App() {
         <Route path="/wizard/source" element={<SourceInput />} />
         <Route path="/wizard/draft" element={<AIDraftGeneration />} />
         <Route path="/wizard/editor/:id" element={<PortfolioEditor />} />
-        <Route path="/wizard/style/:id" element={<TemplateStyle />} />
+        {/* [2026-09] 템플릿/스타일 설정 페이지를 편집기 오른쪽 패널로
+            합쳤습니다. 바꾸는 손과 보이는 결과가 떨어져 있을 이유가 없고,
+            그 페이지에는 편집기와 별개의 미리보기가 또 하나 있었습니다.
+            이미 배포된 주소라 링크가 남아 있을 수 있어 리다이렉트만 둡니다. */}
+        <Route path="/wizard/style/:id" element={<StyleRedirect />} />
         <Route path="/wizard/export/:id" element={<Export />} />
 
         {/* 직무 전환 재구성 */}

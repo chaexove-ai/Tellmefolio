@@ -52,7 +52,7 @@ export function getPortfolioPalette(colorTheme: ColorTheme): PortfolioPalette {
   };
 }
 
-/** TemplateStyle.tsx의 서체 목록과 동일 — 본문 서체 하나로 통일해 두 화면이
+/** 서체 목록의 원본. StylePanel(선택 UI)과 템플릿 렌더링이
  *  같은 이름·같은 CSS 값을 보게 합니다(전에 Export.tsx가 템플릿 이름을
  *  따로 하드코딩해서 어긋났던 것과 같은 이유로 분리 대신 공유). */
 export const FONT_STACKS: Record<string, string> = {

@@ -170,8 +170,8 @@ export default function Export() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <Link to={id ? `/wizard/style/${id}` : "/wizard"} className="text-xs text-brand hover:underline">
-        템플릿·스타일 설정으로 돌아가기
+      <Link to={id ? `/wizard/editor/${id}` : "/wizard"} className="text-xs text-brand hover:underline">
+        편집기로 돌아가기
       </Link>
       <h1 className="text-xl font-heading">내보내기</h1>
 

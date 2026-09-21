@@ -13,6 +13,7 @@ import {
 } from "../../lib/portfolios";
 import { formatRelativeTime } from "../../lib/formatRelativeTime";
 import EditorPreview from "../../components/EditorPreview";
+import StylePanel from "../../components/StylePanel";
 
 interface EvidenceItem {
   id: string;
@@ -56,6 +57,26 @@ const mismatchItems = [
  * 건드리지 않았습니다 — 문장-출처 연결이나 이력서 대조 기능 자체가 아직
  * 없어서, 여전히 예시 데이터라는 것만 명시합니다.
  */
+/**
+ * [2026-09] 스타일 패널을 어느 열에 둘지 결정하기 위한 훅입니다.
+ *
+ * CSS 로 숨기고 보이기만 하면(hidden/xl:block) 패널을 양쪽에 하나씩 두 벌
+ * 두어야 하는데, 그러면 각자 자기 상태를 갖게 되어 한쪽에서 고친 값이
+ * 다른 쪽에 없습니다. 인스턴스는 하나로 두고 둘 중 한 자리에만 그립니다.
+ */
+function useIsWide(): boolean {
+  const [wide, setWide] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(min-width: 1280px)").matches
+  );
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1280px)");
+    const onChange = (e: MediaQueryListEvent) => setWide(e.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+  return wide;
+}
+
 export default function PortfolioEditor() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
@@ -87,10 +108,17 @@ export default function PortfolioEditor() {
   const [deleting, setDeleting] = useState(false);
   const [deleteProjectError, setDeleteProjectError] = useState<string | null>(null);
 
+  // coverUrl 은 "지금 미리보기에 그릴 표지"(아직 저장 안 한 새 파일일 수
+  // 있음), savedCoverUrl 은 "DB에 들어 있는 표지"입니다. 스타일 패널의
+  // 되돌리기가 후자를 복원합니다.
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
+  const [savedCoverUrl, setSavedCoverUrl] = useState<string | null>(null);
   /** 미리보기는 xl(1280px) 이상에서만 자리가 납니다. 그 아래에서는 폼과
-   *  미리보기가 둘 다 좁아져 양쪽 다 못 쓰게 되므로 아예 감춥니다. */
+   *  미리보기가 둘 다 좁아져 양쪽 다 못 쓰게 되므로 감추고, 스타일 패널만
+   *  왼쪽 열로 내려보냅니다(안 그러면 좁은 화면에서 스타일을 바꿀 방법이
+   *  아예 없어집니다 — 설정 페이지를 없앴으니 여기가 유일한 입구입니다). */
   const [previewOpen, setPreviewOpen] = useState(true);
+  const isWide = useIsWide();
 
   const loadProject = (index: number, list: PortfolioProjectRow[]) => {
     const p = list[index];
@@ -125,7 +153,9 @@ export default function PortfolioEditor() {
           // 넘어갑니다(템플릿이 coverUrl null 을 알아서 처리합니다).
           getCoverImageUrl(p.cover_image_path)
             .then((url) => {
-              if (alive) setCoverUrl(url);
+              if (!alive) return;
+              setCoverUrl(url);
+              setSavedCoverUrl(url);
             })
             .catch(() => {});
         }
@@ -342,6 +372,20 @@ export default function PortfolioEditor() {
     );
   }
 
+  const stylePanel = (
+    <StylePanel
+      portfolioId={portfolio.id}
+      initial={portfolio}
+      savedCoverUrl={savedCoverUrl}
+      onStyleChange={(s) => setPortfolio((prev) => (prev ? { ...prev, ...s } : prev))}
+      onCoverPreviewChange={setCoverUrl}
+      onCoverSaved={(url) => {
+        setCoverUrl(url);
+        setSavedCoverUrl(url);
+      }}
+    />
+  );
+
   return (
     <div className="flex items-start gap-6">
       <div className="flex-1 min-w-0 max-w-3xl space-y-6">
@@ -363,8 +407,8 @@ export default function PortfolioEditor() {
               )}
               {previewOpen ? "미리보기 숨기기" : "미리보기 보기"}
             </button>
-            <button className="btn-primary" onClick={() => navigate(`/wizard/style/${portfolio.id}`)}>
-              템플릿/스타일 설정
+            <button className="btn-primary" onClick={() => navigate(`/wizard/export/${portfolio.id}`)}>
+              내보내기
             </button>
           </div>
         </div>
@@ -379,6 +423,8 @@ export default function PortfolioEditor() {
             </p>
           )}
         </div>
+
+        {!isWide && stylePanel}
 
         <div className="entry space-y-3">
           <div className="flex items-center justify-between">
@@ -719,13 +765,18 @@ export default function PortfolioEditor() {
         </div>
       </div>
 
-      {previewOpen && (
-        <aside className="hidden xl:block sticky top-6 shrink-0 w-[420px] 2xl:w-[560px]">
-          <EditorPreview
-            portfolio={portfolio}
-            projects={previewProjects}
-            coverUrl={coverUrl}
-          />
+      {isWide && (
+        <aside className="sticky top-6 shrink-0 w-[420px] 2xl:w-[560px] space-y-3">
+          {stylePanel}
+          {/* 토글이 감추는 것은 미리보기뿐입니다 — 스타일 패널까지 같이
+              사라지면 "미리보기 숨기기"라는 이름과 동작이 어긋납니다. */}
+          {previewOpen && (
+            <EditorPreview
+              portfolio={portfolio}
+              projects={previewProjects}
+              coverUrl={coverUrl}
+            />
+          )}
         </aside>
       )}
     </div>

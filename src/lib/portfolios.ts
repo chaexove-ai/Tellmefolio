@@ -110,7 +110,7 @@ export async function createPortfolioFromDraft(input: {
   return { portfolio: portfolio as PortfolioRow, projects };
 }
 
-/** TemplateStyle / Export 처럼 프로젝트 목록 없이 포트폴리오 한 건만 필요할 때. */
+/** Export 처럼 프로젝트 목록 없이 포트폴리오 한 건만 필요할 때. */
 export async function getPortfolio(id: string): Promise<PortfolioRow> {
   const sb = await requireClient();
   const { data, error } = await sb.from("portfolios").select().eq("id", id).single();
