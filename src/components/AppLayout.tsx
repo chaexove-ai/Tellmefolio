@@ -1,5 +1,6 @@
 import { Suspense, useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
+import DesktopOnly, { DESKTOP_MIN_WIDTH } from "./DesktopOnly";
 import { LibraryBig, Sparkles, Repeat, Users, Settings, Menu, X } from "lucide-react";
 import AIUsageBadge from "./AIUsageBadge";
 import RouteFallback from "./RouteFallback";
@@ -39,9 +40,28 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
  * 데스크톱은 좌측 고정 사이드바, 모바일(md 미만)은 상단 바 + 햄버거로
  * 여는 오프캔버스 드로어로 같은 내비게이션을 보여줍니다.
  */
+/** 창 폭이 데스크탑 기준을 넘는지. matchMedia 를 쓰는 이유는 resize 이벤트와
+ *  달리 기준을 넘나드는 순간에만 한 번 알려주기 때문입니다 — 드래그하는 동안
+ *  매 픽셀마다 리렌더하지 않습니다. */
+function useIsDesktop(): boolean {
+  const query = `(min-width: ${DESKTOP_MIN_WIDTH}px)`;
+  const [ok, setOk] = useState(
+    () => typeof window === "undefined" || window.matchMedia(query).matches
+  );
+  useEffect(() => {
+    const mq = window.matchMedia(query);
+    const onChange = (e: MediaQueryListEvent) => setOk(e.matches);
+    mq.addEventListener("change", onChange);
+    setOk(mq.matches);
+    return () => mq.removeEventListener("change", onChange);
+  }, [query]);
+  return ok;
+}
+
 export default function AppLayout() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const location = useLocation();
+  const isDesktop = useIsDesktop();
 
   // 라우트가 바뀌면 모바일 드로어를 자동으로 닫습니다.
   useEffect(() => {
@@ -55,6 +75,12 @@ export default function AppLayout() {
       document.body.style.overflow = "";
     };
   }, [drawerOpen]);
+
+  // [2026-09] 좁은 창에서는 앱 화면 대신 안내만 보여줍니다. CSS 로 숨기지
+  // 않고 렌더 자체를 바꾸는 이유는, 숨기기만 하면 뒤에서 편집기와 미리보기가
+  // 계속 살아 있어 GSAP·ResizeObserver 가 보이지도 않는 화면을 계속
+  // 계산하기 때문입니다.
+  if (!isDesktop) return <DesktopOnly />;
 
   return (
     <div className="min-h-screen flex bg-neutral-950">

@@ -119,7 +119,9 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="max-w-4xl space-y-14">
+    // [2026-09] 데스크탑 전용이 되면서 max-w-4xl(896px) 로 묶어둘 이유가
+    // 없어졌습니다 — 최소 폭이 보장되니 남는 가로를 카드가 쓰는 편이 낫습니다.
+    <div className="space-y-14">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-heading">홈</h1>
         <Link to="/library/portfolios" className="text-sm text-brand hover:underline">
