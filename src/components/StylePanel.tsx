@@ -4,6 +4,7 @@ import { templates } from "../lib/templates";
 import { formatRelativeTime } from "../lib/formatRelativeTime";
 import { useAuth } from "../auth/AuthProvider";
 import { FONT_STACKS, DEFAULT_FONT } from "../lib/portfolioTheme";
+import { shrinkImage, formatBytes } from "../lib/images";
 import {
   updatePortfolioStyle,
   uploadCoverImage,
@@ -105,6 +106,11 @@ export default function StylePanel({
   const [saveError, setSaveError] = useState<string | null>(null);
 
   const [coverFile, setCoverFile] = useState<File | null>(null);
+  // [2026-09] 표지를 올리기 전에 줄입니다. 줄인 결과를 안내에 쓰려고
+  // 크기를 들고 있습니다 — 4.2MB 가 180KB 가 됐다는 걸 보여주면,
+  // 사용자가 "화질이 깎였나" 대신 "빨라지겠네"로 읽습니다.
+  const [shrinkNote, setShrinkNote] = useState<string | null>(null);
+  const [preparing, setPreparing] = useState(false);
   const [coverPreview, setCoverPreview] = useState<string | null>(savedCoverUrl);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -158,14 +164,26 @@ export default function StylePanel({
     draft.layout !== snapshot.layout ||
     draft.density !== snapshot.density;
 
-  const pickCover = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const pickCover = async (e: ChangeEvent<HTMLInputElement>) => {
+    const picked = e.target.files?.[0];
+    if (!picked) return;
+
+    setPreparing(true);
+    setShrinkNote(null);
+    // 실패해도 원본을 돌려주므로 여기서 예외를 걱정하지 않습니다.
+    const result = await shrinkImage(picked);
+    setPreparing(false);
+
     if (coverPreview?.startsWith("blob:")) URL.revokeObjectURL(coverPreview);
-    const url = URL.createObjectURL(file);
-    setCoverFile(file);
+    const url = URL.createObjectURL(result.file);
+    setCoverFile(result.file);
     setCoverPreview(url);
     onCoverPreviewChange(url);
+    setShrinkNote(
+      result.changed
+        ? `${formatBytes(result.originalBytes)} → ${formatBytes(result.bytes)}로 줄였습니다`
+        : null
+    );
   };
 
   const revert = () => {
@@ -176,6 +194,7 @@ export default function StylePanel({
     setCoverPreview(savedCoverUrl);
     onCoverPreviewChange(savedCoverUrl);
     if (fileInputRef.current) fileInputRef.current.value = "";
+    setShrinkNote(null);
     setSaveError(null);
   };
 
@@ -334,13 +353,22 @@ export default function StylePanel({
               ) : (
                 <span className="h-8 w-12 rounded border border-dashed border-neutral-800 shrink-0" />
               )}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={pickCover}
-                className="block w-[160px] text-xs text-neutral-500 file:mr-2 file:rounded file:border-0 file:bg-neutral-800 file:px-2 file:py-1 file:text-xs file:text-neutral-300"
-              />
+              <div className="min-w-0">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => void pickCover(e)}
+                  disabled={preparing}
+                  className="block w-[160px] text-xs text-neutral-500 file:mr-2 file:rounded file:border-0 file:bg-neutral-800 file:px-2 file:py-1 file:text-xs file:text-neutral-300 disabled:opacity-50"
+                />
+                {preparing && (
+                  <p className="text-xs text-neutral-500 mt-1">이미지 준비 중…</p>
+                )}
+                {!preparing && shrinkNote && (
+                  <p className="text-xs text-neutral-500 mt-1">{shrinkNote}</p>
+                )}
+              </div>
             </Group>
 
             <Group label="프리셋">

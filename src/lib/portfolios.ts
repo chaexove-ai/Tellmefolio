@@ -270,6 +270,27 @@ export async function uploadCoverImage(input: {
   if (error) {
     throw new PortfolioError("대표 이미지를 업로드하지 못했습니다. 잠시 후 다시 시도해 주세요.");
   }
+
+  // [2026-09] 같은 자리를 덮어쓰는 건 확장자가 같을 때뿐입니다. 업로드 전
+  // 축소가 들어오면서 jpg 가 webp 로 바뀌는 일이 생겼고, 그러면 예전
+  // cover.jpg 가 아무도 안 보는 채로 버킷에 남습니다. 이 포트폴리오 폴더에서
+  // 방금 올린 것 말고는 지웁니다.
+  //
+  // 실패해도 예외를 던지지 않습니다 — 새 표지는 이미 올라갔고, 정리에
+  // 실패했다고 업로드를 실패로 보고하면 사용자가 다시 올리게 됩니다.
+  try {
+    const folder = `${input.userId}/${input.portfolioId}`;
+    const { data: existing } = await sb.storage.from(COVER_IMAGE_BUCKET).list(folder);
+    const stale = (existing ?? [])
+      .map((f) => `${folder}/${f.name}`)
+      .filter((p) => p !== path);
+    if (stale.length > 0) {
+      await sb.storage.from(COVER_IMAGE_BUCKET).remove(stale);
+    }
+  } catch {
+    // 위 주석대로 넘어갑니다.
+  }
+
   return path;
 }
 
