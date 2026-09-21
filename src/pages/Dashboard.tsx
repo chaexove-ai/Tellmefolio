@@ -111,6 +111,10 @@ export default function Dashboard() {
     { label: "비공개 포트폴리오", sub: "나만 볼 수 있음", icon: Lock, accent: ACCENTS.gold },
     { label: "직무 전환 생성", sub: "이번 달 재구성", icon: Repeat, accent: ACCENTS.blue },
   ];
+  /** 셋 중 "포트폴리오 만들기" 하나만 큰 면으로 세웁니다 — 이 앱에
+   *  들어온 사람이 하러 온 일이 그것입니다. */
+  const [primary, ...others] = nextSteps;
+
   const statValues = [
     portfolios.length,
     portfolios.filter((p) => p.visibility === "공개").length,
@@ -129,35 +133,23 @@ export default function Dashboard() {
         </Link>
       </div>
 
-      {/* [2026-09] 통계를 다시 위로 올렸습니다.
-          전에 아래로 내린 이유는 "전체 2, 공개 1" 같은 숫자가 첫 화면을
-          차지할 이유가 없다는 것이었는데, 문제는 위치가 아니라 크기였습니다.
-          48px 아이콘 원과 p-6 여백을 두른 카드 네 개가 화면 맨 위를 채우면
-          그게 이 페이지의 주인공처럼 보입니다. 라벨과 숫자만 남긴 얇은
-          띠로 줄이면 "현재 상태"로 읽히고, 아래 책장이 주인공 자리를
-          되찾습니다. */}
-      {/* [2026-09] 숫자만 색을 달리했더니 카드 넷이 같은 상자로 보였습니다.
-          면과 테두리까지 그 색을 옅게 입혀 카드마다 정체성을 줍니다.
+      {/* [2026-09] 통계를 띠 하나로 합쳤습니다.
+          카드 넷이 같은 간격으로 떠 있으면, 색을 넣어도 "같은 모양의
+          반복"이라는 인상이 남습니다. 간격을 없애고 한 덩어리로 붙이면
+          네 개의 상자가 아니라 하나의 현황 띠로 읽힙니다 — 성격에도
+          맞습니다. 색은 그대로 두되 칸마다 면을 채워 넣어서, 합쳐졌는데도
+          오히려 색이 더 잘 보입니다.
 
-          알파를 아주 낮게(면 7%, 테두리 28%) 잡은 이유 — 크림 바탕 위에서
-          네 칸을 진하게 칠하면 알록달록한 대시보드가 되고, 이 앱이 잡아온
-          원고지·잉크 톤과 싸웁니다. 테두리를 면보다 진하게 두면 색은
-          분명히 읽히면서 바탕은 조용합니다.
-
-          아이콘도 되살렸습니다. stats 배열에 icon 이 이미 있었는데 얇은
-          띠로 줄이면서 안 쓰고 있었습니다 — 색만으로 구분하면 색을
-          구별하기 어려운 사람에게는 넷이 똑같은 칸입니다. */}
-      <div className="grid grid-cols-4 gap-4">
+          랜딩에서 이미 쓴 원칙입니다(CONTEXT.md: "3열 카드 그리드가 연속
+          으로 세 번 나오던 것이 단조롭다의 원인"). 앱 안쪽에는 아직 그
+          원칙이 적용되지 않았습니다. */}
+      <div className="entry p-0 overflow-hidden grid grid-cols-4 divide-x divide-neutral-800/70">
         {stats.map((s, i) => (
           <div
             key={s.label}
-            className="entry p-5"
+            className="p-5"
             style={{
-              // brand 는 CSS 변수(RGB 트리플)라 hex 알파 접미사를 못 씁니다.
-              // 인라인 스타일에서도 변수는 그대로 읽히므로 rgb(var(--brand) / a)
-              // 형태로 씁니다 — 넷 중 하나만 흰 칸이면 그 칸만 빠져 보입니다.
               backgroundColor: s.accent ? `${s.accent}12` : "rgb(var(--brand) / 0.07)",
-              borderColor: s.accent ? `${s.accent}47` : "rgb(var(--brand) / 0.3)",
             }}
           >
             <div className="flex items-center gap-2">
@@ -206,6 +198,10 @@ export default function Dashboard() {
         </div>
       ) : (
         <>
+          <div className="flex items-baseline justify-between mb-4">
+            <h2 className="text-lg font-heading text-neutral-200">내 서재</h2>
+            <span className="text-xs text-neutral-600">{portfolios.length}권</span>
+          </div>
           <Reveal>
             <Bookshelf
               portfolios={portfolios}
@@ -245,25 +241,42 @@ export default function Dashboard() {
 
       <div>
         <h2 className="text-lg font-heading text-neutral-200 mb-4">다음으로 할 일</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-          {nextSteps.map((s, i) => (
-            <Reveal key={s.title} delay={i * 0.08}>
-              <div className="entry h-full p-6">
-                <div
-                  className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 ${
-                    s.accent ? "" : "bg-brand/10 text-brand"
-                  }`}
-                  style={s.accent ? { backgroundColor: `${s.accent}1a`, color: s.accent } : undefined}
-                >
-                  <s.icon size={20} strokeWidth={2.25} />
-                </div>
-                <p className="font-medium text-neutral-100 mb-1.5 text-base">{s.title}</p>
-                <p className="text-sm text-neutral-500 mb-4">{s.desc}</p>
-                <Link to={s.to} className="text-sm text-brand hover:underline">
-                  {s.cta} →
-                </Link>
-              </div>
-            </Reveal>
+        {/* [2026-09] 3열 카드 그리드를 걷어냈습니다. 위에 이미 4칸 띠가
+            있고 아래에 또 카드 3개가 오면 같은 리듬이 반복됩니다. 게다가
+            셋의 무게가 같아서 "그래서 지금 뭘 하면 되는가"가 안 보였습니다.
+
+            실제로는 하나가 압도적으로 중요합니다 — 이 앱에 들어온 사람은
+            포트폴리오를 만들러 옵니다. 그것만 큰 면으로 세우고 나머지 둘은
+            그 아래 링크로 내립니다. */}
+        <Reveal>
+          <Link
+            to={primary.to}
+            className="entry group flex items-center gap-5 p-7 transition-colors hover:border-brand/50"
+            style={{ backgroundColor: "rgb(var(--brand) / 0.07)", borderColor: "rgb(var(--brand) / 0.3)" }}
+          >
+            <span className="grid size-12 shrink-0 place-items-center rounded-full bg-brand/15 text-brand">
+              <primary.icon size={22} strokeWidth={2} aria-hidden="true" />
+            </span>
+            <span className="min-w-0">
+              <span className="block font-medium text-neutral-100">{primary.title}</span>
+              <span className="block text-sm text-neutral-500 mt-1">{primary.desc}</span>
+            </span>
+            <span className="ml-auto shrink-0 text-sm text-brand group-hover:underline">
+              {primary.cta} →
+            </span>
+          </Link>
+        </Reveal>
+
+        <div className="mt-4 flex flex-wrap gap-x-8 gap-y-2">
+          {others.map((s) => (
+            <Link
+              key={s.title}
+              to={s.to}
+              className="inline-flex items-center gap-2 text-sm text-neutral-500 hover:text-brand"
+            >
+              <s.icon size={15} strokeWidth={1.75} aria-hidden="true" />
+              {s.title}
+            </Link>
           ))}
         </div>
       </div>
