@@ -1,16 +1,18 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { Check, Info, LoaderCircle, Plus, Trash2 } from "lucide-react";
+import { Check, Info, LoaderCircle, PanelRight, PanelRightClose, Plus, Trash2 } from "lucide-react";
 import {
   getPortfolioWithProjects,
   updatePortfolioProject,
   createPortfolioProject,
   deletePortfolioProject,
+  getCoverImageUrl,
   PortfolioError,
   type PortfolioProjectRow,
   type PortfolioRow,
 } from "../../lib/portfolios";
 import { formatRelativeTime } from "../../lib/formatRelativeTime";
+import EditorPreview from "../../components/EditorPreview";
 
 interface EvidenceItem {
   id: string;
@@ -85,6 +87,11 @@ export default function PortfolioEditor() {
   const [deleting, setDeleting] = useState(false);
   const [deleteProjectError, setDeleteProjectError] = useState<string | null>(null);
 
+  const [coverUrl, setCoverUrl] = useState<string | null>(null);
+  /** 미리보기는 xl(1280px) 이상에서만 자리가 납니다. 그 아래에서는 폼과
+   *  미리보기가 둘 다 좁아져 양쪽 다 못 쓰게 되므로 아예 감춥니다. */
+  const [previewOpen, setPreviewOpen] = useState(true);
+
   const loadProject = (index: number, list: PortfolioProjectRow[]) => {
     const p = list[index];
     setProjectIndex(index);
@@ -113,6 +120,15 @@ export default function PortfolioEditor() {
         setProjects(ps);
         if (ps.length > 0) loadProject(0, ps);
         setLastSavedAt(new Date(p.updated_at).getTime());
+        if (p.cover_image_path) {
+          // 표지를 못 불러와도 나머지 미리보기는 그려져야 하므로 조용히
+          // 넘어갑니다(템플릿이 coverUrl null 을 알아서 처리합니다).
+          getCoverImageUrl(p.cover_image_path)
+            .then((url) => {
+              if (alive) setCoverUrl(url);
+            })
+            .catch(() => {});
+        }
       })
       .catch((e) => {
         if (!alive) return;
@@ -127,6 +143,21 @@ export default function PortfolioEditor() {
   }, [id]);
 
   const currentProject = projects[projectIndex];
+
+  /** 미리보기에 넘길 데이터입니다.
+   *
+   *  편집 중인 탭의 값은 저장하기 전까지 projects 배열에 반영되지 않습니다
+   *  (저장 시점에만 반영). 그래서 그 항목만 지금 입력칸의 값으로 덮어써서
+   *  넘깁니다 — 저장을 눌러야 미리보기가 바뀐다면 "실시간"이 아닙니다. */
+  const previewProjects = useMemo(
+    () =>
+      projects.map((p, i) =>
+        i === projectIndex
+          ? { ...p, name: titleField, context, role, problem, execution, outcome, reflection }
+          : p
+      ),
+    [projects, projectIndex, titleField, context, role, problem, execution, outcome, reflection]
+  );
 
   /** "프로젝트 개요"의 7칸을 순서 있는 케이스 스터디 흐름으로 보여주기 위한
    *  메타데이터입니다. 예전에는 placeholder 텍스트가 곧 라벨이라 필드를 다
@@ -312,364 +343,391 @@ export default function PortfolioEditor() {
   }
 
   return (
-    <div className="max-w-3xl space-y-6">
-      <div className="flex items-center justify-between">
-        <Link to="/wizard/draft" className="text-xs text-brand hover:underline">
-          AI 초안 생성으로 돌아가기
-        </Link>
-        <button className="btn-primary" onClick={() => navigate(`/wizard/style/${portfolio.id}`)}>
-          템플릿/스타일 설정
-        </button>
-      </div>
-      <div>
-        <h1 className="text-xl font-heading">{portfolio.title}</h1>
-        {portfolio.summary ? (
-          <p className="text-sm text-neutral-400 mt-1">{portfolio.summary}</p>
-        ) : (
-          <p className="text-xs text-neutral-600 mt-1 flex items-start gap-1.5">
-            <Info size={13} strokeWidth={1.5} className="text-neutral-500 shrink-0 mt-0.5" />
-            <span>요약이 아직 없습니다. 아래 항목을 직접 채워 주세요.</span>
-          </p>
-        )}
-      </div>
-
-      <div className="entry space-y-3">
+    <div className="flex items-start gap-6">
+      <div className="flex-1 min-w-0 max-w-3xl space-y-6">
         <div className="flex items-center justify-between">
-          <h2 className="entry-title mb-0">프로젝트 개요</h2>
+          <Link to="/wizard/draft" className="text-xs text-brand hover:underline">
+            AI 초안 생성으로 돌아가기
+          </Link>
           <div className="flex items-center gap-2">
-            {portfolio.summary && <span className="badge bg-brand/10 text-brand">AI 초안 반영됨</span>}
-            {currentProject && !deleteConfirming && (
-              <button
-                type="button"
-                onClick={() => setDeleteConfirming(true)}
-                className="inline-flex items-center gap-1 text-xs text-neutral-600 hover:text-brand"
-              >
-                <Trash2 size={12} strokeWidth={1.75} />이 프로젝트 삭제
-              </button>
-            )}
+            <button
+              type="button"
+              className="hidden xl:inline-flex items-center gap-1.5 text-xs text-neutral-500 hover:text-brand"
+              onClick={() => setPreviewOpen((v) => !v)}
+              aria-pressed={previewOpen}
+            >
+              {previewOpen ? (
+                <PanelRightClose size={14} strokeWidth={1.5} aria-hidden="true" />
+              ) : (
+                <PanelRight size={14} strokeWidth={1.5} aria-hidden="true" />
+              )}
+              {previewOpen ? "미리보기 숨기기" : "미리보기 보기"}
+            </button>
+            <button className="btn-primary" onClick={() => navigate(`/wizard/style/${portfolio.id}`)}>
+              템플릿/스타일 설정
+            </button>
           </div>
         </div>
-
-        {deleteConfirming && (
-          <div className="flex items-center justify-between rounded-lg border border-brand/30 bg-brand/[0.06] px-3.5 py-2.5 text-xs">
-            <span className="text-neutral-300">
-              "{currentProject?.name || "제목 없음"}"을(를) 정말 삭제할까요? 되돌릴 수 없습니다.
-            </span>
-            <div className="flex items-center gap-2 shrink-0 ml-3">
-              <button
-                type="button"
-                className="text-neutral-400 hover:underline"
-                onClick={() => setDeleteConfirming(false)}
-                disabled={deleting}
-              >
-                취소
-              </button>
-              <button
-                type="button"
-                className="font-medium text-brand hover:underline disabled:opacity-40"
-                onClick={() => void handleDeleteProject()}
-                disabled={deleting}
-              >
-                {deleting ? "삭제하는 중" : "삭제"}
-              </button>
-            </div>
-          </div>
-        )}
-        {deleteProjectError && (
-          <p role="alert" className="text-xs text-brand">
-            {deleteProjectError}
-          </p>
-        )}
-
-        {projects.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2">
-            {projects.map((p, i) => (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => void switchProject(i)}
-                className={`rounded-full border px-3.5 py-1.5 text-xs transition-all ${
-                  i === projectIndex
-                    ? "border-brand bg-brand/10 text-brand font-medium"
-                    : "border-neutral-700 text-neutral-400 hover:border-neutral-500"
-                }`}
-              >
-                {p.name || "제목 없음"}
-              </button>
-            ))}
-            <button
-              type="button"
-              onClick={() => void handleAddProject()}
-              disabled={addingProject}
-              className="inline-flex items-center gap-1 rounded-full border border-dashed border-neutral-700 px-3.5 py-1.5 text-xs text-neutral-400 hover:border-neutral-500 hover:text-neutral-200 disabled:opacity-40"
-            >
-              <Plus size={13} strokeWidth={2} />
-              {addingProject ? "추가하는 중" : "새 프로젝트"}
-            </button>
-          </div>
-        )}
-
-        {projects.length === 0 && (
-          <div className="space-y-2">
-            <p className="text-sm text-neutral-500">
-              프로젝트가 없습니다.{" "}
-              <Link to="/wizard/source" className="text-brand hover:underline">
-                원본 자료 입력
-              </Link>
-              부터 다시 시작하거나, 아래에서 빈 프로젝트를 직접 추가할 수 있습니다.
+        <div>
+          <h1 className="text-xl font-heading">{portfolio.title}</h1>
+          {portfolio.summary ? (
+            <p className="text-sm text-neutral-400 mt-1">{portfolio.summary}</p>
+          ) : (
+            <p className="text-xs text-neutral-600 mt-1 flex items-start gap-1.5">
+              <Info size={13} strokeWidth={1.5} className="text-neutral-500 shrink-0 mt-0.5" />
+              <span>요약이 아직 없습니다. 아래 항목을 직접 채워 주세요.</span>
             </p>
-            <button
-              type="button"
-              onClick={() => void handleAddProject()}
-              disabled={addingProject}
-              className="inline-flex items-center gap-1 rounded-full border border-dashed border-neutral-700 px-3.5 py-1.5 text-xs text-neutral-400 hover:border-neutral-500 hover:text-neutral-200 disabled:opacity-40"
-            >
-              <Plus size={13} strokeWidth={2} />
-              {addingProject ? "추가하는 중" : "새 프로젝트"}
-            </button>
-          </div>
-        )}
-        {addProjectError && (
-          <p role="alert" className="text-xs text-brand">
-            {addProjectError}
-          </p>
-        )}
+          )}
+        </div>
 
-        {currentProject && currentProject.stack.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            {currentProject.stack.map((s) => (
-              <span key={s} className="badge bg-neutral-800 text-neutral-400">
-                {s}
-              </span>
-            ))}
-          </div>
-        )}
-
-        {projects.length > 0 && (
-          <>
-            <div className="grid grid-cols-1 sm:grid-cols-[2fr_1fr] gap-4">
-              <div className="space-y-1.5">
-                <label htmlFor="proj-title" className="text-xs font-medium text-neutral-300">
-                  프로젝트 제목
-                </label>
-                <input
-                  id="proj-title"
-                  value={titleField}
-                  onChange={(e) => setTitleField(e.target.value)}
-                  placeholder="예: 사용자 온보딩 퍼널 개선"
-                  className="field"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="proj-role"
-                  className="text-xs font-medium text-neutral-300 inline-flex items-center gap-1.5"
+        <div className="entry space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="entry-title mb-0">프로젝트 개요</h2>
+            <div className="flex items-center gap-2">
+              {portfolio.summary && <span className="badge bg-brand/10 text-brand">AI 초안 반영됨</span>}
+              {currentProject && !deleteConfirming && (
+                <button
+                  type="button"
+                  onClick={() => setDeleteConfirming(true)}
+                  className="inline-flex items-center gap-1 text-xs text-neutral-600 hover:text-brand"
                 >
-                  담당 역할
-                  <span className="badge bg-neutral-800 text-neutral-500 text-[10px] px-1.5 py-0">
-                    직접 입력
-                  </span>
-                </label>
-                <input
-                  id="proj-role"
-                  value={role}
-                  onChange={(e) => setRole(e.target.value)}
-                  placeholder="예: 프론트엔드 리드"
-                  className="field"
-                />
-              </div>
-            </div>
-
-            <div className="border-t border-neutral-800 pt-4">
-              <p className="text-xs text-neutral-500 mb-4">
-                아래 5가지는 케이스 스터디 흐름 순서(맥락 → 문제 → 실행 → 성과 → 회고)대로
-                적으면 자연스럽게 이어집니다.
-              </p>
-              <div className="space-y-5">
-                {storyFields.map((f, i) => (
-                  <div key={f.key} className="flex gap-3">
-                    <div className="flex flex-col items-center pt-0.5">
-                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-neutral-800 text-[10px] font-medium text-neutral-400">
-                        {i + 1}
-                      </span>
-                      {i < storyFields.length - 1 && (
-                        <span className="w-px flex-1 bg-neutral-800 mt-1" />
-                      )}
-                    </div>
-                    <div className="flex-1 space-y-1.5 pb-0.5">
-                      <label
-                        htmlFor={`proj-${f.key}`}
-                        className="text-xs font-medium text-neutral-300 inline-flex items-center gap-1.5"
-                      >
-                        {f.label}
-                        {!f.aiFilled && (
-                          <span className="badge bg-neutral-800 text-neutral-500 text-[10px] px-1.5 py-0">
-                            직접 입력
-                          </span>
-                        )}
-                      </label>
-                      <p className="text-xs text-neutral-600">{f.helper}</p>
-                      <textarea
-                        id={`proj-${f.key}`}
-                        value={f.value}
-                        onChange={(e) => f.onChange(e.target.value)}
-                        placeholder={f.placeholder}
-                        rows={f.rows}
-                        className="field-area"
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </>
-        )}
-      </div>
-
-      <div className="entry space-y-3">
-        <h2 className="entry-title mb-0">AI 문장 다듬기</h2>
-        <p className="text-xs text-neutral-400">
-          다듬을 문장을 선택하거나 아래에 붙여넣어 목표 직무에 맞는 케이스 스터디
-          문장으로 개선할 수 있습니다.
-        </p>
-        <textarea
-          value={sentence}
-          onChange={(e) => setSentence(e.target.value)}
-          placeholder="다듬을 문장 입력"
-          rows={2}
-          className="field-area"
-        />
-        <button
-          className="btn-secondary disabled:opacity-40"
-          disabled={!sentence.trim()}
-          onClick={() => setShowRefine(true)}
-        >
-          AI 문장 다듬기 요청
-        </button>
-
-        {showRefine && (
-          <div className="border-t border-neutral-800 pt-3 mt-3">
-            <p className="text-xs text-neutral-500 mb-2">
-              아래 개선안을 원문과 비교하고 적용 여부를 직접 결정하세요. AI는 사실이나
-              의도를 임의로 변경하지 않습니다.
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 text-sm divide-y sm:divide-y-0 sm:divide-x divide-neutral-800">
-              <div className="sm:pr-6 pb-4 sm:pb-0">
-                <p className="text-xs text-neutral-500 mb-1">원문</p>
-                {sentence}
-              </div>
-              <div className="sm:pl-6 pt-4 sm:pt-0">
-                <p className="text-xs text-neutral-500 mb-1">AI 개선안</p>
-                {sentence
-                  ? `${sentence} (핵심 성과와 역할을 강조한 케이스 스터디 문장으로 개선된 예시입니다.)`
-                  : ""}
-              </div>
-            </div>
-            <div className="flex gap-2 mt-3">
-              <button className="btn-secondary" onClick={() => setShowRefine(false)}>
-                취소
-              </button>
-              <button className="btn-primary" onClick={() => setShowRefine(false)}>
-                개선안 적용
-              </button>
+                  <Trash2 size={12} strokeWidth={1.75} />이 프로젝트 삭제
+                </button>
+              )}
             </div>
           </div>
-        )}
-      </div>
 
-      <div className="entry space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="entry-title mb-0">AI 근거 및 사실 확인</h2>
-          <span className="badge bg-amber-500/15 text-amber-400">
-            {evidenceItems.filter((e) => e.status === "검토 필요").length}건 검토 필요
-          </span>
-        </div>
-        <p className="text-xs text-neutral-400 flex items-start gap-1.5">
-          <Info size={13} strokeWidth={1.5} className="text-neutral-500 shrink-0 mt-0.5" />
-          <span>
-            AI가 제안한 문장별 원본 자료와 근거를 확인하고 사실 여부를 직접
-            표시하세요.{" "}
-            <span className="text-neutral-600">
-              (아래는 예시 데이터입니다 — 문장-출처 연결 기능은 아직 없습니다.)
-            </span>
-          </span>
-        </p>
-        <ul>
-          {evidenceItems.map((e) => (
-            <li key={e.id} className="row text-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-neutral-200">{e.label}</span>
-                <span
-                  className={`badge ${
-                    e.status === "확인 완료"
-                      ? "bg-emerald-500/15 text-emerald-400"
-                      : "bg-amber-500/15 text-amber-400"
+          {deleteConfirming && (
+            <div className="flex items-center justify-between rounded-lg border border-brand/30 bg-brand/[0.06] px-3.5 py-2.5 text-xs">
+              <span className="text-neutral-300">
+                "{currentProject?.name || "제목 없음"}"을(를) 정말 삭제할까요? 되돌릴 수 없습니다.
+              </span>
+              <div className="flex items-center gap-2 shrink-0 ml-3">
+                <button
+                  type="button"
+                  className="text-neutral-400 hover:underline"
+                  onClick={() => setDeleteConfirming(false)}
+                  disabled={deleting}
+                >
+                  취소
+                </button>
+                <button
+                  type="button"
+                  className="font-medium text-brand hover:underline disabled:opacity-40"
+                  onClick={() => void handleDeleteProject()}
+                  disabled={deleting}
+                >
+                  {deleting ? "삭제하는 중" : "삭제"}
+                </button>
+              </div>
+            </div>
+          )}
+          {deleteProjectError && (
+            <p role="alert" className="text-xs text-brand">
+              {deleteProjectError}
+            </p>
+          )}
+
+          {projects.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2">
+              {projects.map((p, i) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => void switchProject(i)}
+                  className={`rounded-full border px-3.5 py-1.5 text-xs transition-all ${
+                    i === projectIndex
+                      ? "border-brand bg-brand/10 text-brand font-medium"
+                      : "border-neutral-700 text-neutral-400 hover:border-neutral-500"
                   }`}
                 >
-                  {e.status}
-                </span>
-              </div>
-              <p className="text-xs text-neutral-500 mt-1">연결 원본: {e.source}</p>
-              <div className="flex gap-3 mt-2 text-xs">
-                <button className="text-brand hover:underline">원본 보기</button>
-                <button className="text-neutral-400 hover:underline">불일치 표시</button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </div>
+                  {p.name || "제목 없음"}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => void handleAddProject()}
+                disabled={addingProject}
+                className="inline-flex items-center gap-1 rounded-full border border-dashed border-neutral-700 px-3.5 py-1.5 text-xs text-neutral-400 hover:border-neutral-500 hover:text-neutral-200 disabled:opacity-40"
+              >
+                <Plus size={13} strokeWidth={2} />
+                {addingProject ? "추가하는 중" : "새 프로젝트"}
+              </button>
+            </div>
+          )}
 
-      <div className="entry space-y-3">
-        <h2 className="entry-title mb-0">이력서·포트폴리오 불일치 확인</h2>
-        <p className="text-xs text-neutral-400">
-          경력 기간, 소속과 역할, 프로젝트명, 성과 수치의 불일치 가능성 항목을
-          자동으로 탐지합니다.{" "}
-          <span className="text-neutral-600">(예시 데이터 — 이력서 업로드 기능은 아직 없습니다.)</span>
-        </p>
-        <ul>
-          {mismatchItems.map((m) => (
-            <li key={m.id} className="row text-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-neutral-200">{m.label}</span>
-                <button className="text-xs text-brand hover:underline">확인</button>
-              </div>
-              <p className="text-xs text-neutral-500 mt-1">{m.detail}</p>
-            </li>
-          ))}
-        </ul>
-        <button className="text-xs text-brand hover:underline">전체 불일치 항목 보기</button>
-      </div>
-
-      <div className="entry flex items-center justify-between">
-        <div>
-          <p className="text-sm text-neutral-200">
-            마지막 저장: {formatRelativeTime(lastSavedAt)}
-          </p>
-          {saveError && (
-            <p role="alert" className="text-xs text-brand mt-1">
-              {saveError}
+          {projects.length === 0 && (
+            <div className="space-y-2">
+              <p className="text-sm text-neutral-500">
+                프로젝트가 없습니다.{" "}
+                <Link to="/wizard/source" className="text-brand hover:underline">
+                  원본 자료 입력
+                </Link>
+                부터 다시 시작하거나, 아래에서 빈 프로젝트를 직접 추가할 수 있습니다.
+              </p>
+              <button
+                type="button"
+                onClick={() => void handleAddProject()}
+                disabled={addingProject}
+                className="inline-flex items-center gap-1 rounded-full border border-dashed border-neutral-700 px-3.5 py-1.5 text-xs text-neutral-400 hover:border-neutral-500 hover:text-neutral-200 disabled:opacity-40"
+              >
+                <Plus size={13} strokeWidth={2} />
+                {addingProject ? "추가하는 중" : "새 프로젝트"}
+              </button>
+            </div>
+          )}
+          {addProjectError && (
+            <p role="alert" className="text-xs text-brand">
+              {addProjectError}
             </p>
           )}
-          <p className="text-xs text-neutral-600 mt-1">
-            현재 프로젝트 탭의 내용을 저장합니다. 다른 탭으로 옮기면 자동으로 먼저
-            저장됩니다.
-          </p>
-        </div>
-        <button
-          className="btn-secondary disabled:opacity-40 inline-flex items-center gap-1.5"
-          disabled={saving || projects.length === 0}
-          onClick={() => void saveCurrentProject()}
-        >
-          {saving ? (
-            "저장하는 중"
-          ) : (
+
+          {currentProject && currentProject.stack.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {currentProject.stack.map((s) => (
+                <span key={s} className="badge bg-neutral-800 text-neutral-400">
+                  {s}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {projects.length > 0 && (
             <>
-              <Check size={13} strokeWidth={2.5} aria-hidden="true" />
-              수동 저장
+              <div className="grid grid-cols-1 sm:grid-cols-[2fr_1fr] gap-4">
+                <div className="space-y-1.5">
+                  <label htmlFor="proj-title" className="text-xs font-medium text-neutral-300">
+                    프로젝트 제목
+                  </label>
+                  <input
+                    id="proj-title"
+                    value={titleField}
+                    onChange={(e) => setTitleField(e.target.value)}
+                    placeholder="예: 사용자 온보딩 퍼널 개선"
+                    className="field"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label
+                    htmlFor="proj-role"
+                    className="text-xs font-medium text-neutral-300 inline-flex items-center gap-1.5"
+                  >
+                    담당 역할
+                    <span className="badge bg-neutral-800 text-neutral-500 text-[10px] px-1.5 py-0">
+                      직접 입력
+                    </span>
+                  </label>
+                  <input
+                    id="proj-role"
+                    value={role}
+                    onChange={(e) => setRole(e.target.value)}
+                    placeholder="예: 프론트엔드 리드"
+                    className="field"
+                  />
+                </div>
+              </div>
+
+              <div className="border-t border-neutral-800 pt-4">
+                <p className="text-xs text-neutral-500 mb-4">
+                  아래 5가지는 케이스 스터디 흐름 순서(맥락 → 문제 → 실행 → 성과 → 회고)대로
+                  적으면 자연스럽게 이어집니다.
+                </p>
+                <div className="space-y-5">
+                  {storyFields.map((f, i) => (
+                    <div key={f.key} className="flex gap-3">
+                      <div className="flex flex-col items-center pt-0.5">
+                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-neutral-800 text-[10px] font-medium text-neutral-400">
+                          {i + 1}
+                        </span>
+                        {i < storyFields.length - 1 && (
+                          <span className="w-px flex-1 bg-neutral-800 mt-1" />
+                        )}
+                      </div>
+                      <div className="flex-1 space-y-1.5 pb-0.5">
+                        <label
+                          htmlFor={`proj-${f.key}`}
+                          className="text-xs font-medium text-neutral-300 inline-flex items-center gap-1.5"
+                        >
+                          {f.label}
+                          {!f.aiFilled && (
+                            <span className="badge bg-neutral-800 text-neutral-500 text-[10px] px-1.5 py-0">
+                              직접 입력
+                            </span>
+                          )}
+                        </label>
+                        <p className="text-xs text-neutral-600">{f.helper}</p>
+                        <textarea
+                          id={`proj-${f.key}`}
+                          value={f.value}
+                          onChange={(e) => f.onChange(e.target.value)}
+                          placeholder={f.placeholder}
+                          rows={f.rows}
+                          className="field-area"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </>
           )}
-        </button>
+        </div>
+
+        <div className="entry space-y-3">
+          <h2 className="entry-title mb-0">AI 문장 다듬기</h2>
+          <p className="text-xs text-neutral-400">
+            다듬을 문장을 선택하거나 아래에 붙여넣어 목표 직무에 맞는 케이스 스터디
+            문장으로 개선할 수 있습니다.
+          </p>
+          <textarea
+            value={sentence}
+            onChange={(e) => setSentence(e.target.value)}
+            placeholder="다듬을 문장 입력"
+            rows={2}
+            className="field-area"
+          />
+          <button
+            className="btn-secondary disabled:opacity-40"
+            disabled={!sentence.trim()}
+            onClick={() => setShowRefine(true)}
+          >
+            AI 문장 다듬기 요청
+          </button>
+
+          {showRefine && (
+            <div className="border-t border-neutral-800 pt-3 mt-3">
+              <p className="text-xs text-neutral-500 mb-2">
+                아래 개선안을 원문과 비교하고 적용 여부를 직접 결정하세요. AI는 사실이나
+                의도를 임의로 변경하지 않습니다.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 text-sm divide-y sm:divide-y-0 sm:divide-x divide-neutral-800">
+                <div className="sm:pr-6 pb-4 sm:pb-0">
+                  <p className="text-xs text-neutral-500 mb-1">원문</p>
+                  {sentence}
+                </div>
+                <div className="sm:pl-6 pt-4 sm:pt-0">
+                  <p className="text-xs text-neutral-500 mb-1">AI 개선안</p>
+                  {sentence
+                    ? `${sentence} (핵심 성과와 역할을 강조한 케이스 스터디 문장으로 개선된 예시입니다.)`
+                    : ""}
+                </div>
+              </div>
+              <div className="flex gap-2 mt-3">
+                <button className="btn-secondary" onClick={() => setShowRefine(false)}>
+                  취소
+                </button>
+                <button className="btn-primary" onClick={() => setShowRefine(false)}>
+                  개선안 적용
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="entry space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="entry-title mb-0">AI 근거 및 사실 확인</h2>
+            <span className="badge bg-amber-500/15 text-amber-400">
+              {evidenceItems.filter((e) => e.status === "검토 필요").length}건 검토 필요
+            </span>
+          </div>
+          <p className="text-xs text-neutral-400 flex items-start gap-1.5">
+            <Info size={13} strokeWidth={1.5} className="text-neutral-500 shrink-0 mt-0.5" />
+            <span>
+              AI가 제안한 문장별 원본 자료와 근거를 확인하고 사실 여부를 직접
+              표시하세요.{" "}
+              <span className="text-neutral-600">
+                (아래는 예시 데이터입니다 — 문장-출처 연결 기능은 아직 없습니다.)
+              </span>
+            </span>
+          </p>
+          <ul>
+            {evidenceItems.map((e) => (
+              <li key={e.id} className="row text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-neutral-200">{e.label}</span>
+                  <span
+                    className={`badge ${
+                      e.status === "확인 완료"
+                        ? "bg-emerald-500/15 text-emerald-400"
+                        : "bg-amber-500/15 text-amber-400"
+                    }`}
+                  >
+                    {e.status}
+                  </span>
+                </div>
+                <p className="text-xs text-neutral-500 mt-1">연결 원본: {e.source}</p>
+                <div className="flex gap-3 mt-2 text-xs">
+                  <button className="text-brand hover:underline">원본 보기</button>
+                  <button className="text-neutral-400 hover:underline">불일치 표시</button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="entry space-y-3">
+          <h2 className="entry-title mb-0">이력서·포트폴리오 불일치 확인</h2>
+          <p className="text-xs text-neutral-400">
+            경력 기간, 소속과 역할, 프로젝트명, 성과 수치의 불일치 가능성 항목을
+            자동으로 탐지합니다.{" "}
+            <span className="text-neutral-600">(예시 데이터 — 이력서 업로드 기능은 아직 없습니다.)</span>
+          </p>
+          <ul>
+            {mismatchItems.map((m) => (
+              <li key={m.id} className="row text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-neutral-200">{m.label}</span>
+                  <button className="text-xs text-brand hover:underline">확인</button>
+                </div>
+                <p className="text-xs text-neutral-500 mt-1">{m.detail}</p>
+              </li>
+            ))}
+          </ul>
+          <button className="text-xs text-brand hover:underline">전체 불일치 항목 보기</button>
+        </div>
+
+        <div className="entry flex items-center justify-between">
+          <div>
+            <p className="text-sm text-neutral-200">
+              마지막 저장: {formatRelativeTime(lastSavedAt)}
+            </p>
+            {saveError && (
+              <p role="alert" className="text-xs text-brand mt-1">
+                {saveError}
+              </p>
+            )}
+            <p className="text-xs text-neutral-600 mt-1">
+              현재 프로젝트 탭의 내용을 저장합니다. 다른 탭으로 옮기면 자동으로 먼저
+              저장됩니다.
+            </p>
+          </div>
+          <button
+            className="btn-secondary disabled:opacity-40 inline-flex items-center gap-1.5"
+            disabled={saving || projects.length === 0}
+            onClick={() => void saveCurrentProject()}
+          >
+            {saving ? (
+              "저장하는 중"
+            ) : (
+              <>
+                <Check size={13} strokeWidth={2.5} aria-hidden="true" />
+                수동 저장
+              </>
+            )}
+          </button>
+        </div>
       </div>
+
+      {previewOpen && (
+        <aside className="hidden xl:block sticky top-6 shrink-0 w-[420px] 2xl:w-[560px]">
+          <EditorPreview
+            portfolio={portfolio}
+            projects={previewProjects}
+            coverUrl={coverUrl}
+          />
+        </aside>
+      )}
     </div>
   );
 }
