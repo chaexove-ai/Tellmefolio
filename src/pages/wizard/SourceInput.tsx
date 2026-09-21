@@ -222,8 +222,8 @@ export default function SourceInput() {
   return (
     <div className="max-w-2xl space-y-6">
       <div>
-        <Link to="/wizard" className="text-xs text-brand hover:underline">
-          이전 단계로
+        <Link to="/library" className="text-xs text-brand hover:underline">
+          내 서재로
         </Link>
         <h1 className="text-xl font-heading mt-2">원본 자료 입력</h1>
         <p className="text-sm text-neutral-400 mt-1">
