@@ -251,6 +251,25 @@ summary::marker { content: ""; }
   color: #6b5847;
 }
 
+/* 표지 위의 "이름·색상 수정" 글자. 표지가 크림색 그레인이라 흰 칩을
+   얹으면 이물질처럼 떠 보입니다. 배경 없이 글자만 두고, 본문(meta)보다
+   한 단계 진하게 해서 누를 것이라는 게 읽히게 합니다. */
+.book-cover-edit {
+  color: #6b5847;
+}
+
+.book-cover-edit:hover {
+  color: #3a2f24;
+}
+
+:root:not(.light) .book-cover-edit {
+  color: rgb(var(--n400));
+}
+
+:root:not(.light) .book-cover-edit:hover {
+  color: rgb(var(--n100));
+}
+
 :root:not(.light) .book-cover-title {
   color: rgb(var(--n50));
 }

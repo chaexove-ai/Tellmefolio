@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { BookOpen, LoaderCircle, Pencil, Plus } from "lucide-react";
+import { BookOpen, LoaderCircle, Plus } from "lucide-react";
 import GrainCover from "./GrainCover";
 import {
   updatePortfolioTitle,
@@ -74,6 +74,9 @@ export default function Bookshelf({ portfolios, onUpdated }: BookshelfProps) {
   const [editError, setEditError] = useState<string | null>(null);
 
   const openEditor = (p: LibraryPortfolio) => {
+    // 편집 중에 커서가 책에서 벗어나도 표시줄이 원래 문구로 돌아가지
+    // 않도록, 그 책을 짚은 상태로 붙잡아 둡니다.
+    setActive(p);
     setEditing(p);
     setDraftTitle(p.title);
     setDraftColor(p.jobColor);
@@ -101,36 +104,88 @@ export default function Bookshelf({ portfolios, onUpdated }: BookshelfProps) {
 
   return (
     <div>
-      {/* 제목 표시줄 — 스크롤 영역 바깥이라 잘리지 않습니다 */}
-      <div className="h-8 flex items-center gap-2.5 text-sm text-neutral-400 mb-2">
-        {/* 커서를 올리기 전에는 색 칸이 투명이라 문장 앞이 빈 자리로
-            보였습니다. 아무 책도 안 짚은 상태에는 라인 책 아이콘을 두고,
-            책을 짚으면 그 책의 색 칸으로 바뀝니다 — 자리 크기가 같아서
-            문장이 흔들리지 않습니다. */}
-        {active ? (
-          <span
-            aria-hidden="true"
-            className="w-[9px] h-[9px] rounded-[2px] shrink-0"
-            style={{ backgroundColor: active.jobColor }}
-          />
+      {/* 제목 표시줄 — 스크롤 영역 바깥이라 잘리지 않습니다.
+          [2026-09] 수정도 여기서 합니다. 처음엔 가운데 뜨는 창으로
+          만들었는데, 제목 한 줄과 색 하나를 고치자고 화면 전체를 덮고
+          어둡게 까는 것은 과합니다. 어차피 이 줄이 지금 짚은 책의 제목을
+          보여주는 자리라, 같은 자리에서 그대로 고치는 편이 자연스럽습니다.
+          스크롤 컨테이너 바깥이라 잘리지도 않습니다. */}
+      <div className="min-h-8 flex items-center gap-2.5 text-sm text-neutral-400 mb-2">
+        {editing ? (
+          <>
+            <input
+              type="color"
+              value={draftColor}
+              onChange={(e) => setDraftColor(e.target.value)}
+              aria-label="색상 선택"
+              className="h-7 w-9 shrink-0 cursor-pointer rounded-md border border-neutral-800 bg-transparent p-0.5"
+            />
+            <input
+              className="field max-w-sm py-1.5 text-sm"
+              value={draftTitle}
+              autoFocus
+              onChange={(e) => setDraftTitle(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") void saveEdit();
+                if (e.key === "Escape") setEditing(null);
+              }}
+              aria-label="포트폴리오 제목"
+            />
+            <button
+              type="button"
+              className="btn-primary shrink-0 px-3 py-1.5 text-xs disabled:opacity-40 inline-flex items-center gap-1.5"
+              onClick={() => void saveEdit()}
+              disabled={saving || !draftTitle.trim()}
+            >
+              {saving && <LoaderCircle size={12} className="animate-spin" aria-hidden="true" />}
+              저장
+            </button>
+            <button
+              type="button"
+              className="shrink-0 text-xs text-neutral-500 hover:text-brand"
+              onClick={() => setEditing(null)}
+              disabled={saving}
+            >
+              취소
+            </button>
+            {editError && (
+              <span role="alert" className="text-xs text-brand truncate">
+                {editError}
+              </span>
+            )}
+          </>
         ) : (
-          <BookOpen
-            size={14}
-            strokeWidth={1.5}
-            className="shrink-0 text-neutral-500 -ml-[2.5px]"
-            aria-hidden="true"
-          />
-        )}
-        {active ? (
-          <span className="truncate">
-            <span className="text-neutral-100">{active.title}</span>
-            <span className="text-neutral-500">
-              {" "}
-              · {active.job} · {active.year}
-            </span>
-          </span>
-        ) : (
-          <span>책등에 커서를 올리면 책이 빠져나옵니다</span>
+          <>
+            {/* 커서를 올리기 전에는 색 칸이 투명이라 문장 앞이 빈 자리로
+                보였습니다. 아무 책도 안 짚은 상태에는 라인 책 아이콘을 두고,
+                책을 짚으면 그 책의 색 칸으로 바뀝니다 — 자리 크기가 같아서
+                문장이 흔들리지 않습니다. */}
+            {active ? (
+              <span
+                aria-hidden="true"
+                className="w-[9px] h-[9px] rounded-[2px] shrink-0"
+                style={{ backgroundColor: active.jobColor }}
+              />
+            ) : (
+              <BookOpen
+                size={14}
+                strokeWidth={1.5}
+                className="shrink-0 text-neutral-500 -ml-[2.5px]"
+                aria-hidden="true"
+              />
+            )}
+            {active ? (
+              <span className="truncate">
+                <span className="text-neutral-100">{active.title}</span>
+                <span className="text-neutral-500">
+                  {" "}
+                  · {active.job} · {active.year}
+                </span>
+              </span>
+            ) : (
+              <span>책등에 커서를 올리면 책이 빠져나옵니다</span>
+            )}
+          </>
         )}
       </div>
 
@@ -148,10 +203,10 @@ export default function Bookshelf({ portfolios, onUpdated }: BookshelfProps) {
              절대배치됩니다(<a> 가 static 이라 기준이 되지 않습니다). */
           <div
             key={p.id}
-            onMouseEnter={() => setActive(p)}
-            onMouseLeave={() => setActive(null)}
-            onFocus={() => setActive(p)}
-            onBlur={() => setActive(null)}
+            onMouseEnter={() => !editing && setActive(p)}
+            onMouseLeave={() => !editing && setActive(null)}
+            onFocus={() => !editing && setActive(p)}
+            onBlur={() => !editing && setActive(null)}
             className="book group relative h-[224px]"
           >
             <Link to={`/wizard/editor/${p.id}`} className="block h-full">
@@ -207,19 +262,18 @@ export default function Bookshelf({ portfolios, onUpdated }: BookshelfProps) {
             </div>
             </Link>
 
-            {/* 책이 펼쳐졌을 때만 보입니다. 접힌 책등은 54px 라 아이콘을
-                올릴 자리가 없고, 있어도 제목을 가립니다. 키보드로 탭해
-                왔을 때도 보이도록 focus-visible 을 같이 겁니다. */}
+            {/* 책이 펼쳐졌을 때만 보입니다. 접힌 책등은 54px 라 올릴 자리가
+                없고, 있어도 제목을 가립니다. 아이콘 칩(흰 사각형)으로 뒀더니
+                크림색 표지 위에서 이물질처럼 떠 보여서 글자만 남겼습니다.
+                키보드로 탭해 왔을 때도 보이도록 focus-visible 을 같이 겁니다. */}
             <button
               type="button"
               onClick={() => openEditor(p)}
-              aria-label={`${p.title} 이름과 색상 수정`}
-              className="absolute right-1.5 top-1.5 z-30 grid size-6 place-items-center rounded-md
-                bg-neutral-950/55 text-neutral-200 opacity-0 backdrop-blur-[2px]
-                transition-opacity duration-150
-                group-hover:opacity-100 focus-visible:opacity-100 hover:text-white"
+              className="book-cover-edit absolute right-3 top-3 z-30 text-[10.5px] underline
+                underline-offset-2 opacity-0 transition-opacity duration-150
+                group-hover:opacity-100 focus-visible:opacity-100"
             >
-              <Pencil size={12} strokeWidth={1.75} aria-hidden="true" />
+              이름·색상 수정
             </button>
           </div>
         ))}
@@ -238,81 +292,6 @@ export default function Bookshelf({ portfolios, onUpdated }: BookshelfProps) {
 
       <p className="text-sm text-neutral-500 mt-4">눌러서 포트폴리오를 열어보세요.</p>
 
-      {editing && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 px-4"
-          role="dialog"
-          aria-modal="true"
-          aria-label="포트폴리오 이름과 색상 수정"
-        >
-          <div className="surface w-full max-w-sm space-y-4">
-            <h3 className="font-heading text-base text-neutral-100">이름과 색상</h3>
-
-            <label className="block space-y-1.5">
-              <span className="text-xs text-neutral-500">제목</span>
-              <input
-                className="field"
-                value={draftTitle}
-                autoFocus
-                onChange={(e) => setDraftTitle(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") void saveEdit();
-                  if (e.key === "Escape") setEditing(null);
-                }}
-              />
-            </label>
-
-            <div className="space-y-1.5">
-              <span className="text-xs text-neutral-500">색상</span>
-              <div className="flex items-center gap-2.5">
-                <input
-                  type="color"
-                  value={draftColor}
-                  onChange={(e) => setDraftColor(e.target.value)}
-                  aria-label="색상 선택"
-                  className="h-9 w-12 shrink-0 cursor-pointer rounded-lg border border-neutral-800 bg-transparent p-1"
-                />
-                <input
-                  className="field font-mono text-xs"
-                  value={draftColor}
-                  onChange={(e) => setDraftColor(e.target.value)}
-                  aria-label="색상 코드"
-                />
-              </div>
-              <p className="text-[11px] text-neutral-600">
-                이 포트폴리오 한 건의 색만 바뀝니다. 같은 직무 전체를 한 번에
-                칠하려면 내 서재의 직무 색상 설정을 쓰세요.
-              </p>
-            </div>
-
-            {editError && (
-              <p role="alert" className="text-xs text-brand">
-                {editError}
-              </p>
-            )}
-
-            <div className="flex justify-end gap-2 pt-1">
-              <button
-                type="button"
-                className="btn-secondary text-xs px-3 py-2"
-                onClick={() => setEditing(null)}
-                disabled={saving}
-              >
-                취소
-              </button>
-              <button
-                type="button"
-                className="btn-primary text-xs px-3 py-2 disabled:opacity-40 inline-flex items-center gap-1.5"
-                onClick={() => void saveEdit()}
-                disabled={saving || !draftTitle.trim()}
-              >
-                {saving && <LoaderCircle size={12} className="animate-spin" aria-hidden="true" />}
-                저장
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
