@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { BookOpen, LoaderCircle, Plus } from "lucide-react";
+import { BookOpen, Globe, Lock, LoaderCircle, Plus } from "lucide-react";
 import GrainCover from "./GrainCover";
 import {
   updatePortfolioTitle,
   updatePortfolioColor,
   updatePortfolioYear,
+  updatePortfolioVisibility,
   PortfolioError,
   type LibraryPortfolio,
 } from "../lib/portfolios";
@@ -72,6 +73,9 @@ export default function Bookshelf({ portfolios, onUpdated }: BookshelfProps) {
   const [draftTitle, setDraftTitle] = useState("");
   const [draftColor, setDraftColor] = useState("#c2703d");
   const [draftYear, setDraftYear] = useState("");
+  // [2026-09] 공개 여부도 여기서 고칩니다. 내보내기 화면에도 있지만,
+  // 이미 만든 걸 다시 닫으려고 내보내기까지 들어가야 하는 건 이상합니다.
+  const [draftPublic, setDraftPublic] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
 
@@ -83,6 +87,7 @@ export default function Bookshelf({ portfolios, onUpdated }: BookshelfProps) {
     setDraftTitle(p.title);
     setDraftColor(p.jobColor);
     setDraftYear(p.year);
+    setDraftPublic(p.visibility === "공개");
     setEditError(null);
   };
 
@@ -95,12 +100,17 @@ export default function Bookshelf({ portfolios, onUpdated }: BookshelfProps) {
       if (title !== editing.title) await updatePortfolioTitle(editing.id, title);
       if (draftColor !== editing.jobColor) await updatePortfolioColor(editing.id, draftColor);
       if (draftYear.trim() !== editing.year) await updatePortfolioYear(editing.id, draftYear);
-      const next = {
+      const wasPublic = editing.visibility === "공개";
+      if (draftPublic !== wasPublic) {
+        await updatePortfolioVisibility(editing.id, draftPublic ? "public" : "private");
+      }
+      const next: LibraryPortfolio = {
         ...editing,
         title: title || editing.title,
         jobColor: draftColor,
         // 비우면 서버가 생성 연도로 되돌리므로, 화면도 그 값으로 맞춥니다.
         year: draftYear.trim() || editing.year,
+        visibility: draftPublic ? "공개" : "비공개",
       };
       onUpdated?.(next);
       setActive((cur) => (cur && cur.id === next.id ? next : cur));
@@ -155,6 +165,27 @@ export default function Bookshelf({ portfolios, onUpdated }: BookshelfProps) {
               inputMode="numeric"
               aria-label="연도 (비우면 만든 해)"
             />
+            {/* 공개 여부는 저장을 눌러야 반영됩니다 — 나머지 칸과 같은
+                묶음이라, 여기만 즉시 적용되면 취소를 눌렀을 때 무엇이
+                되돌려졌는지 알 수 없습니다. */}
+            <button
+              type="button"
+              onClick={() => setDraftPublic((v) => !v)}
+              aria-pressed={draftPublic}
+              title={draftPublic ? "링크가 있으면 누구나 볼 수 있습니다" : "나만 볼 수 있습니다"}
+              className={`shrink-0 inline-flex items-center gap-1.5 rounded-sm border px-2.5 py-1.5 text-xs transition-colors ${
+                draftPublic
+                  ? "border-brand bg-brand/10 text-brand"
+                  : "border-neutral-800 text-neutral-500 hover:text-neutral-300"
+              }`}
+            >
+              {draftPublic ? (
+                <Globe size={12} aria-hidden="true" />
+              ) : (
+                <Lock size={12} aria-hidden="true" />
+              )}
+              {draftPublic ? "공개" : "비공개"}
+            </button>
             <button
               type="button"
               className="btn-primary shrink-0 px-3 py-1.5 text-xs disabled:opacity-40 inline-flex items-center gap-1.5"
