@@ -60,10 +60,10 @@ export default function Bookshelf({ portfolios }: BookshelfProps) {
   return (
     <div>
       {/* 제목 표시줄 — 스크롤 영역 바깥이라 잘리지 않습니다 */}
-      <div className="h-7 flex items-center gap-2 text-xs text-neutral-400 mb-1">
+      <div className="h-8 flex items-center gap-2.5 text-sm text-neutral-400 mb-2">
         <span
           aria-hidden="true"
-          className="w-[7px] h-[7px] rounded-[2px] transition-colors"
+          className="w-[9px] h-[9px] rounded-[2px] transition-colors"
           style={{ backgroundColor: active ? active.jobColor : "transparent" }}
         />
         {active ? (
@@ -79,7 +79,11 @@ export default function Bookshelf({ portfolios }: BookshelfProps) {
         )}
       </div>
 
-      <div className="shelf flex items-end gap-[3px] border-b-2 border-neutral-800 overflow-x-auto overflow-y-hidden pt-10 pb-0">
+      {/* [2026-09] "책등 올리는 구역도 크게" — 164px → 224px, gap도 살짝
+          넓혀서(3px→5px) 더 큰 책들이 답답해 보이지 않게 했습니다. pt는
+          10(40px)→12(48px): hover 시 위로 뜨는 폭이 12px→14px로 커진 만큼
+          여유를 더 뒀습니다(안 그러면 확대된 책이 위쪽에서 살짝 잘립니다). */}
+      <div className="shelf flex items-end gap-[5px] border-b-2 border-neutral-800 overflow-x-auto overflow-y-hidden pt-12 pb-0">
         {portfolios.map((p) => (
           <Link
             key={p.id}
@@ -88,7 +92,7 @@ export default function Bookshelf({ portfolios }: BookshelfProps) {
             onMouseLeave={() => setActive(null)}
             onFocus={() => setActive(p)}
             onBlur={() => setActive(null)}
-            className="book group relative block h-[164px]"
+            className="book group relative block h-[224px]"
           >
             {/* 책등 면 — 평소 보이는 얼굴. hover 시 서서히 사라집니다 */}
             <div
@@ -97,14 +101,14 @@ export default function Bookshelf({ portfolios }: BookshelfProps) {
                 group-hover:border-brand/65 group-focus-visible:border-brand/65"
             >
               <span
-                className="block w-full h-[7px] rounded-t-[2px] shrink-0"
+                className="block w-full h-[9px] rounded-t-[2px] shrink-0"
                 style={{ backgroundColor: p.jobColor }}
                 aria-hidden="true"
               />
-              <span className="book-title flex-1 min-h-0 w-full py-2.5 text-[10.5px] text-neutral-300 group-hover:text-neutral-100 transition-colors">
+              <span className="book-title flex-1 min-h-0 w-full py-3 text-[13px] text-neutral-300 group-hover:text-neutral-100 transition-colors">
                 {p.title}
               </span>
-              <span className="text-[8px] text-neutral-500 pb-1.5 shrink-0" aria-hidden="true">
+              <span className="text-[9.5px] text-neutral-500 pb-2 shrink-0" aria-hidden="true">
                 {p.year}
               </span>
             </div>
@@ -124,17 +128,17 @@ export default function Bookshelf({ portfolios }: BookshelfProps) {
                   어울리지 않아서, 다크 테마에서만 어둡게 한 겹 덮어 톤을 낮춥니다.
                   라이트 테마에서는 index.css에서 display:none 처리됩니다. */}
               <div className="book-cover-scrim" aria-hidden="true" />
-              <div className="absolute inset-0 z-10 flex flex-col justify-between p-2.5">
+              <div className="absolute inset-0 z-10 flex flex-col justify-between p-3.5">
                 <span
-                  className="h-2 w-2 shrink-0 rounded-full"
+                  className="h-2.5 w-2.5 shrink-0 rounded-full"
                   style={{ backgroundColor: p.jobColor }}
                   aria-hidden="true"
                 />
                 <div>
-                  <p className="book-cover-title line-clamp-3 text-[11px] font-semibold leading-snug">
+                  <p className="book-cover-title line-clamp-3 text-[13px] font-semibold leading-snug">
                     {p.title}
                   </p>
-                  <p className="book-cover-meta mt-1 text-[9px]">
+                  <p className="book-cover-meta mt-1.5 text-[10.5px]">
                     {p.job} · {p.year}
                   </p>
                 </div>
@@ -145,17 +149,17 @@ export default function Bookshelf({ portfolios }: BookshelfProps) {
 
         <Link
           to="/wizard"
-          className="shrink-0 w-[38px] h-[164px] ml-1.5 rounded-t-[3px]
+          className="shrink-0 w-[54px] h-[224px] ml-2 rounded-t-[3px]
             border-2 border-dashed border-neutral-700 border-b-0 text-neutral-600
-            flex items-end justify-center pb-4 transition-colors duration-150
+            flex items-end justify-center pb-5 transition-colors duration-150
             hover:border-brand hover:text-brand focus-visible:border-brand focus-visible:text-brand"
         >
-          <Plus size={16} aria-hidden="true" />
+          <Plus size={20} aria-hidden="true" />
           <span className="sr-only">새 포트폴리오 만들기</span>
         </Link>
       </div>
 
-      <p className="text-xs text-neutral-500 mt-3">눌러서 포트폴리오를 열어보세요.</p>
+      <p className="text-sm text-neutral-500 mt-4">눌러서 포트폴리오를 열어보세요.</p>
     </div>
   );
 }
