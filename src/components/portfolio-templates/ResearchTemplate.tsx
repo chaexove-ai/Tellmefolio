@@ -22,9 +22,13 @@ const fieldLabels: Array<{ key: "context" | "problem" | "execution" | "outcome" 
  * 세리프 제목 + 여백으로 "정제된" 인상을 만듭니다 — 카드나 배지 없이
  * 가로줄(rule)만으로 구획을 나눕니다.
  */
-export default function ResearchTemplate({ portfolio, projects, bodyFontStack }: PortfolioTemplateProps) {
+export default function ResearchTemplate({ portfolio, projects, bodyFontStack, lang = "ko" }: PortfolioTemplateProps) {
   const palette = getPortfolioPalette(portfolio.color_theme);
   const visible = projects.filter(hasContent);
+  // 이 템플릿은 학술 논문 관례를 흉내 낸 게 컨셉이라 Background/Problem/...
+  // 같은 소제목은 ko/en 상관없이 항상 영어로 둡니다(디자인 의도). "제목
+  // 없음" fallback만 언어에 맞춥니다.
+  const untitled = lang === "en" ? "Untitled" : "제목 없음";
 
   return (
     <div
@@ -65,7 +69,7 @@ export default function ResearchTemplate({ portfolio, projects, bodyFontStack }:
                   <span style={{ color: palette.textFaint, fontFamily: SERIF_STACK }}>
                     {romanNumerals[i] ?? i + 1}.
                   </span>
-                  <span>{p.name || "제목 없음"}</span>
+                  <span>{p.name || untitled}</span>
                 </li>
               ))}
             </ol>
@@ -84,7 +88,7 @@ export default function ResearchTemplate({ portfolio, projects, bodyFontStack }:
                   {romanNumerals[i] ?? i + 1}.
                 </span>
                 <h2 style={{ fontFamily: SERIF_STACK }} className="text-xl font-normal">
-                  {p.name || "제목 없음"}
+                  {p.name || untitled}
                 </h2>
               </div>
               {p.role.trim() && (

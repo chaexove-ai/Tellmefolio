@@ -11,6 +11,7 @@ import {
 import { templateName } from "../../lib/templates";
 import { FONT_STACKS, DEFAULT_FONT } from "../../lib/portfolioTheme";
 import { exportNodeToPdf } from "../../lib/exportPdf";
+import { translatePortfolioToEnglish, TranslateError } from "../../lib/translate";
 import PortfolioRenderer from "../../components/portfolio-templates/PortfolioRenderer";
 
 /**
@@ -42,6 +43,16 @@ export default function Export() {
   const [confirming, setConfirming] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
+
+  // 영어 버전 번역 결과 캐시. 한 번 번역되면 한국어↔영어를 오가도 다시
+  // 호출하지 않습니다 — 매번 호출하면 API 비용도 들고, 왔다 갔다 할 때마다
+  // 로딩을 보여주는 건 사용자 경험에도 좋지 않습니다.
+  const [translated, setTranslated] = useState<{
+    portfolio: PortfolioRow;
+    projects: PortfolioProjectRow[];
+  } | null>(null);
+  const [translating, setTranslating] = useState(false);
+  const [translateError, setTranslateError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) {
@@ -79,6 +90,50 @@ export default function Export() {
     };
   }, [id]);
 
+  // 영어 버전을 선택했는데 아직 번역해둔 게 없으면 그때 번역을 시작합니다.
+  // "영어 버전" 버튼을 누르는 시점에만 API를 호출하므로, 한국어만 쓰다
+  // 끝나는 대부분의 경우엔 번역 비용이 전혀 들지 않습니다.
+  //
+  // [버그 수정] translating을 의존성 배열에 넣었더니 번역이 영원히 안 끝나는
+  // 문제가 있었습니다 — 이 안에서 setTranslating(true)를 호출하면 그
+  // 자체가 리렌더를 일으키고, translating이 의존성이라 effect가 곧바로
+  // 다시 실행되면서 "이전 실행"의 cleanup(alive = false)이 먼저 돌아갑니다.
+  // 그 순간 방금 시작한 번역 요청은 아직 응답 전인데 alive만 false가 돼서,
+  // 나중에 응답이 와도 if (alive) 에 걸려 setTranslated/setTranslating(false)가
+  // 전부 무시됐습니다 — 사용자 눈에는 스피너가 끝없이 도는 것처럼 보입니다.
+  // translating은 가드로만 쓰고 재실행 트리거에서는 빼야 합니다.
+  useEffect(() => {
+    if (lang !== "영어" || !portfolio || translated || translating) return;
+    let alive = true;
+    setTranslating(true);
+    setTranslateError(null);
+    translatePortfolioToEnglish(portfolio, projects)
+      .then((result) => {
+        if (alive) setTranslated(result);
+      })
+      .catch((e) => {
+        if (alive) {
+          setTranslateError(
+            e instanceof TranslateError ? e.message : "번역 중 문제가 발생했습니다."
+          );
+        }
+      })
+      .finally(() => {
+        if (alive) setTranslating(false);
+      });
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- translating은
+    // 가드 용도일 뿐, 재실행 트리거로 넣으면 위 주석의 무한 대기 버그가 남.
+  }, [lang, portfolio, projects, translated]);
+
+  // 화면(미리보기·PDF 캡처·파일명)이 실제로 그릴 대상. 영어를 골랐고 번역이
+  // 끝났으면 번역본을, 그 외에는 원문을 씁니다 — 아직 번역 중이거나 실패한
+  // 동안은 원문을 계속 보여줘서 화면이 비지 않게 합니다.
+  const displayPortfolio = lang === "영어" && translated ? translated.portfolio : portfolio;
+  const displayProjects = lang === "영어" && translated ? translated.projects : projects;
+
   const startExport = async () => {
     if (!portfolio) return;
     setConfirming(false);
@@ -100,7 +155,8 @@ export default function Export() {
       if (!previewRef.current) {
         throw new Error("미리보기를 찾을 수 없습니다.");
       }
-      const filename = `${portfolio.title.trim() || "portfolio"}.pdf`;
+      const titleForFile = displayPortfolio?.title.trim() || portfolio.title.trim() || "portfolio";
+      const filename = lang === "영어" ? `${titleForFile} (EN).pdf` : `${titleForFile}.pdf`;
       await exportNodeToPdf(previewRef.current, filename);
       navigate("/library/portfolios");
     } catch {
@@ -152,10 +208,27 @@ export default function Export() {
                 </button>
               ))}
             </div>
-            {lang === "영어" && (
+            {lang === "영어" && translating && (
+              <p className="text-xs text-neutral-500 mt-3 inline-flex items-center gap-1.5">
+                <LoaderCircle size={12} className="animate-spin" />
+                AI가 영어로 번역하고 있어요. 잠시만 기다려 주세요.
+              </p>
+            )}
+            {lang === "영어" && !translating && translateError && (
+              <p role="alert" className="text-xs text-brand mt-3">
+                {translateError} 아래 "다시 시도"를 눌러 주세요 — 그때까지는 미리보기가 원문(한국어)으로 보입니다.
+                <button
+                  type="button"
+                  onClick={() => setTranslateError(null)}
+                  className="ml-2 underline"
+                >
+                  다시 시도
+                </button>
+              </p>
+            )}
+            {lang === "영어" && !translating && !translateError && translated && (
               <p className="text-xs text-neutral-600 mt-3">
-                영어 번역은 아직 준비 중이에요 — 지금 내보내면 원문(한국어) 그대로
-                나갑니다.
+                AI가 번역한 영어 버전이에요 — 문장이 다소 어색할 수 있으니, 내보내기 전에 한 번 검토해 주세요.
               </p>
             )}
           </div>
@@ -197,10 +270,11 @@ export default function Export() {
             <div className="rounded-xl border border-neutral-800 overflow-auto max-h-[520px]">
               <PortfolioRenderer
                 ref={previewRef}
-                portfolio={portfolio}
-                projects={projects}
+                portfolio={displayPortfolio ?? portfolio}
+                projects={displayProjects}
                 coverUrl={coverUrl}
                 bodyFontStack={bodyFontStack}
+                lang={lang === "영어" ? "en" : "ko"}
               />
             </div>
           </div>
@@ -218,8 +292,12 @@ export default function Export() {
             </p>
           )}
 
-          <button className="btn-primary" onClick={() => setConfirming(true)}>
-            PDF로 내보내기
+          <button
+            className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={lang === "영어" && translating}
+            onClick={() => setConfirming(true)}
+          >
+            {lang === "영어" && translating ? "번역 중…" : "PDF로 내보내기"}
           </button>
         </>
       )}
@@ -233,6 +311,11 @@ export default function Export() {
             </p>
             <p className="text-sm text-neutral-200">언어: {lang}</p>
             <p className="text-sm text-neutral-200">형식: PDF (.pdf)</p>
+            {lang === "영어" && !translated && (
+              <p className="text-xs text-brand mt-2">
+                영어 번역이 아직 준비되지 않아 이번에는 원문(한국어)으로 내보내집니다.
+              </p>
+            )}
             <div className="flex justify-end gap-2 mt-6">
               <button className="btn-secondary" onClick={() => setConfirming(false)}>
                 취소

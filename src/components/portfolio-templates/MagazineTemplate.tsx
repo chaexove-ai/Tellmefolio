@@ -2,13 +2,26 @@ import { getPortfolioPalette } from "../../lib/portfolioTheme";
 import type { PortfolioTemplateProps } from "./types";
 import { hasContent } from "./types";
 
-const fieldLabels: Array<{ key: "context" | "problem" | "execution" | "outcome" | "reflection"; label: string }> = [
-  { key: "context", label: "맥락 및 배경" },
-  { key: "problem", label: "문제 정의" },
-  { key: "execution", label: "실행 내용" },
-  { key: "outcome", label: "핵심 성과" },
-  { key: "reflection", label: "배운 점" },
-];
+type FieldKey = "context" | "problem" | "execution" | "outcome" | "reflection";
+
+// [2026-09] 영어 버전을 골라도 이 라벨들이 계속 한국어로 나온다는 신고를
+// 받고 언어별로 나눴습니다 — MinimalTemplate과 같은 이유입니다.
+const fieldLabelsByLang: Record<"ko" | "en", Array<{ key: FieldKey; label: string }>> = {
+  ko: [
+    { key: "context", label: "맥락 및 배경" },
+    { key: "problem", label: "문제 정의" },
+    { key: "execution", label: "실행 내용" },
+    { key: "outcome", label: "핵심 성과" },
+    { key: "reflection", label: "배운 점" },
+  ],
+  en: [
+    { key: "context", label: "Background" },
+    { key: "problem", label: "Problem" },
+    { key: "execution", label: "Execution" },
+    { key: "outcome", label: "Key Outcomes" },
+    { key: "reflection", label: "Reflection" },
+  ],
+};
 
 /**
  * 매거진형 — "이미지 중심의 감각적인 레이아웃".
@@ -20,10 +33,12 @@ const fieldLabels: Array<{ key: "context" | "problem" | "execution" | "outcome" 
  * 요소로 삼아 한 편의 "기사"처럼 배치합니다. layout이 2단이면 프로젝트를
  * 좌우로 나눠 잡지 지면처럼 두 편씩 보이게 합니다.
  */
-export default function MagazineTemplate({ portfolio, projects, coverUrl, bodyFontStack }: PortfolioTemplateProps) {
+export default function MagazineTemplate({ portfolio, projects, coverUrl, bodyFontStack, lang = "ko" }: PortfolioTemplateProps) {
   const palette = getPortfolioPalette(portfolio.color_theme);
   const visible = projects.filter(hasContent);
   const isTwoCol = portfolio.layout === "2col";
+  const fieldLabels = fieldLabelsByLang[lang];
+  const untitled = lang === "en" ? "Untitled" : "제목 없음";
 
   return (
     <div style={{ background: palette.bg, color: palette.text, fontFamily: bodyFontStack }} className="w-full">
@@ -72,7 +87,7 @@ export default function MagazineTemplate({ portfolio, projects, coverUrl, bodyFo
                   {String(i + 1).padStart(2, "0")}
                 </span>
                 <div className="pt-1">
-                  <h2 className="text-xl font-heading leading-snug">{p.name || "제목 없음"}</h2>
+                  <h2 className="text-xl font-heading leading-snug">{p.name || untitled}</h2>
                   {(p.role || p.stack.length > 0) && (
                     <p className="text-xs mt-1" style={{ color: palette.textFaint }}>
                       {[p.role, p.stack.join(" · ")].filter(Boolean).join(" — ")}

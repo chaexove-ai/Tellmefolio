@@ -2,13 +2,28 @@ import { getPortfolioPalette } from "../../lib/portfolioTheme";
 import type { PortfolioTemplateProps } from "./types";
 import { hasContent } from "./types";
 
-const fieldLabels: Array<{ key: "context" | "problem" | "execution" | "outcome" | "reflection"; label: string }> = [
-  { key: "context", label: "맥락" },
-  { key: "problem", label: "문제" },
-  { key: "execution", label: "실행" },
-  { key: "outcome", label: "성과" },
-  { key: "reflection", label: "회고" },
-];
+type FieldKey = "context" | "problem" | "execution" | "outcome" | "reflection";
+
+// [2026-09] 영어 버전을 골라도 이 라벨들이 계속 한국어로 나온다는 신고를
+// 받고 언어별로 나눴습니다 — portfolio/projects의 실제 텍스트는 translate.ts
+// 쪽에서 이미 번역돼 들어오지만, 이 라벨은 데이터가 아니라 템플릿 코드에
+// 박힌 문자열이라 그쪽 번역과 별개로 여기서 직접 나눠줘야 합니다.
+const fieldLabelsByLang: Record<"ko" | "en", Array<{ key: FieldKey; label: string }>> = {
+  ko: [
+    { key: "context", label: "맥락" },
+    { key: "problem", label: "문제" },
+    { key: "execution", label: "실행" },
+    { key: "outcome", label: "성과" },
+    { key: "reflection", label: "회고" },
+  ],
+  en: [
+    { key: "context", label: "Context" },
+    { key: "problem", label: "Problem" },
+    { key: "execution", label: "Execution" },
+    { key: "outcome", label: "Outcome" },
+    { key: "reflection", label: "Reflection" },
+  ],
+};
 
 /**
  * 클린 미니멀 — "여백 중심의 깔끔한 구성".
@@ -19,9 +34,11 @@ const fieldLabels: Array<{ key: "context" | "problem" | "execution" | "outcome" 
  * 무채색(grayscale)으로 눌러서 튀지 않게 — "여백이 주인공"이라는
  * 컨셉을 색이 방해하지 않게 하려는 선택입니다.
  */
-export default function MinimalTemplate({ portfolio, projects, coverUrl, bodyFontStack }: PortfolioTemplateProps) {
+export default function MinimalTemplate({ portfolio, projects, coverUrl, bodyFontStack, lang = "ko" }: PortfolioTemplateProps) {
   const palette = getPortfolioPalette(portfolio.color_theme);
   const visible = projects.filter(hasContent);
+  const fieldLabels = fieldLabelsByLang[lang];
+  const untitled = lang === "en" ? "Untitled" : "제목 없음";
 
   return (
     <div style={{ background: palette.bg, color: palette.text, fontFamily: bodyFontStack }} className="w-full">
@@ -48,7 +65,7 @@ export default function MinimalTemplate({ portfolio, projects, coverUrl, bodyFon
         <div className="space-y-24">
           {visible.map((p) => (
             <div key={p.id}>
-              <h2 className="text-lg font-medium mb-1">{p.name || "제목 없음"}</h2>
+              <h2 className="text-lg font-medium mb-1">{p.name || untitled}</h2>
               <p className="text-xs mb-8" style={{ color: palette.textFaint }}>
                 {[p.role, p.stack.join(", ")].filter(Boolean).join(" · ")}
               </p>
