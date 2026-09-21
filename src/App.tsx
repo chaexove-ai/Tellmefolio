@@ -35,13 +35,17 @@ const JobSwitchRequest = lazy(() => import("./pages/jobswitch/JobSwitchRequest")
 const JobSwitchResult = lazy(() => import("./pages/jobswitch/JobSwitchResult"));
 
 const Gallery = lazy(() => import("./pages/gallery/Gallery"));
-const GalleryDetail = lazy(() => import("./pages/gallery/GalleryDetail"));
 const ShareSettings = lazy(() => import("./pages/gallery/ShareSettings"));
 const VisitStats = lazy(() => import("./pages/gallery/VisitStats"));
 
 const AccountSettings = lazy(() => import("./pages/account/AccountSettings"));
 const SocialAccountManage = lazy(() => import("./pages/account/SocialAccountManage"));
 const DataManage = lazy(() => import("./pages/account/DataManage"));
+
+function CommunityDetailRedirect() {
+  const { id } = useParams<{ id: string }>();
+  return <Navigate to={id ? `/p/${id}` : "/community"} replace />;
+}
 
 function StyleRedirect() {
   const { id } = useParams<{ id: string }>();
@@ -113,7 +117,10 @@ export default function App() {
             갈려 있어서 /community 로 통일했습니다. 이미 배포된 주소가
             있으니 옛 경로는 아래에서 넘겨줍니다. */}
         <Route path="/community" element={<Gallery />} />
-        <Route path="/community/:id" element={<GalleryDetail />} />
+        {/* [2026-09-22] 커뮤니티 상세는 공개 열람 페이지와 같은 화면을
+            보여주던 자리입니다. 둘을 유지하면 한쪽만 고치는 일이 생기므로
+            /p/:id 하나로 합쳤습니다. 기존 링크는 그리로 넘깁니다. */}
+        <Route path="/community/:id" element={<CommunityDetailRedirect />} />
         <Route path="/community/share" element={<ShareSettings />} />
         <Route path="/community/stats" element={<VisitStats />} />
 

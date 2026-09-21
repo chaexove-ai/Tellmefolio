@@ -5,6 +5,7 @@ import {
   getPortfolioWithProjects,
   getCoverImageUrl,
   updatePortfolioVisibility,
+  updatePortfolioListed,
   PortfolioError,
   type PortfolioProjectRow,
   type PortfolioRow,
@@ -50,6 +51,7 @@ export default function Export() {
   const [sharing, setSharing] = useState(false);
   const [shareError, setShareError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [listing, setListing] = useState(false);
 
   // 영어 버전 번역 결과 캐시. 한 번 번역되면 한국어↔영어를 오가도 다시
   // 호출하지 않습니다 — 매번 호출하면 API 비용도 들고, 왔다 갔다 할 때마다
@@ -183,12 +185,37 @@ export default function Export() {
     setShareError(null);
     try {
       await updatePortfolioVisibility(portfolio.id, next);
-      setPortfolio({ ...portfolio, visibility: next });
+      // 비공개로 되돌리면 커뮤니티 게시도 함께 내립니다. RLS 가 이미
+      // 막으므로 목록에 뜨지는 않지만, 다시 공개했을 때 예전 체크가
+      // 살아나 조용히 목록에 올라가면 안 됩니다.
+      if (next === "private" && portfolio.listed) {
+        await updatePortfolioListed(portfolio.id, false);
+      }
+      setPortfolio({
+        ...portfolio,
+        visibility: next,
+        listed: next === "private" ? false : portfolio.listed,
+      });
       setCopied(false);
     } catch (e) {
       setShareError(e instanceof PortfolioError ? e.message : "설정을 저장하지 못했습니다.");
     } finally {
       setSharing(false);
+    }
+  };
+
+  const toggleListed = async () => {
+    if (!portfolio) return;
+    const next = !portfolio.listed;
+    setListing(true);
+    setShareError(null);
+    try {
+      await updatePortfolioListed(portfolio.id, next);
+      setPortfolio({ ...portfolio, listed: next });
+    } catch (e) {
+      setShareError(e instanceof PortfolioError ? e.message : "설정을 저장하지 못했습니다.");
+    } finally {
+      setListing(false);
     }
   };
 
@@ -347,6 +374,28 @@ export default function Export() {
                   열어보기
                 </a>
               </div>
+            )}
+
+            {/* [2026-09-22] 커뮤니티 게시는 공개와 별개의 결정입니다.
+                링크를 연다고 해서 목록에 뜨면, 재직 중에 이직을 준비하는
+                사람은 이 서비스를 쓸 수 없습니다. 그 사람이 주 사용자입니다. */}
+            {isPublic && (
+              <label className="mt-4 flex items-start gap-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={Boolean(portfolio?.listed)}
+                  disabled={listing}
+                  onChange={() => void toggleListed()}
+                  className="accent-brand mt-0.5 shrink-0"
+                />
+                <span className="text-sm text-neutral-300">
+                  커뮤니티 목록에도 올리기
+                  <span className="block text-xs text-neutral-500 mt-0.5">
+                    체크하지 않으면 링크를 아는 사람만 볼 수 있고, 커뮤니티에는
+                    나타나지 않습니다. 이직을 준비 중이라면 체크하지 마세요.
+                  </span>
+                </span>
+              </label>
             )}
 
             {shareError && (

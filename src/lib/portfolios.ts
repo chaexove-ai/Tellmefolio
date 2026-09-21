@@ -28,6 +28,9 @@ export interface PortfolioRow {
   job_color: string;
   year: string | null;
   visibility: "private" | "public";
+  /** 커뮤니티 목록 노출 여부. visibility 와 별개입니다 — 자세한 이유는
+   *  20260922090000_portfolio_listed.sql 주석 참고. */
+  listed: boolean;
   template_id: TemplateId;
   color_theme: ColorTheme;
   font: string;
@@ -294,6 +297,8 @@ export interface LibraryPortfolio {
   job: string;
   year: string;
   visibility: "공개" | "비공개";
+  /** 커뮤니티 목록에 올렸는지. 공개(visibility)와 별개입니다. */
+  listed: boolean;
   updatedAt: string;
   jobColor: string;
 }
@@ -307,6 +312,9 @@ function toLibraryPortfolio(p: PortfolioRow): LibraryPortfolio {
     // 해로 대신 보여줍니다(없는 것보다는 낫습니다).
     year: p.year?.trim() || String(new Date(p.created_at).getFullYear()),
     visibility: p.visibility === "public" ? "공개" : "비공개",
+    // 컬럼이 없던 시절 행은 undefined 로 옵니다 — 프런트는 자동 배포되고
+    // 마이그레이션은 손으로 돌리니, 그 틈에 죽지 않게 false 로 봅니다.
+    listed: p.listed ?? false,
     updatedAt: p.updated_at,
     jobColor: p.job_color,
   };
@@ -439,6 +447,21 @@ export async function updatePortfolioVisibility(
 }
 
 /**
+ * [2026-09-22] 커뮤니티 목록 노출 전환.
+ *
+ * 공개(visibility)와 나눠둔 이유는 마이그레이션 주석에 적었습니다 —
+ * 요약하면, 재직 중 이직 준비가 이 서비스의 주 사용처라 링크는 조용해야
+ * 합니다. 커뮤니티에 올리는 것은 그와 별개의 결정입니다.
+ */
+export async function updatePortfolioListed(id: string, listed: boolean): Promise<void> {
+  const sb = await requireClient();
+  const { error } = await sb.from("portfolios").update({ listed }).eq("id", id);
+  if (error) {
+    throw new PortfolioError("커뮤니티 설정을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+  }
+}
+
+/**
  * 공개된 포트폴리오를 **로그인 없이** 읽습니다.
  *
  * getPortfolioWithProjects 와 갈라놓은 이유는 실패했을 때 할 말이 다르기
@@ -484,6 +507,7 @@ export async function listPublicPortfolios(limit = 60): Promise<LibraryPortfolio
     .from("portfolios")
     .select()
     .eq("visibility", "public")
+    .eq("listed", true)
     .order("updated_at", { ascending: false })
     .limit(limit);
 
