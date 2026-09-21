@@ -61,15 +61,41 @@ GitHub Desktop의 "Push origin"을 씁니다.
 **Edge Function은 git push로 배포되지 않습니다.** 따로 실행해야 합니다.
 
 ```bash
-supabase functions deploy generate-draft
-supabase functions deploy translate-portfolio
+npx supabase login                                    # 노트북마다 1회
+npx supabase link --project-ref tswxxqqnzqexwxkgpajg  # 노트북마다 1회
+npx supabase functions deploy generate-draft
+npx supabase functions deploy translate-portfolio
 
-# 시크릿도 별도입니다
-supabase secrets set ANTHROPIC_API_KEY=...
-supabase secrets set MODEL=claude-haiku-...
+# 시크릿도 별도입니다 (함수 두 개 다 ANTHROPIC_API_KEY 하나만 필수)
+npx supabase secrets list
+npx supabase secrets set ANTHROPIC_API_KEY=...
+supabase secrets set MODEL=claude-haiku-...           # 없으면 haiku 기본값
 ```
 
 DB 마이그레이션(`supabase/migrations/`)도 마찬가지로 별도 적용입니다.
+
+```bash
+npx supabase db push
+npx supabase migration list   # Local/Remote 양쪽에 다 찍혔는지 확인
+```
+
+#### 마이그레이션 규칙 두 가지 — 지키지 않으면 막힙니다
+
+**1. 파일명은 14자리 타임스탬프로.** `20260921120000_이름.sql` 형태입니다.
+버전 번호는 파일명 앞 숫자에서 뽑는데, 8자리(`YYYYMMDD`)로 짓다가 같은 날
+두 개를 만들면 버전이 겹쳐서 `schema_migrations` 기본키 충돌(23505)이
+납니다. 2026-09-21 에 covers 와 density 가 둘 다 `20260921` 이라 실제로
+막혔고, density 쪽 파일명을 바꿔서 풀었습니다.
+
+**2. 스키마는 대시보드에서 손으로 만지지 않습니다.** 대시보드에서 만든 건
+마이그레이션 기록에 남지 않아서, 나중에 같은 내용의 파일을 `db push` 하면
+"already exists"(42710)로 멈춥니다. covers 버킷의 정책 4개가 이 경우였고,
+`drop policy if exists` 를 앞에 붙여서 다시 실행 가능하게 고쳤습니다.
+
+그래서 **새 마이그레이션은 전부 재실행 가능하게 씁니다** — `create table
+if not exists`, `add column if not exists`, 정책은 `drop policy if exists`
+후 `create policy`. 기존 파일들이 이 규칙을 따르고 있으니 그대로 흉내내면
+됩니다. 재실행해도 데이터가 날아가지 않는지는 반드시 확인하고 쓰세요.
 
 ### 노트북 두 대로 작업합니다
 
