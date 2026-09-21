@@ -387,6 +387,33 @@ export async function updatePortfolioColor(id: string, color: string): Promise<v
   }
 }
 
+/**
+ * [2026-09] 연도를 직접 지정합니다.
+ *
+ * year 컬럼은 지금까지 아무 데서도 채우지 않아서, 화면에는 늘 생성
+ * 연도가 나왔습니다(toLibraryPortfolio 의 폴백). 대부분은 그게 맞지만
+ * 어긋나는 경우가 있습니다 — 2023년 프로젝트를 지금 정리하면 라벨은
+ * 2023 이어야 하고, "2025 버전"처럼 판을 구분하는 용도로도 쓰입니다.
+ *
+ * 빈 값을 넘기면 null 로 저장해 다시 자동(생성 연도)으로 돌아갑니다.
+ * "지웠더니 사라짐"이 아니라 "지웠더니 기본값으로 돌아감"이 이 칸에
+ * 맞는 동작입니다.
+ */
+export async function updatePortfolioYear(id: string, year: string): Promise<void> {
+  const sb = await requireClient();
+  const trimmed = year.trim();
+  if (trimmed && !/^\d{4}$/.test(trimmed)) {
+    throw new PortfolioError("연도는 네 자리 숫자로 입력해 주세요.");
+  }
+  const { error } = await sb
+    .from("portfolios")
+    .update({ year: trimmed || null })
+    .eq("id", id);
+  if (error) {
+    throw new PortfolioError("연도를 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+  }
+}
+
 /** 로그인한 사용자의 포트폴리오 전체를 최근 수정순으로. */
 export async function listMyPortfolios(userId: string): Promise<LibraryPortfolio[]> {
   const sb = await requireClient();

@@ -114,7 +114,7 @@ export default function AccountSettings() {
           자리입니다. 아직 만들지 않았습니다.
         </p>
         <ul className="mt-3 space-y-1.5 text-xs text-neutral-600">
-          <li>· 기본 직무와 연도 — 지금은 연도를 바꿀 수 있는 화면이 아예 없습니다</li>
+          <li>· 기본 직무 (연도는 만든 해가 자동으로 들어가고, 책장에서 고칠 수 있습니다)</li>
           <li>· 기본 템플릿 · 색 · 여백</li>
           <li>· 새 포트폴리오의 기본 공개 범위</li>
         </ul>

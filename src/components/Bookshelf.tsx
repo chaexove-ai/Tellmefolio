@@ -5,6 +5,7 @@ import GrainCover from "./GrainCover";
 import {
   updatePortfolioTitle,
   updatePortfolioColor,
+  updatePortfolioYear,
   PortfolioError,
   type LibraryPortfolio,
 } from "../lib/portfolios";
@@ -70,6 +71,7 @@ export default function Bookshelf({ portfolios, onUpdated }: BookshelfProps) {
   const [editing, setEditing] = useState<LibraryPortfolio | null>(null);
   const [draftTitle, setDraftTitle] = useState("");
   const [draftColor, setDraftColor] = useState("#c2703d");
+  const [draftYear, setDraftYear] = useState("");
   const [saving, setSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
 
@@ -80,6 +82,7 @@ export default function Bookshelf({ portfolios, onUpdated }: BookshelfProps) {
     setEditing(p);
     setDraftTitle(p.title);
     setDraftColor(p.jobColor);
+    setDraftYear(p.year);
     setEditError(null);
   };
 
@@ -91,7 +94,14 @@ export default function Bookshelf({ portfolios, onUpdated }: BookshelfProps) {
       const title = draftTitle.trim();
       if (title !== editing.title) await updatePortfolioTitle(editing.id, title);
       if (draftColor !== editing.jobColor) await updatePortfolioColor(editing.id, draftColor);
-      const next = { ...editing, title: title || editing.title, jobColor: draftColor };
+      if (draftYear.trim() !== editing.year) await updatePortfolioYear(editing.id, draftYear);
+      const next = {
+        ...editing,
+        title: title || editing.title,
+        jobColor: draftColor,
+        // 비우면 서버가 생성 연도로 되돌리므로, 화면도 그 값으로 맞춥니다.
+        year: draftYear.trim() || editing.year,
+      };
       onUpdated?.(next);
       setActive((cur) => (cur && cur.id === next.id ? next : cur));
       setEditing(null);
@@ -130,6 +140,20 @@ export default function Bookshelf({ portfolios, onUpdated }: BookshelfProps) {
                 if (e.key === "Escape") setEditing(null);
               }}
               aria-label="포트폴리오 제목"
+            />
+            {/* 연도는 비워둘 수 있습니다 — 비우면 만든 해가 자동으로
+                들어갑니다(lib/portfolios.ts updatePortfolioYear 주석). */}
+            <input
+              className="field w-[5.5rem] shrink-0 py-1.5 text-sm text-center"
+              value={draftYear}
+              onChange={(e) => setDraftYear(e.target.value.replace(/[^0-9]/g, "").slice(0, 4))}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") void saveEdit();
+                if (e.key === "Escape") setEditing(null);
+              }}
+              placeholder="연도"
+              inputMode="numeric"
+              aria-label="연도 (비우면 만든 해)"
             />
             <button
               type="button"
