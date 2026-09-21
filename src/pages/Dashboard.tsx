@@ -38,10 +38,34 @@ import Bookshelf from "../components/Bookshelf";
 // null 인 항목은 기존 brand 색(Tailwind의 bg-brand/10 text-brand)을 그대로
 // 씁니다 — 새 hex를 넣지 않은 이유는, brand 색이 CSS 변수(RGB 트리플)라
 // job_color 배지처럼 "hex + 알파 접미사"로 다루기 어렵기 때문입니다.
-const ACCENTS = {
-  sage: "#5f7a52",
-  blue: "#3f6f8f",
-  gold: "#b07d2d",
+/**
+ * [2026-09 수정] 색이 탁하다는 지적을 받고 다시 잡았습니다.
+ *
+ * 원인은 알파였습니다. 어두운 저채도 색(세이지 채도 20%, 블루 38%)을
+ * 7% 로 희석하면 색이 아니라 회색 얼룩이 됩니다 — 크림 바탕이 나머지
+ * 93% 를 차지하니 남는 건 미세한 명도 차뿐입니다.
+ *
+ * 그래서 면에는 희석한 색이 아니라 "밝은 색조"를 직접 씁니다. 명도가
+ * 높으면서 채도는 살아 있는 값이라 옅어도 색으로 읽힙니다. 진한 값은
+ * 숫자와 아이콘에만 쓰고, 채도도 한 단계씩 올렸습니다.
+ *
+ * ink 는 해당 fill 위에서 4.5:1 이상입니다(숫자는 30px 이라 3:1 이면
+ * 되지만, 같은 색을 아이콘에도 쓰므로 작은 요소 기준을 맞췄습니다).
+ */
+/** 브랜드 칸의 면. 다른 셋과 같은 이유로 알파가 아니라 밝은 색조입니다. */
+const BRAND_FILL = "#fbeadd";
+
+interface Accent {
+  /** 숫자·아이콘 */
+  ink: string;
+  /** 칸 배경 */
+  fill: string;
+}
+
+const ACCENTS: Record<string, Accent> = {
+  sage: { ink: "#44702f", fill: "#eaf2e3" },
+  blue: { ink: "#295f82", fill: "#e3eef6" },
+  gold: { ink: "#8c5a0c", fill: "#fbf0da" },
 };
 
 const nextSteps = [
@@ -59,7 +83,7 @@ const nextSteps = [
     desc: "기존 포트폴리오를 목표 직무 관점으로 재해석합니다.",
     to: "/job-switch",
     cta: "직무 전환 시작",
-    accent: ACCENTS.sage as string | null,
+    accent: ACCENTS.sage.ink as string | null,
   },
   {
     icon: Users,
@@ -67,7 +91,7 @@ const nextSteps = [
     desc: "다른 사용자의 포트폴리오 구성 방식을 참고합니다.",
     to: "/community",
     cta: "커뮤니티 보기",
-    accent: ACCENTS.blue as string | null,
+    accent: ACCENTS.blue.ink as string | null,
   },
 ];
 
@@ -105,7 +129,7 @@ export default function Dashboard() {
     };
   }, [configured, session?.user?.id]);
 
-  const stats: Array<{ label: string; sub: string; icon: typeof FolderOpen; accent: string | null }> = [
+  const stats: Array<{ label: string; sub: string; icon: typeof FolderOpen; accent: Accent | null }> = [
     { label: "전체 포트폴리오", sub: "저장된 작업물", icon: FolderOpen, accent: null },
     { label: "공개 포트폴리오", sub: "현재 공개 중", icon: Globe, accent: ACCENTS.sage },
     { label: "비공개 포트폴리오", sub: "나만 볼 수 있음", icon: Lock, accent: ACCENTS.gold },
@@ -148,9 +172,7 @@ export default function Dashboard() {
           <div
             key={s.label}
             className="p-5"
-            style={{
-              backgroundColor: s.accent ? `${s.accent}12` : "rgb(var(--brand) / 0.07)",
-            }}
+            style={{ backgroundColor: s.accent ? s.accent.fill : BRAND_FILL }}
           >
             <div className="flex items-center gap-2">
               <s.icon
@@ -158,13 +180,13 @@ export default function Dashboard() {
                 strokeWidth={1.75}
                 aria-hidden="true"
                 className={s.accent ? undefined : "text-brand"}
-                style={s.accent ? { color: s.accent } : undefined}
+                style={s.accent ? { color: s.accent.ink } : undefined}
               />
               <p className="text-xs tracking-wide text-neutral-500">{s.label}</p>
             </div>
             <p
               className="mt-2.5 text-[30px] leading-none font-heading text-neutral-100"
-              style={s.accent ? { color: s.accent } : undefined}
+              style={s.accent ? { color: s.accent.ink } : undefined}
             >
               {statValues[i]}
             </p>
