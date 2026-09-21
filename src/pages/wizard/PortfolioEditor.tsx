@@ -592,7 +592,7 @@ export default function PortfolioEditor() {
                       <div className="flex-1 space-y-1.5 pb-0.5">
                         <label
                           htmlFor={`proj-${f.key}`}
-                          className="text-xs font-medium text-neutral-300 inline-flex items-center gap-1.5"
+                          className="text-[13px] font-medium text-neutral-200 inline-flex items-center gap-1.5"
                         >
                           {f.label}
                           {!f.aiFilled && (
@@ -601,14 +601,19 @@ export default function PortfolioEditor() {
                             </span>
                           )}
                         </label>
-                        <p className="text-xs text-neutral-600">{f.helper}</p>
+                        {/* 안내는 칸이 비어 있을 때만 보여줍니다. 6칸에
+                            라벨·안내·예시가 늘 함께 쌓이면 화면이 안내문으로
+                            덮입니다 — 처음엔 필요하지만 한 번 채우고 나면
+                            소음입니다. */}
+                        {!f.value && <p className="text-xs text-neutral-600">{f.helper}</p>}
                         <textarea
                           id={`proj-${f.key}`}
                           value={f.value}
                           onChange={(e) => f.onChange(e.target.value)}
                           placeholder={f.placeholder}
                           rows={f.rows}
-                          className="field-area"
+                          // 긴 글을 쓰고 읽는 칸입니다. 14px 는 작았습니다.
+                          className="field-area text-[15px] leading-relaxed"
                         />
                       </div>
                     </div>
@@ -619,119 +624,134 @@ export default function PortfolioEditor() {
           )}
         </div>
 
-        <div className="entry space-y-3">
-          <h2 className="entry-title mb-0">AI 문장 다듬기</h2>
-          <p className="text-xs text-neutral-400">
-            다듬을 문장을 선택하거나 아래에 붙여넣어 목표 직무에 맞는 케이스 스터디
-            문장으로 개선할 수 있습니다.
-          </p>
-          <textarea
-            value={sentence}
-            onChange={(e) => setSentence(e.target.value)}
-            placeholder="다듬을 문장 입력"
-            rows={2}
-            className="field-area"
-          />
-          <button
-            className="btn-secondary disabled:opacity-40"
-            disabled={!sentence.trim()}
-            onClick={() => setShowRefine(true)}
-          >
-            AI 문장 다듬기 요청
-          </button>
+        {/* [2026-09] 아래 세 섹션은 전부 아직 동작하지 않습니다 — "AI 문장
+            다듬기"는 버튼이 상태만 바꾸고, 나머지 둘은 고정된 예시 데이터를
+            그립니다. 그런데 이 셋이 편집기 왼쪽 열의 절반을 차지하면서,
+            정작 글을 쓰는 칸이 화면 위쪽 일부로 밀려 있었습니다. 지우지
+            않고 접어 둡니다 — 만들 화면의 설계가 여기 담겨 있어서 참고용으로
+            남길 가치가 있습니다. 실제로 동작하게 되는 순간 이 껍데기를
+            벗기면 됩니다. */}
+        <details className="entry">
+          <summary className="cursor-pointer text-xs text-neutral-500 hover:text-brand list-none">
+            아직 동작하지 않는 화면 3개 보기 (AI 문장 다듬기 · 근거 확인 · 이력서 대조)
+          </summary>
+          <div className="mt-4 space-y-6">
+          <div className="entry space-y-3">
+            <h2 className="entry-title mb-0">AI 문장 다듬기</h2>
+            <p className="text-xs text-neutral-400">
+              다듬을 문장을 선택하거나 아래에 붙여넣어 목표 직무에 맞는 케이스 스터디
+              문장으로 개선할 수 있습니다.
+            </p>
+            <textarea
+              value={sentence}
+              onChange={(e) => setSentence(e.target.value)}
+              placeholder="다듬을 문장 입력"
+              rows={2}
+              className="field-area"
+            />
+            <button
+              className="btn-secondary disabled:opacity-40"
+              disabled={!sentence.trim()}
+              onClick={() => setShowRefine(true)}
+            >
+              AI 문장 다듬기 요청
+            </button>
 
-          {showRefine && (
-            <div className="border-t border-neutral-800 pt-3 mt-3">
-              <p className="text-xs text-neutral-500 mb-2">
-                아래 개선안을 원문과 비교하고 적용 여부를 직접 결정하세요. AI는 사실이나
-                의도를 임의로 변경하지 않습니다.
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 text-sm divide-y sm:divide-y-0 sm:divide-x divide-neutral-800">
-                <div className="sm:pr-6 pb-4 sm:pb-0">
-                  <p className="text-xs text-neutral-500 mb-1">원문</p>
-                  {sentence}
+            {showRefine && (
+              <div className="border-t border-neutral-800 pt-3 mt-3">
+                <p className="text-xs text-neutral-500 mb-2">
+                  아래 개선안을 원문과 비교하고 적용 여부를 직접 결정하세요. AI는 사실이나
+                  의도를 임의로 변경하지 않습니다.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 text-sm divide-y sm:divide-y-0 sm:divide-x divide-neutral-800">
+                  <div className="sm:pr-6 pb-4 sm:pb-0">
+                    <p className="text-xs text-neutral-500 mb-1">원문</p>
+                    {sentence}
+                  </div>
+                  <div className="sm:pl-6 pt-4 sm:pt-0">
+                    <p className="text-xs text-neutral-500 mb-1">AI 개선안</p>
+                    {sentence
+                      ? `${sentence} (핵심 성과와 역할을 강조한 케이스 스터디 문장으로 개선된 예시입니다.)`
+                      : ""}
+                  </div>
                 </div>
-                <div className="sm:pl-6 pt-4 sm:pt-0">
-                  <p className="text-xs text-neutral-500 mb-1">AI 개선안</p>
-                  {sentence
-                    ? `${sentence} (핵심 성과와 역할을 강조한 케이스 스터디 문장으로 개선된 예시입니다.)`
-                    : ""}
+                <div className="flex gap-2 mt-3">
+                  <button className="btn-secondary" onClick={() => setShowRefine(false)}>
+                    취소
+                  </button>
+                  <button className="btn-primary" onClick={() => setShowRefine(false)}>
+                    개선안 적용
+                  </button>
                 </div>
               </div>
-              <div className="flex gap-2 mt-3">
-                <button className="btn-secondary" onClick={() => setShowRefine(false)}>
-                  취소
-                </button>
-                <button className="btn-primary" onClick={() => setShowRefine(false)}>
-                  개선안 적용
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="entry space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="entry-title mb-0">AI 근거 및 사실 확인</h2>
-            <span className="badge bg-amber-500/15 text-amber-400">
-              {evidenceItems.filter((e) => e.status === "검토 필요").length}건 검토 필요
-            </span>
+            )}
           </div>
-          <p className="text-xs text-neutral-400 flex items-start gap-1.5">
-            <Info size={13} strokeWidth={1.5} className="text-neutral-500 shrink-0 mt-0.5" />
-            <span>
-              AI가 제안한 문장별 원본 자료와 근거를 확인하고 사실 여부를 직접
-              표시하세요.{" "}
-              <span className="text-neutral-600">
-                (아래는 예시 데이터입니다 — 문장-출처 연결 기능은 아직 없습니다.)
-              </span>
-            </span>
-          </p>
-          <ul>
-            {evidenceItems.map((e) => (
-              <li key={e.id} className="row text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-neutral-200">{e.label}</span>
-                  <span
-                    className={`badge ${
-                      e.status === "확인 완료"
-                        ? "bg-emerald-500/15 text-emerald-400"
-                        : "bg-amber-500/15 text-amber-400"
-                    }`}
-                  >
-                    {e.status}
-                  </span>
-                </div>
-                <p className="text-xs text-neutral-500 mt-1">연결 원본: {e.source}</p>
-                <div className="flex gap-3 mt-2 text-xs">
-                  <button className="text-brand hover:underline">원본 보기</button>
-                  <button className="text-neutral-400 hover:underline">불일치 표시</button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
 
-        <div className="entry space-y-3">
-          <h2 className="entry-title mb-0">이력서·포트폴리오 불일치 확인</h2>
-          <p className="text-xs text-neutral-400">
-            경력 기간, 소속과 역할, 프로젝트명, 성과 수치의 불일치 가능성 항목을
-            자동으로 탐지합니다.{" "}
-            <span className="text-neutral-600">(예시 데이터 — 이력서 업로드 기능은 아직 없습니다.)</span>
-          </p>
-          <ul>
-            {mismatchItems.map((m) => (
-              <li key={m.id} className="row text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-neutral-200">{m.label}</span>
-                  <button className="text-xs text-brand hover:underline">확인</button>
-                </div>
-                <p className="text-xs text-neutral-500 mt-1">{m.detail}</p>
-              </li>
-            ))}
-          </ul>
-          <button className="text-xs text-brand hover:underline">전체 불일치 항목 보기</button>
-        </div>
+          <div className="entry space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="entry-title mb-0">AI 근거 및 사실 확인</h2>
+              <span className="badge bg-amber-500/15 text-amber-400">
+                {evidenceItems.filter((e) => e.status === "검토 필요").length}건 검토 필요
+              </span>
+            </div>
+            <p className="text-xs text-neutral-400 flex items-start gap-1.5">
+              <Info size={13} strokeWidth={1.5} className="text-neutral-500 shrink-0 mt-0.5" />
+              <span>
+                AI가 제안한 문장별 원본 자료와 근거를 확인하고 사실 여부를 직접
+                표시하세요.{" "}
+                <span className="text-neutral-600">
+                  (아래는 예시 데이터입니다 — 문장-출처 연결 기능은 아직 없습니다.)
+                </span>
+              </span>
+            </p>
+            <ul>
+              {evidenceItems.map((e) => (
+                <li key={e.id} className="row text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-neutral-200">{e.label}</span>
+                    <span
+                      className={`badge ${
+                        e.status === "확인 완료"
+                          ? "bg-emerald-500/15 text-emerald-400"
+                          : "bg-amber-500/15 text-amber-400"
+                      }`}
+                    >
+                      {e.status}
+                    </span>
+                  </div>
+                  <p className="text-xs text-neutral-500 mt-1">연결 원본: {e.source}</p>
+                  <div className="flex gap-3 mt-2 text-xs">
+                    <button className="text-brand hover:underline">원본 보기</button>
+                    <button className="text-neutral-400 hover:underline">불일치 표시</button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="entry space-y-3">
+            <h2 className="entry-title mb-0">이력서·포트폴리오 불일치 확인</h2>
+            <p className="text-xs text-neutral-400">
+              경력 기간, 소속과 역할, 프로젝트명, 성과 수치의 불일치 가능성 항목을
+              자동으로 탐지합니다.{" "}
+              <span className="text-neutral-600">(예시 데이터 — 이력서 업로드 기능은 아직 없습니다.)</span>
+            </p>
+            <ul>
+              {mismatchItems.map((m) => (
+                <li key={m.id} className="row text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-neutral-200">{m.label}</span>
+                    <button className="text-xs text-brand hover:underline">확인</button>
+                  </div>
+                  <p className="text-xs text-neutral-500 mt-1">{m.detail}</p>
+                </li>
+              ))}
+            </ul>
+            <button className="text-xs text-brand hover:underline">전체 불일치 항목 보기</button>
+          </div>
+
+          </div>
+        </details>
 
         <div className="entry flex items-center justify-between">
           <div>
