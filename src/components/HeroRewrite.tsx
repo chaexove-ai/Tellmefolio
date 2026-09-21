@@ -82,7 +82,7 @@ export default function HeroRewrite() {
     <div className="max-w-xl mx-auto">
       {/* 원본 메모 */}
       <div className="entry">
-        <p className="text-[11px] tracking-[0.14em] text-brand mb-2.5">원본 메모</p>
+        <p className="text-xs tracking-[0.14em] text-brand mb-2.5">원본 메모</p>
         <p className="text-sm text-neutral-400 leading-relaxed">“{heroRewrite.source}”</p>
       </div>
 
@@ -93,7 +93,7 @@ export default function HeroRewrite() {
 
       {/* 재작성 결과 */}
       <div className="entry min-h-[132px]" aria-hidden="true">
-        <p className="text-[11px] mb-2.5 flex items-center gap-2 text-brand">
+        <p className="text-xs mb-2.5 flex items-center gap-2 text-brand">
           <span
             className={
               reduced

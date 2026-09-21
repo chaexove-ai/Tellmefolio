@@ -224,7 +224,7 @@ export default function Bookshelf({ portfolios, onUpdated }: BookshelfProps) {
               <span className="book-title flex-1 min-h-0 w-full py-3 text-[13px] text-neutral-300 group-hover:text-neutral-100 transition-colors">
                 {p.title}
               </span>
-              <span className="text-[9.5px] text-neutral-500 pb-2 shrink-0" aria-hidden="true">
+              <span className="text-[12px] text-neutral-500 pb-2 shrink-0" aria-hidden="true">
                 {p.year}
               </span>
             </div>
@@ -254,7 +254,7 @@ export default function Bookshelf({ portfolios, onUpdated }: BookshelfProps) {
                   <p className="book-cover-title line-clamp-3 text-[13px] font-semibold leading-snug">
                     {p.title}
                   </p>
-                  <p className="book-cover-meta mt-1.5 text-[10.5px]">
+                  <p className="book-cover-meta mt-1.5 text-[12px]">
                     {p.job} · {p.year}
                   </p>
                 </div>
@@ -269,7 +269,7 @@ export default function Bookshelf({ portfolios, onUpdated }: BookshelfProps) {
             <button
               type="button"
               onClick={() => openEditor(p)}
-              className="book-cover-edit absolute right-3 top-3 z-30 text-[10.5px] underline
+              className="book-cover-edit absolute right-3 top-3 z-30 text-[12px] underline
                 underline-offset-2 opacity-0 transition-opacity duration-150
                 group-hover:opacity-100 focus-visible:opacity-100"
             >

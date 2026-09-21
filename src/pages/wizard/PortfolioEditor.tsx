@@ -556,7 +556,7 @@ export default function PortfolioEditor() {
 
           {currentProject && (
             <div className="space-y-1.5">
-              <label htmlFor="proj-stack" className="text-[13px] font-medium text-neutral-200">
+              <label htmlFor="proj-stack" className="text-xs font-medium text-neutral-200">
                 사용한 툴 · 키워드
               </label>
               {/* 칩과 입력칸을 하나의 상자 안에 넣습니다. 전에는 입력칸이
@@ -634,7 +634,7 @@ export default function PortfolioEditor() {
                     className="text-xs font-medium text-neutral-300 inline-flex items-center gap-1.5"
                   >
                     담당 역할
-                    <span className="badge bg-neutral-800 text-neutral-500 text-[10px] px-1.5 py-0">
+                    <span className="badge bg-neutral-800 text-neutral-500 px-1.5 py-0">
                       직접 입력
                     </span>
                   </label>
@@ -657,7 +657,7 @@ export default function PortfolioEditor() {
                   {storyFields.map((f, i) => (
                     <div key={f.key} className="flex gap-3">
                       <div className="flex flex-col items-center pt-0.5">
-                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-neutral-800 text-[10px] font-medium text-neutral-400">
+                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-neutral-800 text-xs font-medium text-neutral-400">
                           {i + 1}
                         </span>
                         {i < storyFields.length - 1 && (
@@ -667,11 +667,11 @@ export default function PortfolioEditor() {
                       <div className="flex-1 space-y-1.5 pb-0.5">
                         <label
                           htmlFor={`proj-${f.key}`}
-                          className="text-[13px] font-medium text-neutral-200 inline-flex items-center gap-1.5"
+                          className="text-xs font-medium text-neutral-200 inline-flex items-center gap-1.5"
                         >
                           {f.label}
                           {!f.aiFilled && (
-                            <span className="badge bg-neutral-800 text-neutral-500 text-[10px] px-1.5 py-0">
+                            <span className="badge bg-neutral-800 text-neutral-500 px-1.5 py-0">
                               직접 입력
                             </span>
                           )}
@@ -688,7 +688,7 @@ export default function PortfolioEditor() {
                           placeholder={f.placeholder}
                           rows={f.rows}
                           // 긴 글을 쓰고 읽는 칸입니다. 14px 는 작았습니다.
-                          className="field-area text-[15px] leading-relaxed"
+                          className="field-area leading-relaxed"
                         />
                       </div>
                     </div>

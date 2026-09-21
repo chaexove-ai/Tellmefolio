@@ -228,7 +228,7 @@ export default function StylePanel({
         <span className="text-xs font-medium text-neutral-300">템플릿 · 스타일</span>
         <span className="flex items-center gap-1.5 min-w-0">
           {!open && (
-            <span className="truncate text-[11px] text-neutral-600">
+            <span className="truncate text-xs text-neutral-600">
               {templates.find((t) => t.id === draft.template_id)?.name} ·{" "}
               {draft.color_theme === "dark" ? "다크" : "라이트"} · {draft.font} ·{" "}
               {draft.layout === "1col" ? "1개씩" : "2개씩"} ·{" "}
@@ -261,7 +261,7 @@ export default function StylePanel({
                     onClick={() => update({ template_id: t.id })}
                     aria-pressed={draft.template_id === t.id}
                     title={t.desc}
-                    className={`rounded-lg border px-2.5 py-1 text-[11px] transition-colors ${
+                    className={`rounded-lg border px-2.5 py-1 text-xs transition-colors ${
                       draft.template_id === t.id
                         ? "border-brand/60 bg-brand/[0.08] text-brand"
                         : "border-neutral-800 text-neutral-400 hover:border-neutral-700"
@@ -339,7 +339,7 @@ export default function StylePanel({
                 type="file"
                 accept="image/*"
                 onChange={pickCover}
-                className="block w-[160px] text-[11px] text-neutral-500 file:mr-2 file:rounded file:border-0 file:bg-neutral-800 file:px-2 file:py-1 file:text-[11px] file:text-neutral-300"
+                className="block w-[160px] text-xs text-neutral-500 file:mr-2 file:rounded file:border-0 file:bg-neutral-800 file:px-2 file:py-1 file:text-xs file:text-neutral-300"
               />
             </Group>
 
@@ -350,7 +350,7 @@ export default function StylePanel({
                     key={pr.id}
                     type="button"
                     onClick={() => update(pr.style)}
-                    className="rounded-full border border-neutral-800 px-2.5 py-1 text-[11px] text-neutral-400 hover:border-brand/50 hover:text-brand transition-colors"
+                    className="rounded-full border border-neutral-800 px-2.5 py-1 text-xs text-neutral-400 hover:border-brand/50 hover:text-brand transition-colors"
                   >
                     {pr.name}
                   </button>
@@ -360,19 +360,19 @@ export default function StylePanel({
           </div>
 
           {saveError && (
-            <p role="alert" className="text-[11px] text-brand">
+            <p role="alert" className="text-xs text-brand">
               {saveError}
             </p>
           )}
 
           <div className="flex items-center justify-between gap-2 mt-1 pt-2.5 border-t border-neutral-800/70">
-            <span className="text-[11px] text-neutral-600 truncate">
+            <span className="text-xs text-neutral-600 truncate">
               마지막 저장: {formatRelativeTime(lastSavedAt)}
             </span>
             <div className="flex items-center gap-1.5 shrink-0">
               <button
                 type="button"
-                className="text-[11px] text-neutral-500 hover:text-brand disabled:opacity-40"
+                className="text-xs text-neutral-500 hover:text-brand disabled:opacity-40"
                 disabled={!dirty || saving}
                 onClick={revert}
               >
@@ -380,7 +380,7 @@ export default function StylePanel({
               </button>
               <button
                 type="button"
-                className="btn-primary text-[11px] px-2.5 py-1 disabled:opacity-40 inline-flex items-center gap-1"
+                className="btn-primary text-xs px-2.5 py-1 disabled:opacity-40 inline-flex items-center gap-1"
                 disabled={!dirty || saving}
                 onClick={() => void save()}
               >
@@ -402,7 +402,7 @@ export default function StylePanel({
 function Group({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-2">
-      <span className="text-[11px] text-neutral-600 shrink-0">{label}</span>
+      <span className="text-xs text-neutral-600 shrink-0">{label}</span>
       {children}
     </div>
   );
@@ -425,7 +425,7 @@ function Segmented({
           type="button"
           onClick={() => onChange(o.value)}
           aria-pressed={value === o.value}
-          className={`rounded-md px-2.5 py-1 text-[11px] transition-colors ${
+          className={`rounded-md px-2.5 py-1 text-xs transition-colors ${
             value === o.value ? "bg-brand/[0.12] text-brand" : "text-neutral-500 hover:text-neutral-300"
           }`}
         >

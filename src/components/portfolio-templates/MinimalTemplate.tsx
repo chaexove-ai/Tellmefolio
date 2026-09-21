@@ -54,7 +54,7 @@ export default function MinimalTemplate({ portfolio, projects, coverUrl, bodyFon
           />
         )}
 
-        <p className="text-xs mb-3" style={{ color: palette.textFaint }}>
+        <p className="text-[12px] mb-3" style={{ color: palette.textFaint }}>
           {[portfolio.job, portfolio.year].filter(Boolean).join(" · ") || "Portfolio"}
         </p>
         <h1 className="text-[28px] font-medium mb-6 leading-snug">{portfolio.title}</h1>
@@ -77,8 +77,8 @@ export default function MinimalTemplate({ portfolio, projects, coverUrl, bodyFon
         >
           {visible.map((p) => (
             <div key={p.id}>
-              <h2 className="text-lg font-medium mb-1">{p.name || untitled}</h2>
-              <p className="text-xs mb-8" style={{ color: palette.textFaint }}>
+              <h2 className="text-[18px] font-medium mb-1">{p.name || untitled}</h2>
+              <p className="text-[12px] mb-8" style={{ color: palette.textFaint }}>
                 {[p.role, p.stack.join(", ")].filter(Boolean).join(" · ")}
               </p>
 
@@ -88,7 +88,7 @@ export default function MinimalTemplate({ portfolio, projects, coverUrl, bodyFon
                   if (!value.trim()) return null;
                   return (
                     <div key={key} className="grid grid-cols-[64px_1fr] gap-6">
-                      <p className="text-xs pt-0.5" style={{ color: palette.textFaint }}>
+                      <p className="text-[12px] pt-0.5" style={{ color: palette.textFaint }}>
                         {label}
                       </p>
                       <p className="text-[15px] leading-[1.9] whitespace-pre-wrap" style={{ color: palette.textMuted }}>
@@ -102,7 +102,7 @@ export default function MinimalTemplate({ portfolio, projects, coverUrl, bodyFon
           ))}
         </div>
 
-        <p className="text-xs mt-24" style={{ color: palette.textFaint }}>
+        <p className="text-[12px] mt-24" style={{ color: palette.textFaint }}>
           {portfolio.title}
         </p>
       </div>

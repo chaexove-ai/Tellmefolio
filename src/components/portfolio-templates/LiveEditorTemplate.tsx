@@ -58,7 +58,7 @@ export default function LiveEditorTemplate({ portfolio, projects }: PortfolioTem
           style={{ background: palette.bgRaised, border: `1px solid ${palette.border}` }}
         >
           {/* 프런트매터 */}
-          <p className="text-sm leading-[1.9]">
+          <p className="text-[14px] leading-[1.9]">
             <span style={{ color: palette.textFaint }}>---</span>
             <br />
             <span style={{ color: palette.accent }}>title</span>
@@ -82,7 +82,7 @@ export default function LiveEditorTemplate({ portfolio, projects }: PortfolioTem
           </p>
 
           {portfolio.summary && (
-            <p className="text-sm leading-relaxed mt-6" style={{ color: palette.textMuted }}>
+            <p className="text-[14px] leading-relaxed mt-6" style={{ color: palette.textMuted }}>
               <span style={{ color: palette.textFaint }}>{"// "}</span>
               {portfolio.summary}
             </p>
@@ -125,7 +125,7 @@ export default function LiveEditorTemplate({ portfolio, projects }: PortfolioTem
                 <div
                   className={`pl-4 border-l ${byDensity(d, { roomy: "space-y-5", normal: "space-y-3", tight: "space-y-2" })}`} style={{ borderColor: palette.border }}>
                   {p.role.trim() && (
-                    <p className="text-sm">
+                    <p className="text-[14px]">
                       <span style={{ color: palette.textFaint }}>{"// "}role</span>
                       <br />
                       <span style={{ color: palette.textMuted }}>{p.role}</span>
@@ -135,7 +135,7 @@ export default function LiveEditorTemplate({ portfolio, projects }: PortfolioTem
                     const value = p[key];
                     if (!value.trim()) return null;
                     return (
-                      <p key={key} className="text-sm leading-[1.8] whitespace-pre-wrap">
+                      <p key={key} className="text-[14px] leading-[1.8] whitespace-pre-wrap">
                         <span style={{ color: palette.textFaint }}>{"// "}{label}</span>
                         <br />
                         <span style={{ color: palette.textMuted }}>{value}</span>

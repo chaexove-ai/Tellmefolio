@@ -98,9 +98,9 @@ export default function MagazineTemplate({ portfolio, projects, coverUrl, bodyFo
                   {String(i + 1).padStart(2, "0")}
                 </span>
                 <div className="pt-1">
-                  <h2 className="text-xl font-heading leading-snug">{p.name || untitled}</h2>
+                  <h2 className="text-[20px] font-heading leading-snug">{p.name || untitled}</h2>
                   {(p.role || p.stack.length > 0) && (
-                    <p className="text-xs mt-1" style={{ color: palette.textFaint }}>
+                    <p className="text-[12px] mt-1" style={{ color: palette.textFaint }}>
                       {[p.role, p.stack.join(" · ")].filter(Boolean).join(" — ")}
                     </p>
                   )}
@@ -116,7 +116,7 @@ export default function MagazineTemplate({ portfolio, projects, coverUrl, bodyFo
                       <p className="text-[11px] font-medium mb-1" style={{ color: palette.accent }}>
                         {label}
                       </p>
-                      <p className="text-sm leading-[1.75] whitespace-pre-wrap" style={{ color: palette.textMuted }}>
+                      <p className="text-[14px] leading-[1.75] whitespace-pre-wrap" style={{ color: palette.textMuted }}>
                         {value}
                       </p>
                     </div>

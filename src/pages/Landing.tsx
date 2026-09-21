@@ -249,7 +249,7 @@ export default function Landing() {
               <dl className="grid grid-cols-1 sm:grid-cols-[190px_1fr] sm:gap-x-7">
                 {audiences.map((aud) => (
                   <div key={aud.title} className="contents">
-                    <dt className="font-heading text-[15px] pt-5 sm:border-t border-neutral-800 flex items-center gap-2.5">
+                    <dt className="font-heading pt-5 sm:border-t border-neutral-800 flex items-center gap-2.5">
                       <aud.icon
                         size={17}
                         strokeWidth={1.5}

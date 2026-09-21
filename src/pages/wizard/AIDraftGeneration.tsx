@@ -60,8 +60,8 @@ function useTabFill(value: string, fill: (v: string) => void, example: string) {
 
 function TabHint() {
   return (
-    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 inline-flex items-center gap-1 text-[11px] text-neutral-500 opacity-0 transition-opacity peer-focus:opacity-100">
-      <kbd className="rounded border border-neutral-600 bg-neutral-800 px-1 py-0.5 font-mono text-[10px] text-neutral-300">
+    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 inline-flex items-center gap-1 text-xs text-neutral-500 opacity-0 transition-opacity peer-focus:opacity-100">
+      <kbd className="rounded border border-neutral-600 bg-neutral-800 px-1 py-0.5 font-mono text-xs text-neutral-300">
         Tab
       </kbd>
       예시 입력
@@ -347,8 +347,8 @@ export default function AIDraftGeneration() {
                     placeholder="예: 팀 리딩 경험을 좀 더 부각해줘"
                     className="field-area max-w-[80ch] peer"
                   />
-                  <span className="pointer-events-none absolute right-3 top-2.5 inline-flex items-center gap-1 text-[11px] text-neutral-500 opacity-0 transition-opacity peer-focus:opacity-100">
-                    <kbd className="rounded border border-neutral-600 bg-neutral-800 px-1 py-0.5 font-mono text-[10px] text-neutral-300">
+                  <span className="pointer-events-none absolute right-3 top-2.5 inline-flex items-center gap-1 text-xs text-neutral-500 opacity-0 transition-opacity peer-focus:opacity-100">
+                    <kbd className="rounded border border-neutral-600 bg-neutral-800 px-1 py-0.5 font-mono text-xs text-neutral-300">
                       Tab
                     </kbd>
                     예시 입력

@@ -13,7 +13,7 @@ export default function Faq() {
     <div className="divide-y divide-neutral-800 border-t border-b border-neutral-800">
       {faqs.map((f) => (
         <details key={f.q} className="group">
-          <summary className="flex items-center justify-between gap-4 cursor-pointer list-none py-4 text-[15px] font-medium text-neutral-50 marker:hidden">
+          <summary className="flex items-center justify-between gap-4 cursor-pointer list-none py-4 font-medium text-neutral-50 marker:hidden">
             <span>{f.q}</span>
             <ChevronDown
               size={16}

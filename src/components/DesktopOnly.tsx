@@ -38,7 +38,7 @@ export default function DesktopOnly() {
         <div className="flex items-center justify-center gap-3 mb-7">
           <span className="h-px w-8" style={{ background: `${BRAND}66` }} aria-hidden="true" />
           <span
-            className="text-[11px] font-medium tracking-[0.18em]"
+            className="text-xs font-medium tracking-[0.18em]"
             style={{ color: BRAND }}
           >
             DESKTOP ONLY

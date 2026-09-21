@@ -514,8 +514,11 @@ summary::marker { content: ""; }
 
   /* 배경색이 있는 배지에는 항상 그 색 계열의 진한 텍스트를 써서 회색 글자로
      대비가 죽는 것을 막습니다. */
+  /* [2026-09] 글씨 크기 기준에서 예외입니다. 알약 모양이라 글자가 커지면
+     좌우로 길어져 한 줄에 들어가던 배지들이 줄을 밀어냅니다. 상태를
+     나타내는 짧은 낱말만 들어가는 자리라 12px 로도 읽힙니다. */
   .badge {
-    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium;
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[12px] font-medium;
   }
 
   /* 상태·안내 블록. 왼쪽 컬러 바 + 옅은 배경으로 "알림 카드"처럼 눈에

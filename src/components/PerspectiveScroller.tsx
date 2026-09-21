@@ -138,10 +138,10 @@ export default function PerspectiveScroller() {
 
           {/* 원본 — 계속 화면에 남아 "하나뿐"임을 상기시킵니다 */}
           <div className="rounded-2xl border border-neutral-800 bg-neutral-950/60 px-4 py-3.5 mb-6">
-            <p className="text-[10.5px] tracking-[0.14em] text-brand mb-1.5">
+            <p className="text-xs tracking-[0.14em] text-brand mb-1.5">
               {demoSource.label} — 하나뿐입니다
             </p>
-            <p className="text-[13px] text-neutral-400 leading-relaxed">“{demoSource.text}”</p>
+            <p className="text-xs text-neutral-400 leading-relaxed">“{demoSource.text}”</p>
           </div>
 
           {/* 진행 막대 — 관점 개수만큼 */}
@@ -199,8 +199,8 @@ export default function PerspectiveScroller() {
           <p
             className={
               idx === 0
-                ? "mt-6 text-[11.5px] text-neutral-600 transition-opacity duration-300"
-                : "mt-6 text-[11.5px] text-neutral-600 opacity-0 transition-opacity duration-300"
+                ? "mt-6 text-xs text-neutral-600 transition-opacity duration-300"
+                : "mt-6 text-xs text-neutral-600 opacity-0 transition-opacity duration-300"
             }
           >
             스크롤하면 같은 경험이 다른 직무의 언어로 다시 쓰입니다

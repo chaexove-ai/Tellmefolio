@@ -449,7 +449,7 @@ export default function SourceInput() {
                 <GitHubIcon size={16} />
               </span>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[13.5px] text-neutral-100">{r.name}</p>
+                <p className="truncate text-xs text-neutral-100">{r.name}</p>
                 <div className="mt-1 flex items-center gap-2 text-xs text-neutral-500">
                   <span className="badge bg-neutral-800 text-neutral-400">README</span>
                   {r.language && <span>{r.language}</span>}
@@ -481,7 +481,7 @@ export default function SourceInput() {
                 <Link2 size={16} strokeWidth={1.75} />
               </span>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[13.5px] text-neutral-100">{l.meta}</p>
+                <p className="truncate text-xs text-neutral-100">{l.meta}</p>
                 <div className="mt-1">
                   <span className="badge bg-brand/10 text-brand">웹</span>
                 </div>
@@ -506,7 +506,7 @@ export default function SourceInput() {
                 <StickyNote size={16} strokeWidth={1.75} />
               </span>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[13.5px] text-neutral-100">
+                <p className="truncate text-xs text-neutral-100">
                   {note.trim().slice(0, 40)}
                   {note.trim().length > 40 ? "…" : ""}
                 </p>
@@ -528,7 +528,7 @@ export default function SourceInput() {
               <span className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-lg bg-neutral-900 border border-neutral-800 text-neutral-600">
                 <StickyNote size={16} strokeWidth={1.75} />
               </span>
-              <p className="text-[13.5px] text-neutral-600">
+              <p className="text-xs text-neutral-600">
                 메모 없음 — "메모" 버튼으로 추가하면 여기 표시됩니다
               </p>
             </div>

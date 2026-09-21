@@ -139,7 +139,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-4 gap-4">
         {stats.map((s, i) => (
           <div key={s.label} className="entry p-5">
-            <p className="text-[11px] tracking-wide text-neutral-500">{s.label}</p>
+            <p className="text-xs tracking-wide text-neutral-500">{s.label}</p>
             <p
               className="mt-2 text-[26px] leading-none font-heading text-neutral-100"
               style={s.accent ? { color: s.accent } : undefined}

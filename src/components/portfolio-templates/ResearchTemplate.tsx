@@ -53,7 +53,7 @@ export default function ResearchTemplate({ portfolio, projects, bodyFontStack, l
             {portfolio.title}
           </h1>
           {portfolio.summary && (
-            <p className="text-sm leading-relaxed max-w-[46ch] mx-auto" style={{ color: palette.textMuted }}>
+            <p className="text-[14px] leading-relaxed max-w-[46ch] mx-auto" style={{ color: palette.textMuted }}>
               {portfolio.summary}
             </p>
           )}
@@ -65,7 +65,7 @@ export default function ResearchTemplate({ portfolio, projects, bodyFontStack, l
             <p className="text-[11px] tracking-[0.2em] uppercase mb-3" style={{ color: palette.textFaint }}>
               Contents
             </p>
-            <ol className="space-y-1.5 text-sm">
+            <ol className="space-y-1.5 text-[14px]">
               {visible.map((p, i) => (
                 <li key={p.id} className="flex items-baseline gap-3">
                   <span style={{ color: palette.textFaint, fontFamily: SERIF_STACK }}>
@@ -95,21 +95,21 @@ export default function ResearchTemplate({ portfolio, projects, bodyFontStack, l
               <div className="flex items-baseline gap-3 mb-1.5">
                 <span
                   style={{ fontFamily: SERIF_STACK, color: palette.accent }}
-                  className="text-base"
+                  className="text-[16px]"
                 >
                   {romanNumerals[i] ?? i + 1}.
                 </span>
-                <h2 style={{ fontFamily: SERIF_STACK }} className="text-xl font-normal">
+                <h2 style={{ fontFamily: SERIF_STACK }} className="text-[20px] font-normal">
                   {p.name || untitled}
                 </h2>
               </div>
               {p.role.trim() && (
-                <p className="text-xs mb-5" style={{ color: palette.textFaint }}>
+                <p className="text-[12px] mb-5" style={{ color: palette.textFaint }}>
                   Role — {p.role}
                 </p>
               )}
               {p.stack.length > 0 && (
-                <p className="text-xs mb-5" style={{ color: palette.textFaint }}>
+                <p className="text-[12px] mb-5" style={{ color: palette.textFaint }}>
                   {p.stack.join(" · ")}
                 </p>
               )}
@@ -126,7 +126,7 @@ export default function ResearchTemplate({ portfolio, projects, bodyFontStack, l
                       >
                         {label}
                       </p>
-                      <p className="text-sm leading-[1.8] whitespace-pre-wrap" style={{ color: palette.textMuted }}>
+                      <p className="text-[14px] leading-[1.8] whitespace-pre-wrap" style={{ color: palette.textMuted }}>
                         {value}
                       </p>
                     </div>
