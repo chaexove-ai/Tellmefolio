@@ -1,4 +1,4 @@
-import type { ColorTheme } from "./portfolios";
+import type { ColorTheme, Density } from "./portfolios";
 
 /**
  * Export 템플릿(연구노트/라이브에디터/클린 미니멀/매거진형)이 공통으로 쓰는
@@ -77,3 +77,22 @@ export const MONO_STACK =
 /** 연구노트 템플릿 전용 제목 서체. 앱 자체가 이미 index.html에서 로드해
  *  둔 서체라 추가 네트워크 요청이 없습니다. */
 export const SERIF_STACK = "'Gowun Batang', serif";
+
+/**
+ * [2026-09] 여백 단계를 고르는 도우미.
+ *
+ * 템플릿마다 기본 간격이 다릅니다(연구노트 py-16, 미니멀 py-20, 라이브
+ * 에디터 py-10 …). 공통 클래스 하나를 내려주면 어느 한 템플릿에는 반드시
+ * 안 맞기 때문에, 고르는 방법만 공유하고 실제 값은 각 템플릿이 자기
+ * 기준으로 셋을 적습니다. Tailwind JIT 이 클래스를 찾으려면 소스에 완성된
+ * 문자열이 있어야 한다는 제약과도 맞습니다(문자열을 조립하지 않습니다).
+ *
+ * ?? v.normal 이 있는 이유: 프런트엔드는 git push 로 자동 배포되지만
+ * DB 마이그레이션은 손으로 실행합니다. 새 코드가 먼저 올라가고 density
+ * 컬럼이 아직 없으면 d 가 undefined 로 들어오는데, 그대로 두면 간격
+ * 클래스가 통째로 빠져 레이아웃이 무너집니다. 기본값으로 떨어뜨려
+ * "마이그레이션 전에는 기존 간격 그대로"가 되게 합니다.
+ */
+export function byDensity<T>(d: Density, v: { roomy: T; normal: T; tight: T }): T {
+  return v[d] ?? v.normal;
+}

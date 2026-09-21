@@ -1,4 +1,4 @@
-import { getPortfolioPalette, SERIF_STACK } from "../../lib/portfolioTheme";
+import { getPortfolioPalette, SERIF_STACK, byDensity } from "../../lib/portfolioTheme";
 import type { PortfolioTemplateProps } from "./types";
 import { hasContent } from "./types";
 
@@ -24,6 +24,8 @@ const fieldLabels: Array<{ key: "context" | "problem" | "execution" | "outcome" 
  */
 export default function ResearchTemplate({ portfolio, projects, bodyFontStack, lang = "ko" }: PortfolioTemplateProps) {
   const palette = getPortfolioPalette(portfolio.color_theme);
+  const d = portfolio.density;
+  const isTwoCol = portfolio.layout === "2col";
   const visible = projects.filter(hasContent);
   // 이 템플릿은 학술 논문 관례를 흉내 낸 게 컨셉이라 Background/Problem/...
   // 같은 소제목은 ko/en 상관없이 항상 영어로 둡니다(디자인 의도). "제목
@@ -35,7 +37,7 @@ export default function ResearchTemplate({ portfolio, projects, bodyFontStack, l
       style={{ background: palette.bg, color: palette.text, fontFamily: bodyFontStack }}
       className="w-full"
     >
-      <div className="mx-auto max-w-[640px] px-10 py-16">
+      <div className={`mx-auto max-w-[640px] px-10 ${byDensity(d, { roomy: "py-24", normal: "py-16", tight: "py-10" })}`}>
         {/* 타이틀 페이지 */}
         <div className="text-center pb-14 mb-14" style={{ borderBottom: `1px solid ${palette.border}` }}>
           <p
@@ -77,7 +79,17 @@ export default function ResearchTemplate({ portfolio, projects, bodyFontStack, l
         )}
 
         {/* 본문 섹션들 */}
-        <div className="space-y-16">
+        <div
+          className={
+            isTwoCol
+              ? byDensity(d, {
+                  roomy: "grid grid-cols-2 gap-x-8 gap-y-24",
+                  normal: "grid grid-cols-2 gap-x-8 gap-y-16",
+                  tight: "grid grid-cols-2 gap-x-6 gap-y-10",
+                })
+              : byDensity(d, { roomy: "space-y-24", normal: "space-y-16", tight: "space-y-10" })
+          }
+        >
           {visible.map((p, i) => (
             <section key={p.id}>
               <div className="flex items-baseline gap-3 mb-1.5">
@@ -102,7 +114,7 @@ export default function ResearchTemplate({ portfolio, projects, bodyFontStack, l
                 </p>
               )}
 
-              <div className="space-y-5">
+              <div className={byDensity(d, { roomy: "space-y-7", normal: "space-y-5", tight: "space-y-3" })}>
                 {fieldLabels.map(({ key, label }) => {
                   const value = p[key];
                   if (!value.trim()) return null;

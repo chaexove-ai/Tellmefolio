@@ -1,4 +1,4 @@
-import { getPortfolioPalette, MONO_STACK } from "../../lib/portfolioTheme";
+import { getPortfolioPalette, MONO_STACK, byDensity } from "../../lib/portfolioTheme";
 import type { PortfolioTemplateProps } from "./types";
 import { hasContent } from "./types";
 
@@ -34,10 +34,12 @@ export default function LiveEditorTemplate({ portfolio, projects }: PortfolioTem
   // 이 템플릿의 정체성상 항상 다크 팔레트를 씁니다.
   const palette = getPortfolioPalette("dark");
   const visible = projects.filter(hasContent);
+  const d = portfolio.density;
+  const isTwoCol = portfolio.layout === "2col";
 
   return (
     <div style={{ background: palette.bg, color: palette.text, fontFamily: MONO_STACK }} className="w-full">
-      <div className="mx-auto max-w-[720px] px-6 py-10">
+      <div className={`mx-auto max-w-[720px] px-6 ${byDensity(d, { roomy: "py-16", normal: "py-10", tight: "py-6" })}`}>
         {/* 창 크롬 */}
         <div
           className="rounded-t-lg px-4 py-2.5 flex items-center gap-2"
@@ -86,7 +88,17 @@ export default function LiveEditorTemplate({ portfolio, projects }: PortfolioTem
             </p>
           )}
 
-          <div className="mt-10 space-y-10">
+          <div
+            className={
+              isTwoCol
+                ? byDensity(d, {
+                    roomy: "mt-16 grid grid-cols-2 gap-x-8 gap-y-16",
+                    normal: "mt-10 grid grid-cols-2 gap-x-8 gap-y-10",
+                    tight: "mt-6 grid grid-cols-2 gap-x-6 gap-y-6",
+                  })
+                : byDensity(d, { roomy: "mt-16 space-y-16", normal: "mt-10 space-y-10", tight: "mt-6 space-y-6" })
+            }
+          >
             {visible.map((p, i) => (
               <div key={p.id}>
                 <p className="text-[13px] mb-3">
@@ -110,7 +122,8 @@ export default function LiveEditorTemplate({ portfolio, projects }: PortfolioTem
                   </div>
                 )}
 
-                <div className="pl-4 space-y-3 border-l" style={{ borderColor: palette.border }}>
+                <div
+                  className={`pl-4 border-l ${byDensity(d, { roomy: "space-y-5", normal: "space-y-3", tight: "space-y-2" })}`} style={{ borderColor: palette.border }}>
                   {p.role.trim() && (
                     <p className="text-sm">
                       <span style={{ color: palette.textFaint }}>{"// "}role</span>

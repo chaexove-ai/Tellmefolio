@@ -11,6 +11,7 @@ import {
   PortfolioError,
   type ColorTheme,
   type LayoutDirection,
+  type Density,
   type PortfolioRow,
   type TemplateId,
 } from "../lib/portfolios";
@@ -36,9 +37,9 @@ const fontOptions = Object.keys(FONT_STACKS);
  *  목업이었습니다. 동작이 프리셋이니 이름도 프리셋으로 맞췄습니다 —
  *  실제 추천 기능이 생기면 그때 따로 만듭니다. */
 const presets: Array<{ id: string; name: string; style: StyleDraft }> = [
-  { id: "r1", name: "심플 다크", style: { color_theme: "dark", font: "Pretendard", layout: "2col" } },
-  { id: "r2", name: "뉴트럴 라이트", style: { color_theme: "light", font: "Noto Sans KR", layout: "1col" } },
-  { id: "r3", name: "테크 모노", style: { color_theme: "dark", font: "Spoqa Han Sans", layout: "2col" } },
+  { id: "r1", name: "심플 다크", style: { color_theme: "dark", font: "Pretendard", layout: "2col", density: "normal" } },
+  { id: "r2", name: "뉴트럴 라이트", style: { color_theme: "light", font: "Noto Sans KR", layout: "1col", density: "roomy" } },
+  { id: "r3", name: "테크 모노", style: { color_theme: "dark", font: "Spoqa Han Sans", layout: "2col", density: "tight" } },
 ];
 
 /** 구글 폰트에서 새로 받아야 하는 서체만. Pretendard·Gowun Batang 은
@@ -54,6 +55,7 @@ interface StyleDraft {
   color_theme: ColorTheme;
   font: string;
   layout: LayoutDirection;
+  density: Density;
 }
 
 interface FullDraft extends StyleDraft {
@@ -64,7 +66,7 @@ interface Props {
   portfolioId: string;
   /** 마운트 시점의 저장된 값. 이후 부모의 portfolio 는 이 패널이 올린
    *  값으로 바뀌므로 다시 받지 않습니다(되먹임 방지). */
-  initial: Pick<PortfolioRow, "template_id" | "color_theme" | "font" | "layout">;
+  initial: Pick<PortfolioRow, "template_id" | "color_theme" | "font" | "layout" | "density">;
   /** DB에 저장돼 있는 표지의 공개 URL. "되돌리기"가 복원할 대상이라
    *  화면에 지금 보이는 표지(아직 안 올린 새 파일일 수 있음)와 반드시
    *  구분해야 합니다 — 한 값으로 합치면 되돌리기가 방금 고른 파일을
@@ -93,6 +95,7 @@ export default function StylePanel({
     color_theme: initial.color_theme,
     font: fontOptions.includes(initial.font) ? initial.font : DEFAULT_FONT,
     layout: initial.layout,
+    density: initial.density,
   });
   const [snapshot, setSnapshot] = useState<FullDraft>(draft);
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
@@ -152,7 +155,8 @@ export default function StylePanel({
     draft.template_id !== snapshot.template_id ||
     draft.color_theme !== snapshot.color_theme ||
     draft.font !== snapshot.font ||
-    draft.layout !== snapshot.layout;
+    draft.layout !== snapshot.layout ||
+    draft.density !== snapshot.density;
 
   const pickCover = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -227,7 +231,8 @@ export default function StylePanel({
             <span className="truncate text-[11px] text-neutral-600">
               {templates.find((t) => t.id === draft.template_id)?.name} ·{" "}
               {draft.color_theme === "dark" ? "다크" : "라이트"} · {draft.font} ·{" "}
-              {draft.layout === "1col" ? "1단" : "2단"}
+              {draft.layout === "1col" ? "1개씩" : "2개씩"} ·{" "}
+              {draft.density === "roomy" ? "넓게" : draft.density === "tight" ? "좁게" : "보통"}
             </span>
           )}
           {dirty && <span className="size-1.5 rounded-full bg-brand shrink-0" aria-label="저장 안 됨" />}
@@ -279,14 +284,29 @@ export default function StylePanel({
               />
             </Group>
 
-            <Group label="레이아웃">
+            {/* 전에는 "레이아웃 1단/2단" 하나였는데, 매거진형 템플릿만 그
+                값을 읽고 나머지 셋은 무시해서 눌러도 아무 일이 없었습니다.
+                두 축으로 나누고 템플릿 4종 전부에 구현했습니다. */}
+            <Group label="나열">
               <Segmented
                 value={draft.layout}
                 options={[
-                  { value: "1col", label: "1단" },
-                  { value: "2col", label: "2단" },
+                  { value: "1col", label: "1개씩" },
+                  { value: "2col", label: "2개씩" },
                 ]}
                 onChange={(v) => update({ layout: v as LayoutDirection })}
+              />
+            </Group>
+
+            <Group label="여백">
+              <Segmented
+                value={draft.density}
+                options={[
+                  { value: "roomy", label: "넓게" },
+                  { value: "normal", label: "보통" },
+                  { value: "tight", label: "좁게" },
+                ]}
+                onChange={(v) => update({ density: v as Density })}
               />
             </Group>
 

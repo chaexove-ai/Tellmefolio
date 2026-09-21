@@ -1,4 +1,4 @@
-import { getPortfolioPalette } from "../../lib/portfolioTheme";
+import { getPortfolioPalette, byDensity } from "../../lib/portfolioTheme";
 import type { PortfolioTemplateProps } from "./types";
 import { hasContent } from "./types";
 
@@ -37,12 +37,14 @@ const fieldLabelsByLang: Record<"ko" | "en", Array<{ key: FieldKey; label: strin
 export default function MinimalTemplate({ portfolio, projects, coverUrl, bodyFontStack, lang = "ko" }: PortfolioTemplateProps) {
   const palette = getPortfolioPalette(portfolio.color_theme);
   const visible = projects.filter(hasContent);
+  const d = portfolio.density;
+  const isTwoCol = portfolio.layout === "2col";
   const fieldLabels = fieldLabelsByLang[lang];
   const untitled = lang === "en" ? "Untitled" : "제목 없음";
 
   return (
     <div style={{ background: palette.bg, color: palette.text, fontFamily: bodyFontStack }} className="w-full">
-      <div className="mx-auto max-w-[600px] px-10 py-20">
+      <div className={`mx-auto max-w-[600px] px-10 ${byDensity(d, { roomy: "py-28", normal: "py-20", tight: "py-12" })}`}>
         {coverUrl && (
           <img
             src={coverUrl}
@@ -62,7 +64,17 @@ export default function MinimalTemplate({ portfolio, projects, coverUrl, bodyFon
           </p>
         )}
 
-        <div className="space-y-24">
+        <div
+          className={
+            isTwoCol
+              ? byDensity(d, {
+                  roomy: "grid grid-cols-2 gap-x-8 gap-y-28",
+                  normal: "grid grid-cols-2 gap-x-8 gap-y-24",
+                  tight: "grid grid-cols-2 gap-x-6 gap-y-14",
+                })
+              : byDensity(d, { roomy: "space-y-28", normal: "space-y-24", tight: "space-y-14" })
+          }
+        >
           {visible.map((p) => (
             <div key={p.id}>
               <h2 className="text-lg font-medium mb-1">{p.name || untitled}</h2>
@@ -70,7 +82,7 @@ export default function MinimalTemplate({ portfolio, projects, coverUrl, bodyFon
                 {[p.role, p.stack.join(", ")].filter(Boolean).join(" · ")}
               </p>
 
-              <div className="space-y-7">
+              <div className={byDensity(d, { roomy: "space-y-9", normal: "space-y-7", tight: "space-y-4" })}>
                 {fieldLabels.map(({ key, label }) => {
                   const value = p[key];
                   if (!value.trim()) return null;

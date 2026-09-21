@@ -11,7 +11,14 @@ import type { Draft } from "./draft";
 
 export type TemplateId = "research" | "live" | "minimal" | "magazine";
 export type ColorTheme = "dark" | "light";
+/** 프로젝트를 몇 개씩 나열할지. 문서 전체의 단 수가 아니라 "프로젝트
+ *  카드가 한 줄에 몇 개 오는가" 입니다 — 전에는 매거진형 템플릿만 이
+ *  값을 읽었고 나머지 셋은 무시했습니다. */
 export type LayoutDirection = "1col" | "2col";
+
+/** 여백. PDF가 한 장 넘치거나 반대로 휑할 때 실제로 만지게 되는 값이라
+ *  1단/2단과 별개 축으로 뒀습니다. 템플릿 4종 전부에 적용됩니다. */
+export type Density = "roomy" | "normal" | "tight";
 
 export interface PortfolioRow {
   id: string;
@@ -25,6 +32,7 @@ export interface PortfolioRow {
   color_theme: ColorTheme;
   font: string;
   layout: LayoutDirection;
+  density: Density;
   cover_image_path: string | null;
   summary: string | null;
   gaps: string[];
@@ -203,7 +211,10 @@ export async function deletePortfolioProject(id: string): Promise<void> {
 export async function updatePortfolioStyle(
   id: string,
   patch: Partial<
-    Pick<PortfolioRow, "template_id" | "color_theme" | "font" | "layout" | "cover_image_path">
+    Pick<
+      PortfolioRow,
+      "template_id" | "color_theme" | "font" | "layout" | "density" | "cover_image_path"
+    >
   >
 ): Promise<void> {
   const sb = await requireClient();

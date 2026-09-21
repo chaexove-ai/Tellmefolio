@@ -1,4 +1,4 @@
-import { getPortfolioPalette } from "../../lib/portfolioTheme";
+import { getPortfolioPalette, byDensity } from "../../lib/portfolioTheme";
 import type { PortfolioTemplateProps } from "./types";
 import { hasContent } from "./types";
 
@@ -37,6 +37,7 @@ export default function MagazineTemplate({ portfolio, projects, coverUrl, bodyFo
   const palette = getPortfolioPalette(portfolio.color_theme);
   const visible = projects.filter(hasContent);
   const isTwoCol = portfolio.layout === "2col";
+  const d = portfolio.density;
   const fieldLabels = fieldLabelsByLang[lang];
   const untitled = lang === "en" ? "Untitled" : "제목 없음";
 
@@ -66,7 +67,7 @@ export default function MagazineTemplate({ portfolio, projects, coverUrl, bodyFo
         </div>
       </div>
 
-      <div className="mx-auto max-w-[760px] px-10 py-14">
+      <div className={`mx-auto max-w-[760px] px-10 ${byDensity(d, { roomy: "py-20", normal: "py-14", tight: "py-9" })}`}>
         {portfolio.summary && (
           <p
             className="font-heading italic text-[22px] leading-[1.6] mb-16 max-w-[52ch]"
@@ -76,7 +77,17 @@ export default function MagazineTemplate({ portfolio, projects, coverUrl, bodyFo
           </p>
         )}
 
-        <div className={isTwoCol ? "grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-16" : "space-y-16"}>
+        <div
+          className={
+            isTwoCol
+              ? byDensity(d, {
+                  roomy: "grid grid-cols-2 gap-x-10 gap-y-24",
+                  normal: "grid grid-cols-2 gap-x-10 gap-y-16",
+                  tight: "grid grid-cols-2 gap-x-8 gap-y-10",
+                })
+              : byDensity(d, { roomy: "space-y-24", normal: "space-y-16", tight: "space-y-10" })
+          }
+        >
           {visible.map((p, i) => (
             <article key={p.id}>
               <div className="flex items-start gap-4 mb-4">
@@ -96,7 +107,7 @@ export default function MagazineTemplate({ portfolio, projects, coverUrl, bodyFo
                 </div>
               </div>
 
-              <div className="space-y-4 pl-[56px]">
+              <div className={`pl-[56px] ${byDensity(d, { roomy: "space-y-6", normal: "space-y-4", tight: "space-y-2.5" })}`}>
                 {fieldLabels.map(({ key, label }) => {
                   const value = p[key];
                   if (!value.trim()) return null;
