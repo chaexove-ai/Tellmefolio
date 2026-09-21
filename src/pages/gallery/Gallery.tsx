@@ -1,7 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { SlidersHorizontal } from "lucide-react";
-import { listPublicPortfolios } from "../../lib/portfolios";
+import { Globe, Lock, SlidersHorizontal, Upload } from "lucide-react";
+import { useAuth } from "../../auth/AuthProvider";
+import {
+  listMyPortfolios,
+  listPublicPortfolios,
+  updatePortfolioListed,
+  updatePortfolioVisibility,
+  PortfolioError,
+} from "../../lib/portfolios";
 import type { LibraryPortfolio } from "../../lib/portfolios";
 import Reveal from "../../components/Reveal";
 import GrainCover from "../../components/GrainCover";
@@ -12,36 +19,41 @@ import GrainCover from "../../components/GrainCover";
  * 전에는 mockData.galleryItems("김지수", "박민준" …)를 그렸습니다. 없는
  * 사람의 없는 포트폴리오였고, 눌러도 아무것도 없었습니다.
  *
- * 목록에 뜨는 조건은 두 가지를 모두 만족할 때입니다 — visibility='public'
- * 이고 listed=true. 링크만 공유한 사람은 여기 나오지 않습니다(공개와
- * 커뮤니티 게시를 나눈 이유는 20260922090000 마이그레이션 주석 참고).
+ * 목록 조건은 visibility='public' 이고 listed=true 인 것 전부입니다 —
+ * user_id 조건은 없습니다. 내 것만 보이는 구조가 아니라, 누가 올렸든
+ * 최근 수정순으로 섞입니다. 링크만 공유한 사람은 여기 나오지 않습니다.
+ *
+ * [여기서 바로 올립니다]
+ * 올리는 기능이 내보내기 화면에만 있으면, 커뮤니티를 보다가 "나도 올려야지"
+ * 한 사람이 내보내기까지 찾아 들어가야 합니다. 이 화면에서 바로 고르게
+ * 합니다. 내보내기 쪽 체크박스는 그대로 둡니다 — 거기는 "만들기를 끝내고
+ * 공유하는" 맥락이라 둘 다 자기 자리가 있습니다.
  *
  * [빠진 필터]
- * '구성 방식(결과 중심형/문제-실행-결과형)' 필터를 뺐습니다. 그런 컬럼이
- * 없어서 mock 에서만 존재하던 값입니다. 고를 수는 있는데 아무것도
- * 걸러지지 않는 칸을 두느니 없는 편이 낫습니다.
- *
- * [작성자 이름]
- * 표시하지 않습니다. portfolios 에 작성자 이름 컬럼이 없고, 남의
- * auth.users 는 RLS 가 막습니다. 무엇보다 본인이 이름을 넣겠다고 한 적이
- * 없는데 커뮤니티에 실명을 띄울 이유가 없습니다.
+ * '구성 방식' 필터를 뺐습니다. 그런 컬럼이 없어서 골라도 아무것도 걸러지지
+ * 않던 칸입니다. 작성자 이름도 표시하지 않습니다 — 컬럼이 없고, 본인이
+ * 실명을 넣겠다고 한 적 없는데 띄울 이유가 없습니다.
  */
 export default function Gallery() {
+  const { session, configured } = useAuth();
+  const userId = session?.user?.id;
+
   const [items, setItems] = useState<LibraryPortfolio[] | null>(null);
   const [loadError, setLoadError] = useState(false);
 
   const [job, setJob] = useState("전체 직무");
   const [year, setYear] = useState("전체 연도");
 
-  useEffect(() => {
-    let alive = true;
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  const load = () => {
     listPublicPortfolios()
-      .then((rows) => alive && setItems(rows))
-      .catch(() => alive && setLoadError(true));
-    return () => {
-      alive = false;
-    };
-  }, []);
+      .then(setItems)
+      .catch(() => setLoadError(true));
+  };
+
+  useEffect(load, []);
 
   const jobs = useMemo(
     () => ["전체 직무", ...Array.from(new Set((items ?? []).map((g) => g.job)))],
@@ -60,13 +72,30 @@ export default function Gallery() {
 
   return (
     <div className="max-w-4xl space-y-6">
-      <div>
-        <h1 className="text-xl font-heading">커뮤니티</h1>
-        <p className="text-xs text-neutral-500 mt-1">
-          작성자가 직접 커뮤니티에 올린 포트폴리오입니다. 열람만 가능하며, 내용을
-          복제하거나 자신의 포트폴리오로 가져올 수 없습니다.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-heading">커뮤니티</h1>
+          <p className="text-xs text-neutral-500 mt-1">
+            작성자가 직접 올린 포트폴리오입니다. 열람만 가능하며, 내용을 복제하거나
+            자신의 포트폴리오로 가져올 수 없습니다.
+          </p>
+        </div>
+        {configured && userId && (
+          <button
+            className="btn-secondary shrink-0 inline-flex items-center gap-1.5"
+            onClick={() => setPickerOpen(true)}
+          >
+            <Upload size={14} aria-hidden="true" />
+            올리기
+          </button>
+        )}
       </div>
+
+      {notice && (
+        <p className="entry py-3 text-sm text-neutral-200 border-l-2 border-l-brand">
+          {notice}
+        </p>
+      )}
 
       {items !== null && items.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-sm text-neutral-300">
@@ -84,24 +113,15 @@ export default function Gallery() {
         </div>
       )}
 
-      {items === null && !loadError && (
-        <p className="text-sm text-neutral-500">불러오는 중…</p>
-      )}
-
-      {loadError && (
-        <p className="text-sm text-red-400">목록을 불러오지 못했습니다.</p>
-      )}
+      {items === null && !loadError && <p className="text-sm text-neutral-500">불러오는 중…</p>}
+      {loadError && <p className="text-sm text-red-400">목록을 불러오지 못했습니다.</p>}
 
       {items !== null && items.length === 0 && (
         <div className="entry p-8 text-center">
           <p className="text-sm text-neutral-300">아직 올라온 포트폴리오가 없습니다.</p>
           <p className="text-xs text-neutral-500 mt-2">
-            내보내기 화면에서 공개한 뒤 "커뮤니티 목록에도 올리기"를 체크하면
-            여기에 나타납니다.
+            위 "올리기"에서 내 포트폴리오를 골라 처음으로 올려보세요.
           </p>
-          <Link to="/library" className="btn-secondary inline-flex mt-5">
-            내 서재로
-          </Link>
         </div>
       )}
 
@@ -130,6 +150,189 @@ export default function Gallery() {
       {items !== null && items.length > 0 && filtered.length === 0 && (
         <p className="text-sm text-neutral-500">조건에 맞는 포트폴리오가 없습니다.</p>
       )}
+
+      {pickerOpen && userId && (
+        <UploadPicker
+          userId={userId}
+          onClose={() => setPickerOpen(false)}
+          onDone={(message) => {
+            setPickerOpen(false);
+            setNotice(message);
+            setItems(null);
+            load();
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+/**
+ * 내 포트폴리오를 골라 커뮤니티에 올리고 내리는 창.
+ *
+ * 체크 상태는 "올릴 것"이고, 저장을 눌러야 반영됩니다 — 체크하자마자
+ * 올라가면 잘못 누른 것을 되돌릴 방법이 없습니다.
+ *
+ * **비공개인 것을 고르면 공개로 함께 전환됩니다.** 커뮤니티 노출은
+ * 링크 공개를 전제로 하기 때문인데(RLS 가 비공개 행을 아예 막습니다),
+ * 사용자가 모르고 누를 일이 아니라 목록에서 그 행마다 표시하고 창 아래에도
+ * 한 번 더 적습니다.
+ */
+function UploadPicker({
+  userId,
+  onClose,
+  onDone,
+}: {
+  userId: string;
+  onClose: () => void;
+  onDone: (message: string) => void;
+}) {
+  const [mine, setMine] = useState<LibraryPortfolio[] | null>(null);
+  const [checked, setChecked] = useState<Set<string>>(new Set());
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    listMyPortfolios(userId)
+      .then((rows) => {
+        if (!alive) return;
+        setMine(rows);
+        setChecked(new Set(rows.filter((r) => r.listed).map((r) => r.id)));
+      })
+      .catch(() => alive && setError("목록을 불러오지 못했습니다."));
+    return () => {
+      alive = false;
+    };
+  }, [userId]);
+
+  const toggle = (id: string) =>
+    setChecked((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+  const rows = mine ?? [];
+  const toAdd = rows.filter((r) => !r.listed && checked.has(r.id));
+  const toRemove = rows.filter((r) => r.listed && !checked.has(r.id));
+  const willGoPublic = toAdd.filter((r) => r.visibility === "비공개");
+  const changed = toAdd.length + toRemove.length;
+
+  const save = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      for (const r of toAdd) {
+        // 순서가 중요합니다 — 공개로 먼저 바꿔야 목록에 올렸을 때
+        // 곧바로 열립니다. 반대면 잠깐 "목록엔 있는데 안 열리는" 상태가
+        // 생깁니다.
+        if (r.visibility === "비공개") {
+          await updatePortfolioVisibility(r.id, "public");
+        }
+        await updatePortfolioListed(r.id, true);
+      }
+      for (const r of toRemove) {
+        // 내릴 때는 공개까지 함께 닫지 않습니다. 링크를 이미 남에게
+        // 보냈을 수 있어서, 목록에서 내리는 것과 링크를 끊는 것은
+        // 서로 다른 결정입니다.
+        await updatePortfolioListed(r.id, false);
+      }
+
+      const parts: string[] = [];
+      if (toAdd.length) parts.push(`${toAdd.length}건을 올렸습니다`);
+      if (toRemove.length) parts.push(`${toRemove.length}건을 내렸습니다`);
+      onDone(parts.join(" · ") || "변경사항이 없습니다.");
+    } catch (e) {
+      setError(e instanceof PortfolioError ? e.message : "저장하지 못했습니다.");
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-10 p-4">
+      <div className="surface w-full max-w-lg">
+        <h2 className="entry-title mb-1">커뮤니티에 올리기</h2>
+        <p className="text-xs text-neutral-500 mb-4">
+          올릴 포트폴리오를 고르세요. 체크를 풀면 커뮤니티에서 내려갑니다.
+        </p>
+
+        {mine === null && !error && <p className="text-sm text-neutral-500">불러오는 중…</p>}
+
+        {mine !== null && rows.length === 0 && (
+          <div className="text-center py-6">
+            <p className="text-sm text-neutral-400">아직 만든 포트폴리오가 없습니다.</p>
+            <Link to="/wizard" className="btn-secondary inline-flex mt-4">
+              포트폴리오 만들기
+            </Link>
+          </div>
+        )}
+
+        {rows.length > 0 && (
+          <ul className="max-h-72 overflow-y-auto space-y-1 -mx-1 px-1">
+            {rows.map((p) => (
+              <li key={p.id}>
+                <label className="flex items-center gap-2.5 py-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={checked.has(p.id)}
+                    onChange={() => toggle(p.id)}
+                    className="accent-brand shrink-0"
+                  />
+                  <span
+                    aria-hidden="true"
+                    className="w-[9px] h-[9px] rounded-[2px] shrink-0"
+                    style={{ backgroundColor: p.jobColor }}
+                  />
+                  <span className="text-sm text-neutral-200 truncate flex-1 min-w-0">
+                    {p.title}
+                  </span>
+                  <span className="text-xs text-neutral-600 shrink-0">{p.job}</span>
+                  <span
+                    className="text-xs shrink-0 inline-flex items-center gap-1 text-neutral-500"
+                    title={p.visibility === "공개" ? "링크로 공개 중" : "비공개 — 올리면 공개로 바뀝니다"}
+                  >
+                    {p.visibility === "공개" ? (
+                      <Globe size={11} aria-hidden="true" />
+                    ) : (
+                      <Lock size={11} aria-hidden="true" />
+                    )}
+                    {p.visibility}
+                  </span>
+                </label>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {willGoPublic.length > 0 && (
+          <p className="text-xs text-neutral-400 mt-3 border-l-2 border-l-brand pl-3">
+            비공개 {willGoPublic.length}건이 함께 공개로 바뀝니다 — 커뮤니티에
+            올리려면 링크가 열려 있어야 합니다. 재직 중이라면 회사 사람도 볼 수
+            있다는 뜻입니다.
+          </p>
+        )}
+
+        {error && (
+          <p role="alert" className="text-xs text-red-400 mt-3">
+            {error}
+          </p>
+        )}
+
+        <div className="flex justify-end gap-2 mt-6">
+          <button className="btn-secondary" onClick={onClose} disabled={saving}>
+            취소
+          </button>
+          <button
+            className="btn-primary disabled:opacity-40"
+            onClick={() => void save()}
+            disabled={saving || changed === 0}
+          >
+            {saving ? "저장 중…" : changed > 0 ? `저장 (${changed}건)` : "저장"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
