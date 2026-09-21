@@ -289,20 +289,33 @@ export default function Landing() {
           </div>
         </section>
 
-        {/* ── 최종 CTA (기본 면) ──────────────────────────────── */}
-        <section className="px-4 sm:px-8 py-28 text-center">
-          <h2 className="font-heading text-2xl mb-3">지금 바로 첫 포트폴리오를 만들어 보세요</h2>
-          <p className="text-sm text-neutral-400 mb-9">
+        {/* ── 최종 CTA (반전 배너) ────────────────────────────
+            [2026-09] 마지막 CTA 를 화면 폭을 다 쓰는 어두운 배너로
+            바꿨습니다. 크림 면이 이어지다 끝나면 페이지가 흐지부지
+            멈춘 것처럼 보이는데, 어두운 띠가 들어오면 "여기가 끝이고
+            할 일은 이것"이라는 마침표가 생깁니다.
+
+            차별점 구역과 같은 .surface-invert 를 씁니다 — 가운데의
+            주장과 끝의 행동이 같은 색으로 묶여 북엔드가 됩니다. 색을
+            하나 더 만들면 그냥 어두운 구역이 둘인 셈이 됩니다. */}
+        <section className="surface-invert px-4 sm:px-8 py-28 lg:py-36 text-center">
+          <h2 className="font-heading text-2xl lg:text-[36px] leading-snug mb-3 lg:mb-4">
+            지금 바로 첫 포트폴리오를 만들어 보세요
+          </h2>
+          <p className="text-sm lg:text-base text-neutral-400 mb-9 lg:mb-10">
             Google, GitHub, Figma 계정으로 3초 만에 시작할 수 있습니다.
           </p>
-          <Link to="/login" className="btn-primary inline-block">
+          <Link to="/login" className="btn-primary inline-block lg:px-7 lg:py-3.5 lg:text-base">
             시작하기
           </Link>
         </section>
       </main>
 
       {/* TODO: /terms, /privacy 페이지를 만든 뒤 아래 주석을 풀어주세요. */}
-      <footer className="px-4 sm:px-8 py-10 border-t border-neutral-800 text-sm text-neutral-400">
+      {/* 배너 아래에 크림 푸터가 오면 마침표를 찍고 한 줄을 더 붙인
+          꼴이 됩니다. 푸터도 같은 어둠으로 이어 붙여 하나의 바닥으로
+          읽히게 합니다. */}
+      <footer className="surface-invert px-4 sm:px-8 py-10 border-t border-neutral-800 text-sm text-neutral-400">
         <div className="max-w-4xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <span className="font-heading text-neutral-100">Tellmefolio</span>
           <nav className="flex flex-wrap items-center gap-x-5 gap-y-2" aria-label="푸터 메뉴">
