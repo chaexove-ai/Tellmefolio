@@ -3,7 +3,7 @@
 새 세션에서 이 프로젝트를 이어받을 때 이 파일부터 읽으면 됩니다.
 사람이 읽어도 되고, AI 에이전트에게 "repo의 CONTEXT.md 읽어줘"라고 해도 됩니다.
 
-> 마지막 갱신: 2026-08-20 (커밋 `5615425`)
+> 마지막 갱신: 2026-09-21 (커밋 `259f0e6`)
 
 ---
 
@@ -11,10 +11,13 @@
 
 AI 포트폴리오 제작 서비스. 한 줄 요약은 **"이야기하면 포트폴리오가 됩니다"** 입니다.
 
-원본 자료(GitHub 저장소, PDF, 링크, 메모)를 넣으면 AI가 케이스 스터디 구조로
-초안을 만들고, 채용 공고를 넣으면 **그 직무의 언어로 다시 씁니다.**
-같은 프로젝트를 프론트엔드 / UX / 기획 관점으로 각각 재해석하는 것이
-이 서비스의 유일한 차별점이고, 랜딩의 "차별점 몰입 구간"이 그것을 보여줍니다.
+원본 자료(GitHub 저장소, 웹 링크, 메모)를 넣으면 AI가 케이스 스터디 구조
+(맥락·역할·문제·실행·성과·회고)로 초안을 만들고, 사용자가 편집해 PDF로
+내보냅니다. 차별점 한 줄은 **"GitHub에는 코드가 있지만 이야기는 없다"** 입니다.
+
+직무별 재해석(채용 공고에 맞춰 다시 쓰기)은 최상위 기능이 아니라 **부가
+기능**으로 격하했습니다. 타깃도 개발자에 국한하지 않고 포트폴리오가 필요한
+모든 직무로 넓혔습니다.
 
 ---
 
@@ -24,8 +27,10 @@ AI 포트폴리오 제작 서비스. 한 줄 요약은 **"이야기하면 포트
 Vite + React 18 + TypeScript
 Tailwind CSS 3
 GSAP (ScrollTrigger)      — 랜딩 모션
-react-router-dom          — 라우팅
+react-router-dom          — 라우팅 (랜딩만 정적 import, 나머지는 React.lazy)
 lucide-react              — 아이콘
+Supabase                  — Auth + DB + Storage + Edge Functions
+jsPDF + html2canvas       — PDF 내보내기 (동적 import, 별도 청크)
 ```
 
 **Next.js 가 아닙니다.** 빌드는 `tsc -b && vite build` 라 타입 에러가 있으면
@@ -37,31 +42,81 @@ lucide-react              — 아이콘
 
 | | |
 |---|---|
-| 로컬 (집 맥) | `~/Projects/tellmefolio-app` |
-| GitHub | `github.com/chaexove-ai/Tellmefolio` (Public, SSH 인증) |
+| 로컬 (집 맥) | `~/Projects/tellmefolio-app` — 원격 SSH |
+| 로컬 (회사 맥) | `~/Documents/GitHub/Tellmefolio` — 원격 **HTTPS**, GitHub Desktop으로 푸시 |
+| GitHub | `github.com/chaexove-ai/Tellmefolio` (Public) |
 | Vercel | `vercel.com/tellmefolio/tellmefolio-app` |
 | 배포 URL | `tellmefolio-app.vercel.app` |
 
+클론이 두 개이고 **원격 인증 방식이 서로 다릅니다.** 터미널에서 `git push`가
+안 되면 먼저 `git remote -v`로 어느 쪽 클론인지 확인하세요. HTTPS 쪽은
+GitHub Desktop의 "Push origin"을 씁니다.
+
 ### 배포 방식 — 중요
 
-**Vercel 프로젝트가 GitHub repo에 연결돼 있습니다. `git push` 하면 자동 배포됩니다.**
+**Vercel이 GitHub repo에 연결돼 있어 `git push` 하면 프런트엔드는 자동
+배포됩니다.** `vercel --prod` 는 쓰지 않습니다(로컬 CLI 인증이 깨져 있고
+고칠 필요도 없습니다).
 
-`vercel --prod` 를 손으로 칠 필요가 없습니다. (현재 로컬 Vercel CLI 인증은
-깨져 있고, 고칠 필요도 없습니다)
+**Edge Function은 git push로 배포되지 않습니다.** 따로 실행해야 합니다.
+
+```bash
+supabase functions deploy generate-draft
+supabase functions deploy translate-portfolio
+
+# 시크릿도 별도입니다
+supabase secrets set ANTHROPIC_API_KEY=...
+supabase secrets set MODEL=claude-haiku-...
+```
+
+DB 마이그레이션(`supabase/migrations/`)도 마찬가지로 별도 적용입니다.
 
 ### 노트북 두 대로 작업합니다
 
-오전엔 회사 노트북, 저녁엔 집 노트북을 씁니다. 예전에는 zip 파일로 코드를
-주고받다가 버전이 뒤섞여 어느 쪽이 최신인지 알 수 없게 된 적이 있습니다.
-지금은 GitHub으로 동기화합니다.
+오전엔 회사 노트북, 저녁엔 집 노트북. 시작할 때 `git pull`, 끝낼 때 `git push`.
+**패치 zip을 주고받는 방식은 쓰지 않습니다** — repo가 Public이니 clone 하면 됩니다.
 
-```bash
-git pull      # 작업 시작할 때
-git push      # 작업 끝낼 때 (= 배포)
-```
+`.env.local` 은 git에 없으니 노트북마다 직접 만들어야 합니다
+(`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`).
+Vite는 **빌드 시점에** 환경변수를 코드에 박습니다 — 변수만 추가하고 재배포하지
+않으면 반영되지 않습니다. 값이 없으면 앱이 죽지 않고 로그인만 목업으로
+폴백하므로, `/login` 에 "연동 준비 중입니다"가 뜨는지로 원인을 확인합니다.
 
-**패치 zip을 새로 만들어 주고받는 방식은 쓰지 않습니다.** repo가 Public이니
-소스가 필요하면 clone 해서 보면 됩니다.
+---
+
+## 데이터 구조
+
+`supabase/migrations/` 에 SQL이 있습니다. RLS는 전부 `user_id = auth.uid()` 기준.
+
+| 테이블 | 용도 |
+|---|---|
+| `portfolios` | 포트폴리오 1건. 제목·직무(`job`)·직무색(`job_color`)·공개범위·템플릿·색테마·폰트·레이아웃·커버이미지 경로·요약·`gaps[]` |
+| `portfolio_projects` | 그 안의 프로젝트들. `position` 순서, 케이스 스터디 6필드 + `stack[]` |
+| `draft_generations` | AI 호출 기록 (`input_tokens`/`output_tokens`) — **사용 횟수 제한의 토대인데 아직 화면과 연결 안 됨** |
+| Storage `portfolio-covers` | 커버 이미지 |
+
+### Edge Functions
+
+| 함수 | 하는 일 |
+|---|---|
+| `generate-draft` | 저장소 README·언어 구성 + 메모 + **웹 링크 본문**을 받아 초안 JSON 생성. 링크는 서버가 직접 fetch(브라우저는 CORS에 막힘), `isSafeUrl`로 루프백·사설망·메타데이터 엔드포인트 차단(SSRF 방지), 최대 3개·4000자·타임아웃 8초 |
+| `translate-portfolio` | 포트폴리오를 영어로. title/summary/job + 프로젝트 서술형 6필드 + role/stack |
+
+제약: **첫 응답까지 150초.** AI 생성이 더 길어지면 큐로 빼거나 그 호출만 분리해야
+합니다. 키는 서버에만 두고 JWT는 자동 검증됩니다.
+
+### 영문 내보내기가 동작하는 방식
+
+Export 화면에서 "영어 버전"을 **누른 시점에만** 번역을 호출합니다 — 한국어만
+쓰고 끝나면 번역 비용이 0입니다. 실패하거나 응답이 이상하면 원문을 그대로
+보여줍니다(번역 실패보다 원문 노출이 안전한 실패 방식).
+
+주의할 분리가 하나 있습니다. **데이터 텍스트는 `translate.ts`가 번역하지만,
+템플릿이 자체적으로 그리는 라벨("맥락 및 배경" 같은 섹션 제목)은 코드에 박힌
+문자열이라 번역 대상이 아닙니다.** 그래서 `PortfolioTemplateProps.lang` 으로
+따로 알려줍니다. 템플릿에 새 라벨을 추가하면 `lang` 분기도 같이 넣으세요.
+(예외: `ResearchTemplate` 의 Background/Problem 소제목은 학술 논문 관례를
+흉내 낸 디자인 의도라 ko/en 상관없이 항상 영어입니다.)
 
 ---
 
@@ -86,6 +141,11 @@ git push      # 작업 끝낼 때 (= 배포)
 > Tailwind 클래스를 쓰면 라이트/다크가 자동으로 맞습니다.
 > 액센트를 테마별로 분리한 이유는 대비율입니다 — 단일 hex로는 라이트와
 > 다크를 동시에 WCAG AA(4.5:1)에 맞출 수 없었습니다.
+> **라이트 테마에서는 neutral 번호가 뒤집힙니다** — `--n950` 이 가장 밝은 색입니다.
+
+예외가 두 군데 있습니다. 홈(`Dashboard.tsx`)의 액센트와 직무색 배지는 hex를
+씁니다 — `job_color` 가 원래 hex 컬럼이고, "hex + 알파 접미사"로 은은한 배경을
+만드는 방식이라 RGB 트리플 변수로는 다루기 어렵습니다.
 
 ### 폰트
 
@@ -96,7 +156,6 @@ git push      # 작업 끝낼 때 (= 배포)
 
 `lucide-react`, `strokeWidth={1.5}`, 색은 `text-brand` 로 변수 상속.
 Gowun Batang의 가는 획과 무게를 맞추려고 얇게 갑니다.
-
 예외는 소셜 로그인 로고입니다 — `BrandIcons.tsx` 참고.
 
 ### 톤
@@ -110,24 +169,31 @@ Gowun Batang의 가는 획과 무게를 맞추려고 얇게 갑니다.
 
 ```
 src/
-├── index.css                     테마 변수 + @layer components (.btn-*, .sec-*, .step-*)
+├── index.css                     테마 변수 + @layer components (.btn-*, .sec-*, .step-*, .book*)
 ├── landingContent.ts             랜딩 문구를 한곳에. 카피만 고칠 땐 이 파일만 열면 됨
-├── mockData.ts                   갤러리·버전 목업 데이터
+├── lib/
+│   ├── supabase.ts               동적 import로 별도 청크 (메인 청크 유지)
+│   ├── portfolios.ts             포트폴리오·프로젝트 CRUD, 직무·직무색 수정
+│   ├── draft.ts                  generate-draft 호출
+│   ├── translate.ts              translate-portfolio 호출 + 결과 병합
+│   ├── github.ts                 공개 저장소 목록·README·언어 구성
+│   ├── exportPdf.ts              DOM → PDF
+│   └── templates.ts  portfolioTheme.ts  scrollRefresh.ts  formatRelativeTime.ts
 ├── pages/
-│   ├── Landing.tsx               랜딩 조립 (섹션 순서, 대상 목록)
-│   ├── Login.tsx                 소셜 로그인 (목업 — 아래 TODO 참고)
-│   ├── gallery/  wizard/  account/  jobswitch/
-│   ├── Dashboard.tsx  PortfolioList.tsx  VersionHistory.tsx
+│   ├── Landing.tsx  Login.tsx  Dashboard.tsx(홈)  PortfolioList.tsx(내 서재)
+│   ├── wizard/       SourceInput → TemplateStyle → AIDraftGeneration → PortfolioEditor → Export
+│   ├── gallery/      커뮤니티 (라우트는 /community, 폴더명은 gallery 유지)
+│   ├── account/  jobswitch/  VersionHistory.tsx
 └── components/
-    ├── Steps.tsx                 "어떻게 만들어지나요" 3단계 세로 연결선
-    ├── PerspectiveScroller.tsx   차별점 몰입 구간 (스크롤 = 직무 전환)
-    ├── BeforeAfterDemo.tsx       위 구간의 모바일·모션감소 대체 탭 위젯
-    ├── BrandIcons.tsx            Google/GitHub/Figma 공식 로고 SVG
-    ├── SocialLoginButtons.tsx    소셜 버튼 3종
-    ├── GrainCover.tsx            이미지 없는 그라디언트+그레인 커버 (파일 0개)
-    ├── Bookshelf.tsx  HeroRewrite.tsx  Reveal.tsx  Faq.tsx
-    └── ScrollProgress.tsx  ThemeToggle.tsx
+    ├── portfolio-templates/      PortfolioRenderer + Research/Live/Minimal/Magazine
+    ├── Bookshelf.tsx             책등 세로쓰기 서재 (hover로 펼쳐짐)
+    ├── Steps.tsx  PerspectiveScroller.tsx  BeforeAfterDemo.tsx  HeroRewrite.tsx
+    ├── BrandIcons.tsx  SocialLoginButtons.tsx  UserMenu.tsx  GrainCover.tsx
+    └── Faq.tsx  Reveal.tsx  RouteFallback.tsx  ScrollProgress.tsx  ScrollToTop.tsx  ThemeToggle.tsx
 ```
+
+`docs/archive/` 의 `적용방법-v*.md`, `랜딩재구성.md` 는 **이미 반영이 끝난 옛
+작업 지시서**입니다. 현재 코드 기준이 아니니 참고만 하세요.
 
 ### 랜딩 섹션 순서와 설계 의도
 
@@ -138,7 +204,7 @@ src/
 히어로        기본 면   HeroRewrite 모션
 차별점        밝은 면   스크롤 잠금 몰입 구간
 작동 방식     기본 면   세로 연결선
-결과물        밝은 면   가로 스크롤
+결과물        밝은 면   가로 스크롤 (갤러리 링크는 제거, 카드는 정적)
 대상          기본 면   정의 목록(dl)
 FAQ           밝은 면   아코디언
 최종 CTA      기본 면
@@ -146,27 +212,22 @@ FAQ           밝은 면   아코디언
 
 ---
 
-## 최근 작업 (2026-08-20, 커밋 `5615425`)
+## 최근 작업 (2026-09-21)
 
-1. **3단계 숫자가 연결선에 가려지던 버그 수정**
-   z-index 문제가 아니라 알파 문제였습니다. `.step-item.is-on .step-dot` 이
-   `background-color: rgb(var(--brand) / 0.1)` 로 불투명 배경을 덮어써서
-   배지가 90% 투명해졌고, 뒤의 연결선이 숫자를 관통했습니다.
-   → 불투명 바닥(`--n950`) + 브랜드 틴트를 `background-image` 로 한 겹.
-   보이는 색은 동일하고 뒤만 안 비칩니다.
+1. **웹 링크 자료를 초안 생성에 실제로 반영** — 고른 링크가 화면에만 있고
+   서버로 가지 않아 "링크만 선택"하면 400이 나던 문제. SSRF 가드 포함.
+2. **GitHub 저장소 목록 401을 재연결 안내로 구분** — provider 토큰은 메모리에만
+   있어 새로고침하면 사라집니다. "재로그인"이 아니라 "GitHub 연결 한 번 더"로
+   풀리는 문제라 일반 오류와 분리했습니다.
+3. **프로젝트 추가·삭제, 직무·직무색 편집** — 프로젝트 행이 AI 초안 경로로만
+   생기던 것, 직무 배지가 클릭해도 반응 없던 것, 색상 모달이 저장해도 남지
+   않던 것을 모두 실제 동작으로.
+4. **영문 내보내기** — 위 "영문 내보내기가 동작하는 방식" 참고.
+5. **홈 가독성·책장 확대** — 홈 카드마다 같은 brand 아이콘 원이 반복돼 구획이
+   안 보이던 것을 accent 색으로 분리. 책등 38→54px, 높이 164→224px.
 
-2. **차별점·대상 섹션에 아이콘 추가**
-   `PerspectiveView` 에 `icon` 필드 추가 (Code / Compass / Target),
-   대상 목록에 GraduationCap / Shuffle / Layers.
-
-3. **소셜 로그인 버튼에 브랜드 로고**
-   Google·Figma는 공식 색 고정(색 자체가 식별 정보), GitHub은 `currentColor`
-   (원래 단색이라 다크에서 묻힘 → 버튼 글자색을 따라감).
-   버튼 껍데기는 전부 우리 테마 변수. 로고는 왼쪽 20px에 고정하고 라벨만
-   가운데 정렬 — 라벨 길이가 달라 로고 열이 어긋나면 탐색이 느려집니다.
-
-4. **`Steps.tsx` 타입 에러 수정** — `useRef<HTMLDivElement>` 가 `<ol>` 에
-   붙어 있어 `tsc -b` 가 멈췄습니다. `HTMLOListElement` 로 정정.
+그 이전: DB 스키마 + 마법사/서재의 실제 테이블 연동, 에디터 재설계, 커버
+이미지 저장, PDF 내보내기, 라우트 코드 스플리팅, Supabase 인증 연동.
 
 ---
 
@@ -174,18 +235,25 @@ FAQ           밝은 면   아코디언
 
 | 항목 | 메모 |
 |---|---|
-| **실제 OAuth 연동** | 지금은 목업 — `navigate("/library")` 로 넘어갈 뿐입니다. 연동 시 `SocialLoginButtons` 에 `busy` prop 을 연결해 중복 클릭을 막으세요 |
+| **AI 사용 횟수 제한** | 화면의 "3/5회"가 아직 가짜입니다. `draft_generations` 테이블에 호출 기록은 이미 쌓이니, 이걸 세서 Edge Function에서 막으면 됩니다 |
 | **`/terms`, `/privacy`** | 푸터 링크는 주석으로 준비만 해둔 상태. 개인정보처리방침은 법적 의무입니다 |
 | **FAQ 답변** | `landingContent.ts` 의 데이터 정책·가격 답변이 `TODO` 로 비어 있습니다. 특히 "제 자료가 AI 학습에 사용되나요?"는 잘못 쓰면 문제가 됩니다 |
-| 프리렌더 | CSR 전용이라 네이버·다음 색인이 안 됩니다 |
-| 코드 스플리팅 | 라우트 20개가 단일 청크 372KB. `React.lazy` 분할 |
-| Before-After 데모 | 직무별 재구성을 나란히 비교로 보여주는 섹션 |
+| 랜딩 카피 | 개발자 관점으로 다시 쓰기 — 생성 파이프라인이 실제로 돈 뒤에 하기로 했고, 이제 돕니다 |
+| 목업 섹션 복구 | 에디터의 "AI 근거 확인"·"이력서 불일치 확인" 이 렌더링만 막힌 상태입니다(코드는 보존) |
+| AI 문장 다듬기 | 초안을 받은 뒤 문장 단위로 고쳐 쓰는 기능 |
+| 프리렌더 | CSR 전용이라 네이버·다음 색인이 안 됩니다. 전체 프리렌더보다 `index.html` 메타태그 + 랜딩 정적화 정도가 비용 대비 낫다고 판단 |
+| 스크롤 초기화 | `ScrollToTop` 을 넣었지만 완전히 해결되지 않았습니다. GSAP ScrollTrigger 충돌 의심 |
+| 웹 형식 내보내기 | Export의 "웹" 버튼은 `disabled` 이고 구현이 없습니다 |
 
 ### 건드리지 말 것
 
-- **`public/og.png`** — 책 모양 등으로 바꾸는 안을 검토했지만 **현행 유지로 결정**했습니다.
-- `.env`, `.env.local`, `.vercel/` — `.gitignore` 에 있습니다. repo가 Public이니
-  절대 커밋되지 않도록 주의하세요. (`.env.local` 에 Vercel OIDC 토큰이 들어갑니다)
+- **`public/og.png`** — 바꾸는 안을 검토했지만 **현행 유지로 결정**했습니다.
+- **`src/pages/gallery/` 폴더명** — 라우트만 `/community` 로 옮겼고 폴더는 그대로입니다.
+- `.env`, `.env.local`, `.vercel/`, `Claude outputs/` — `.gitignore` 에 있습니다.
+  repo가 Public이니 절대 커밋되지 않도록 주의하세요.
+- **Anthropic API 키와 service_role 키는 프런트엔드에 절대 두지 않습니다.**
+- GitHub OAuth 에 `repo` 권한은 요청하지 않습니다 — 비공개 코드 읽기·쓰기
+  전권이라 공개 저장소만 지원하는 이 서비스에 과합니다.
 
 ---
 
@@ -196,3 +264,6 @@ FAQ           밝은 면   아코디언
 
 파일을 고치기 전에는 커밋해서 되돌릴 지점을 만들고, 고친 뒤에는 `git diff` 로
 의도한 변경만 들어갔는지 확인하는 습관을 지킵니다.
+
+커밋 전에 `npm run build` 를 한 번 돌리세요 — `tsc -b` 가 포함돼 있어
+타입 에러가 배포까지 가지 않습니다.
