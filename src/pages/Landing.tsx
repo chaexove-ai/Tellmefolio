@@ -192,7 +192,7 @@ export default function Landing() {
             파는 주장이고, 스크롤 잠금으로 이미 시간을 가장 오래 붙잡는
             구간입니다. 화면이 어두워지면 그 멈춤이 의도한 것으로 읽힙니다.
             다른 구역까지 뒤집으면 쉼표가 아니라 또 다른 반복이 됩니다. */}
-        <section className="surface-brand">
+        <section className="surface-brand-bright">
           <PerspectiveScroller />
         </section>
 
