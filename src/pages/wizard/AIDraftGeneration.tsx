@@ -126,6 +126,7 @@ export default function AIDraftGeneration() {
       const { draft: result } = await generateDraft({
         materials,
         note,
+        links: links.map((l) => l.meta),
         job,
         structure,
         extra,

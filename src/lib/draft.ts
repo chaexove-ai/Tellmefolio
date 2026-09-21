@@ -34,6 +34,7 @@ export class DraftError extends Error {}
 export async function generateDraft(input: {
   materials: RepoMaterial[];
   note: string;
+  links: string[];
   job: string;
   structure: string;
   extra: string;
@@ -53,10 +54,17 @@ export async function generateDraft(input: {
     readmeTruncated: m.readmeTruncated,
   }));
 
+  // [2026-09] links 를 처음으로 실제로 보냅니다. 지금까지는 SourceInput에서
+  // 고른 웹 링크가 화면에 목록으로만 보이고, 여기서는 아예 빠져 있었습니다
+  // — 웹 링크만 골랐을 때 materials·note가 둘 다 비어서 Edge Function이
+  // "초안을 만들 자료가 없습니다"로 400을 내던 원인이었습니다. 실제 URL
+  // 내용을 가져오는 건 서버(Edge Function)가 합니다 — 브라우저에서 임의
+  // 외부 사이트로 fetch하면 CORS에 막히는 경우가 대부분입니다.
   const { data, error } = await sb.functions.invoke("generate-draft", {
     body: {
       materials,
       note: input.note,
+      links: input.links,
       job: input.job,
       structure: input.structure,
       extra: input.extra,
