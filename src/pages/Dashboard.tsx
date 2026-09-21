@@ -151,7 +151,7 @@ export default function Dashboard() {
     // 없어졌습니다 — 최소 폭이 보장되니 남는 가로를 카드가 쓰는 편이 낫습니다.
     <div className="space-y-14">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-heading">홈</h1>
+        <h1 className="text-2xl font-heading">홈</h1>
         <Link to="/library/portfolios" className="text-sm text-brand hover:underline">
           포트폴리오 목록 보기
         </Link>
@@ -171,12 +171,16 @@ export default function Dashboard() {
         {stats.map((s, i) => (
           <div
             key={s.label}
-            className="p-5"
+            className="px-4 py-3.5"
             style={{ backgroundColor: s.accent ? s.accent.fill : BRAND_FILL }}
           >
+            {/* [2026-09] 띠 높이를 줄였습니다. 이 칸은 "지금 상태"를 스치듯
+                확인하는 자리인데, 숫자를 크게 잡고 위아래 여백을 넉넉히
+                두니 화면 맨 위에서 주인공처럼 자리를 차지했습니다.
+                숫자와 라벨을 한 줄에 묶어 세로 길이를 줄입니다. */}
             <div className="flex items-center gap-2">
               <s.icon
-                size={15}
+                size={14}
                 strokeWidth={1.75}
                 aria-hidden="true"
                 className={s.accent ? undefined : "text-brand"}
@@ -184,13 +188,15 @@ export default function Dashboard() {
               />
               <p className="text-xs tracking-wide text-neutral-500">{s.label}</p>
             </div>
-            <p
-              className="mt-2.5 text-[30px] leading-none font-heading text-neutral-100"
-              style={s.accent ? { color: s.accent.ink } : undefined}
-            >
-              {statValues[i]}
-            </p>
-            <p className="mt-2 text-xs text-neutral-600">{s.sub}</p>
+            <div className="mt-1.5 flex items-baseline gap-2">
+              <p
+                className="text-[22px] leading-none font-heading text-neutral-100"
+                style={s.accent ? { color: s.accent.ink } : undefined}
+              >
+                {statValues[i]}
+              </p>
+              <p className="text-xs text-neutral-600 truncate">{s.sub}</p>
+            </div>
           </div>
         ))}
       </div>

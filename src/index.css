@@ -482,7 +482,12 @@ summary::marker { content: ""; }
   flex: 0 0 300px;
 }
 
-.marquee:hover .marquee-track,
+/* [2026-09 수정] hover 로 멈추던 것을 뺐습니다. 흐르다 멈추는 편이
+   읽기에는 낫지만, 커서가 지나가기만 해도 멈춰서 "고장났나" 싶은
+   순간이 더 잦았습니다. 카드 내용은 훑어보는 것이지 정독하는 것이
+   아니라 계속 흐르는 쪽을 택합니다.
+   키보드 포커스는 남깁니다 — 탭으로 들어온 사람은 그 자리를 봐야
+   하고, 그때 움직이면 따라갈 수가 없습니다. */
 .marquee:focus-within .marquee-track {
   animation-play-state: paused;
 }
