@@ -15,7 +15,7 @@ import {
   Workflow,
 } from "lucide-react";
 import AIRequestStatus from "../../components/AIRequestStatus";
-import { aiUsage, type AIRequestStatus as Status } from "../../mockData";
+import { type AIRequestStatus as Status } from "../../mockData";
 import { useAuth } from "../../auth/AuthProvider";
 import type { RepoMaterial } from "../../lib/github";
 import { generateDraft, DraftError, type Draft } from "../../lib/draft";
@@ -88,7 +88,6 @@ export default function AIDraftGeneration() {
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
 
-  const limitReached = aiUsage.dailyUsed >= aiUsage.dailyLimit;
   // [2026-09] 자료함에 웹 링크만 담고 GitHub 저장소나 메모가 없으면
   // "생성할 자료가 없습니다"로 버튼이 계속 비활성이었던 버그를 고쳤습니다
   // — links 를 안 보고 있었습니다.
@@ -400,38 +399,13 @@ export default function AIDraftGeneration() {
         </div>
       )}
 
-      <div className="entry">
-        <h2 className="entry-title">AI 사용량</h2>
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <p className="text-xs text-neutral-500">오늘 남은 횟수</p>
-            <p className="font-medium text-neutral-100">
-              {aiUsage.dailyLimit - aiUsage.dailyUsed} / {aiUsage.dailyLimit}회
-            </p>
-          </div>
-          <div>
-            <p className="text-xs text-neutral-500">이번 달 남은 횟수</p>
-            <p className="font-medium text-neutral-100">
-              {aiUsage.monthlyLimit - aiUsage.monthlyUsed} / {aiUsage.monthlyLimit}회
-            </p>
-          </div>
-        </div>
-        <p className="text-xs text-neutral-600 mt-2">
-          한도 초과 시 기존 포트폴리오 열람·편집·내보내기는 계속 이용할 수 있습니다.
-        </p>
-      </div>
-
       {status === "idle" && (
         <button
           className="btn-primary disabled:opacity-40 disabled:cursor-not-allowed"
-          disabled={limitReached || !hasMaterial}
+          disabled={!hasMaterial}
           onClick={() => void startGeneration()}
         >
-          {limitReached
-            ? "오늘 AI 사용 한도를 초과했습니다"
-            : !hasMaterial
-              ? "생성할 자료가 없습니다"
-              : "AI 초안 생성 요청"}
+          {!hasMaterial ? "생성할 자료가 없습니다" : "AI 초안 생성 요청"}
         </button>
       )}
 

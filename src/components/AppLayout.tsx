@@ -2,7 +2,6 @@ import { Suspense, useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import DesktopOnly, { DESKTOP_MIN_WIDTH } from "./DesktopOnly";
 import { LibraryBig, Sparkles, Repeat, Users, Settings, Menu, X } from "lucide-react";
-import AIUsageBadge from "./AIUsageBadge";
 import RouteFallback from "./RouteFallback";
 import UserMenu from "./UserMenu";
 
@@ -93,8 +92,9 @@ export default function AppLayout() {
         </Link>
         <NavList />
         <div className="pt-6 border-t border-neutral-800 px-2 space-y-4">
-          <AIUsageBadge />
           {/* 다크 테마를 감추면서 토글을 내렸습니다 — index.html 주석 참고 */}
+          {/* [2026-09] AI 사용량 배지를 내렸습니다 — 한도를 정한 적이 없는데
+              "N회 남음"이라는 하드코딩된 숫자가 떠 있었습니다. */}
           <UserMenu />
         </div>
       </aside>
@@ -139,7 +139,6 @@ export default function AppLayout() {
             </div>
             <NavList onNavigate={() => setDrawerOpen(false)} />
             <div className="pt-6 border-t border-neutral-800 px-2 space-y-4">
-              <AIUsageBadge />
               <UserMenu onNavigate={() => setDrawerOpen(false)} />
             </div>
           </aside>

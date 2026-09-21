@@ -11,7 +11,6 @@ import {
   AlertCircle,
   LoaderCircle,
 } from "lucide-react";
-import { aiUsage } from "../mockData";
 import { useAuth } from "../auth/AuthProvider";
 import {
   listMyPortfolios,
@@ -314,34 +313,6 @@ export default function Dashboard() {
             </Link>
           ))}
         </div>
-      </div>
-
-      <div className="entry p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-heading text-neutral-200">AI 사용량 요약</h2>
-          <Link to="/settings" className="text-sm text-brand hover:underline">
-            계정 설정
-          </Link>
-        </div>
-        <div className="grid grid-cols-2 gap-5 text-sm">
-          <div>
-            <p className="text-neutral-500 text-xs">오늘 남은 AI 요청</p>
-            <p className="text-2xl font-heading text-brand mt-1">
-              {aiUsage.dailyLimit - aiUsage.dailyUsed} / {aiUsage.dailyLimit}회
-            </p>
-            <p className="text-xs text-neutral-500 mt-1">일일 한도 기준 · {aiUsage.plan} 플랜</p>
-          </div>
-          <div>
-            <p className="text-neutral-500 text-xs">이번 달 사용</p>
-            <p className="text-2xl font-heading text-neutral-100 mt-1">
-              {aiUsage.monthlyUsed} / {aiUsage.monthlyLimit}회
-            </p>
-            <p className="text-xs text-neutral-500 mt-1">마지막 요청: 포트폴리오 초안 생성</p>
-          </div>
-        </div>
-        <p className="text-xs text-neutral-600 mt-4">
-          한도 초과 시 기존 포트폴리오 열람·편집·내보내기는 계속 이용 가능합니다.
-        </p>
       </div>
 
       <div className="entry p-6">

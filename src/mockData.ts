@@ -2,22 +2,6 @@
 
 export type AIRequestStatus = "idle" | "pending" | "processing" | "completed" | "failed";
 
-export interface AIUsage {
-  dailyUsed: number;
-  dailyLimit: number;
-  monthlyUsed: number;
-  monthlyLimit: number;
-  plan: "무료" | "프로";
-}
-
-export const aiUsage: AIUsage = {
-  dailyUsed: 2,
-  dailyLimit: 5,
-  monthlyUsed: 18,
-  monthlyLimit: 30,
-  plan: "프로",
-};
-
 export interface Portfolio {
   id: string;
   title: string;

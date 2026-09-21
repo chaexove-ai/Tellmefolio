@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AIRequestStatus from "../../components/AIRequestStatus";
-import { portfolios, aiUsage, type AIRequestStatus as Status } from "../../mockData";
+import { portfolios, type AIRequestStatus as Status } from "../../mockData";
 
 /**
  * [와이어프레임 리뷰 반영]
@@ -19,7 +19,6 @@ export default function JobSwitchRequest() {
   const [structure, setStructure] = useState<"결과 중심형" | "문제-실행-결과형">("결과 중심형");
   const [status, setStatus] = useState<Status>("idle");
 
-  const limitReached = aiUsage.dailyUsed >= aiUsage.dailyLimit;
   const canSubmit = targetJob.trim() && (jobPostingUrl.trim() || jobPostingText.trim());
 
   const submit = () => {
@@ -127,10 +126,10 @@ export default function JobSwitchRequest() {
       {status === "idle" && (
         <button
           className="btn-primary disabled:opacity-40 disabled:cursor-not-allowed"
-          disabled={!canSubmit || limitReached}
+          disabled={!canSubmit}
           onClick={submit}
         >
-          {limitReached ? "오늘 AI 사용 한도를 초과했습니다" : "재구성 요청하기"}
+          재구성 요청하기
         </button>
       )}
 
@@ -148,20 +147,6 @@ export default function JobSwitchRequest() {
           결과 확인
         </button>
       )}
-
-      <div className="entry">
-        <h2 className="entry-title">AI 사용량 안내</h2>
-        <p className="text-sm text-neutral-200">
-          오늘 남은 요청 {aiUsage.dailyLimit - aiUsage.dailyUsed} / {aiUsage.dailyLimit}
-        </p>
-        <p className="text-sm text-neutral-200">
-          월 사용량 {aiUsage.monthlyUsed} / {aiUsage.monthlyLimit}
-        </p>
-        <p className="text-xs text-neutral-600 mt-2">
-          한도 초과 시 기존 포트폴리오 열람, 직접 편집, 내보내기는 계속 이용할 수
-          있습니다.
-        </p>
-      </div>
 
       <div className="text-xs text-neutral-500">
         구성 방식: <span className="text-neutral-300">{structure}</span>
