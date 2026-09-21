@@ -4,6 +4,7 @@ import { LoaderCircle } from "lucide-react";
 import {
   getPortfolioWithProjects,
   getCoverImageUrl,
+  updatePortfolioVisibility,
   PortfolioError,
   type PortfolioProjectRow,
   type PortfolioRow,
@@ -43,6 +44,12 @@ export default function Export() {
   const [confirming, setConfirming] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
+
+  // [2026-09] 공개 링크. visibility 컬럼과 RLS 는 처음부터 있었는데 값을
+  // 바꾸는 방법이 없어서 전부 private 에 고정돼 있었습니다.
+  const [sharing, setSharing] = useState(false);
+  const [shareError, setShareError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   // 영어 버전 번역 결과 캐시. 한 번 번역되면 한국어↔영어를 오가도 다시
   // 호출하지 않습니다 — 매번 호출하면 API 비용도 들고, 왔다 갔다 할 때마다
@@ -166,6 +173,36 @@ export default function Export() {
     }
   };
 
+  const isPublic = portfolio?.visibility === "public";
+  const shareUrl = portfolio ? `${window.location.origin}/p/${portfolio.id}` : "";
+
+  const toggleVisibility = async () => {
+    if (!portfolio) return;
+    const next = isPublic ? "private" : "public";
+    setSharing(true);
+    setShareError(null);
+    try {
+      await updatePortfolioVisibility(portfolio.id, next);
+      setPortfolio({ ...portfolio, visibility: next });
+      setCopied(false);
+    } catch (e) {
+      setShareError(e instanceof PortfolioError ? e.message : "설정을 저장하지 못했습니다.");
+    } finally {
+      setSharing(false);
+    }
+  };
+
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // 클립보드 권한이 없을 수 있습니다. 주소가 화면에 그대로 보이므로
+      // 직접 선택해 복사할 수 있고, 여기서 경고를 띄울 일은 아닙니다.
+    }
+  };
+
   const bodyFontStack = portfolio ? FONT_STACKS[portfolio.font] ?? FONT_STACKS[DEFAULT_FONT] : FONT_STACKS[DEFAULT_FONT];
 
   return (
@@ -255,6 +292,68 @@ export default function Export() {
                 웹 형식 (HTML · Notion 호환) · 준비 중
               </button>
             </div>
+          </div>
+
+          {/* [2026-09] 공개 링크.
+              포트폴리오는 남에게 보여주려고 만드는 것인데, 그때까지
+              이 서비스에는 "남에게 보여주는 방법"이 없었습니다. DB 와
+              RLS 는 처음부터 준비돼 있었고 이 화면만 없었습니다. */}
+          <div className="entry">
+            <h2 className="entry-title">공개 링크</h2>
+            <p className="text-xs text-neutral-400 mb-3">
+              공개하면 로그인하지 않은 사람도 링크로 이 포트폴리오를 볼 수 있습니다.
+              언제든 다시 비공개로 바꿀 수 있고, 바꾸는 즉시 링크가 닫힙니다.
+            </p>
+
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => void toggleVisibility()}
+                disabled={sharing || !portfolio}
+                className={`rounded-sm border px-4 py-2 text-sm disabled:opacity-40 ${
+                  isPublic
+                    ? "border-brand bg-brand/10 text-brand"
+                    : "border-neutral-800 text-neutral-400 hover:text-neutral-200"
+                }`}
+              >
+                {sharing
+                  ? "저장 중…"
+                  : isPublic
+                    ? "공개 중 — 비공개로 바꾸기"
+                    : "링크로 공개하기"}
+              </button>
+              <span className="text-xs text-neutral-500">
+                현재 {isPublic ? "공개" : "비공개"}
+              </span>
+            </div>
+
+            {isPublic && (
+              <div className="mt-3 flex items-center gap-2">
+                <input
+                  readOnly
+                  value={shareUrl}
+                  onFocus={(e) => e.currentTarget.select()}
+                  className="field py-1.5 text-sm flex-1 min-w-0"
+                  aria-label="공개 링크"
+                />
+                <button className="btn-secondary shrink-0 px-3 py-1.5 text-xs" onClick={() => void copyLink()}>
+                  {copied ? "복사됨" : "복사"}
+                </button>
+                <a
+                  href={shareUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="shrink-0 text-xs text-brand hover:underline"
+                >
+                  열어보기
+                </a>
+              </div>
+            )}
+
+            {shareError && (
+              <p role="alert" className="text-xs text-red-400 mt-2">
+                {shareError}
+              </p>
+            )}
           </div>
 
           <div className="entry">

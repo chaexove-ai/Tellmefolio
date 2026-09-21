@@ -17,6 +17,10 @@ import Landing from "./pages/Landing";
 
 const Login = lazy(() => import("./pages/Login"));
 
+/** 공개 포트폴리오 열람. 로그인도 AppLayout도 데스크탑 게이트도 없습니다 —
+ *  공유 링크는 대부분 남의 휴대폰에서 열립니다. */
+const PublicPortfolio = lazy(() => import("./pages/PublicPortfolio"));
+
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const PortfolioList = lazy(() => import("./pages/PortfolioList"));
 const VersionHistory = lazy(() => import("./pages/VersionHistory"));
@@ -51,6 +55,14 @@ export default function App() {
       <Routes>
       {/* 인증 및 온보딩 */}
       <Route path="/" element={<Landing />} />
+      <Route
+        path="/p/:id"
+        element={
+          <Suspense fallback={<RouteFallback />}>
+            <PublicPortfolio />
+          </Suspense>
+        }
+      />
       <Route
         path="/login"
         element={

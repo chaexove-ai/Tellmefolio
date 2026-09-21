@@ -414,6 +414,82 @@ export async function updatePortfolioYear(id: string, year: string): Promise<voi
   }
 }
 
+/**
+ * [2026-09] 공개/비공개 전환.
+ *
+ * visibility 컬럼과 RLS 는 처음부터 있었습니다 — `portfolios_select` 가
+ * `auth.uid() = user_id or visibility = 'public'` 이라, public 으로 바꾸면
+ * 로그인하지 않은 사람도 읽을 수 있습니다. 그런데 **값을 바꾸는 함수가
+ * 없었습니다.** 그래서 모든 포트폴리오가 기본값 private 에 영구히 고정돼
+ * 있었고, 대시보드의 "공개 N건"은 항상 0이었습니다. 갤러리에 실제
+ * 데이터가 없던 것도 결과지 원인이 아니었습니다.
+ *
+ * 되돌릴 수 있는 동작입니다 — 비공개로 바꾸면 RLS 가 즉시 막으므로
+ * 공유 링크도 그 순간부터 열리지 않습니다.
+ */
+export async function updatePortfolioVisibility(
+  id: string,
+  visibility: "private" | "public"
+): Promise<void> {
+  const sb = await requireClient();
+  const { error } = await sb.from("portfolios").update({ visibility }).eq("id", id);
+  if (error) {
+    throw new PortfolioError("공개 설정을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+  }
+}
+
+/**
+ * 공개된 포트폴리오를 **로그인 없이** 읽습니다.
+ *
+ * getPortfolioWithProjects 와 갈라놓은 이유는 실패했을 때 할 말이 다르기
+ * 때문입니다. 본인 것을 못 읽으면 "찾을 수 없습니다"가 맞지만, 여기서는
+ * 없는 것인지 비공개인지 호출자가 구분할 수 없습니다 — RLS 가 비공개 행을
+ * 아예 없는 것처럼 돌려주기 때문입니다. 그게 옳은 동작입니다(비공개
+ * 포트폴리오의 존재 여부조차 알려줄 이유가 없습니다). 대신 사용자에게는
+ * 두 경우를 합쳐 "공개되지 않았습니다"로 말합니다.
+ */
+export async function getPublicPortfolio(
+  id: string
+): Promise<{ portfolio: PortfolioRow; projects: PortfolioProjectRow[] } | null> {
+  const sb = await getSupabase();
+  if (!sb) return null;
+
+  const { data: portfolio } = await sb
+    .from("portfolios")
+    .select()
+    .eq("id", id)
+    .eq("visibility", "public")
+    .maybeSingle();
+
+  if (!portfolio) return null;
+
+  const { data: projects } = await sb
+    .from("portfolio_projects")
+    .select()
+    .eq("portfolio_id", id)
+    .order("position", { ascending: true });
+
+  return {
+    portfolio: portfolio as PortfolioRow,
+    projects: (projects ?? []) as PortfolioProjectRow[],
+  };
+}
+
+/** 공개된 포트폴리오 목록 — 커뮤니티 갤러리용. */
+export async function listPublicPortfolios(limit = 60): Promise<LibraryPortfolio[]> {
+  const sb = await getSupabase();
+  if (!sb) return [];
+
+  const { data } = await sb
+    .from("portfolios")
+    .select()
+    .eq("visibility", "public")
+    .order("updated_at", { ascending: false })
+    .limit(limit);
+
+  return ((data ?? []) as PortfolioRow[]).map(toLibraryPortfolio);
+}
+
 /** 로그인한 사용자의 포트폴리오 전체를 최근 수정순으로. */
 export async function listMyPortfolios(userId: string): Promise<LibraryPortfolio[]> {
   const sb = await requireClient();
