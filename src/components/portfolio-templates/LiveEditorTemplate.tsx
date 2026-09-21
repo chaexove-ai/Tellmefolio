@@ -1,6 +1,7 @@
 import { getPortfolioPalette, MONO_STACK, byDensity } from "../../lib/portfolioTheme";
 import type { PortfolioTemplateProps } from "./types";
-import { hasContent } from "./types";
+import { caseStudyFields, briefLead, visibleProjects } from "./types";
+import ProjectImages from "./ProjectImages";
 
 const fieldLabels: Array<{ key: "context" | "problem" | "execution" | "outcome" | "reflection"; label: string }> = [
   { key: "context", label: "background" },
@@ -30,10 +31,10 @@ function slugify(s: string) {
  * `project/{slug}.md` 라는 가짜 파일로, 각 필드를 YAML 프런트매터처럼,
  * 스택 배지를 npm 배지 스타일 pill로 표현합니다.
  */
-export default function LiveEditorTemplate({ portfolio, projects }: PortfolioTemplateProps) {
+export default function LiveEditorTemplate({ portfolio, projects, images = {} }: PortfolioTemplateProps) {
   // 이 템플릿의 정체성상 항상 다크 팔레트를 씁니다.
   const palette = getPortfolioPalette("dark");
-  const visible = projects.filter(hasContent);
+  const visible = visibleProjects(projects, images);
   const d = portfolio.density;
   const isTwoCol = portfolio.layout === "2col";
 
@@ -131,7 +132,25 @@ export default function LiveEditorTemplate({ portfolio, projects }: PortfolioTem
                       <span style={{ color: palette.textMuted }}>{p.role}</span>
                     </p>
                   )}
-                  {fieldLabels.map(({ key, label }) => {
+                  {/* [2026-09-22] "간단히" 는 한 줄 설명을 주석 한 줄로.
+                      이 템플릿의 문법(// label 아래 값)을 그대로 따릅니다. */}
+                  {briefLead(p) && (
+                    <p className="text-[14px] leading-[1.8] whitespace-pre-wrap">
+                      <span style={{ color: palette.textFaint }}>{"// "}summary</span>
+                      <br />
+                      <span style={{ color: palette.textMuted }}>{briefLead(p)}</span>
+                    </p>
+                  )}
+
+                  <ProjectImages
+                    projectId={p.id}
+                    images={images}
+                    borderColor={palette.border}
+                    captionColor={palette.textFaint}
+                    rounded="rounded"
+                  />
+
+                  {caseStudyFields(p, fieldLabels).map(({ key, label }) => {
                     const value = p[key];
                     if (!value.trim()) return null;
                     return (

@@ -1,6 +1,7 @@
 import { getPortfolioPalette, SERIF_STACK, byDensity } from "../../lib/portfolioTheme";
 import type { PortfolioTemplateProps } from "./types";
-import { hasContent } from "./types";
+import { caseStudyFields, briefLead, visibleProjects } from "./types";
+import ProjectImages from "./ProjectImages";
 
 const romanNumerals = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
 
@@ -22,11 +23,11 @@ const fieldLabels: Array<{ key: "context" | "problem" | "execution" | "outcome" 
  * 세리프 제목 + 여백으로 "정제된" 인상을 만듭니다 — 카드나 배지 없이
  * 가로줄(rule)만으로 구획을 나눕니다.
  */
-export default function ResearchTemplate({ portfolio, projects, bodyFontStack, lang = "ko" }: PortfolioTemplateProps) {
+export default function ResearchTemplate({ portfolio, projects, images = {}, bodyFontStack, lang = "ko" }: PortfolioTemplateProps) {
   const palette = getPortfolioPalette(portfolio.color_theme);
   const d = portfolio.density;
   const isTwoCol = portfolio.layout === "2col";
-  const visible = projects.filter(hasContent);
+  const visible = visibleProjects(projects, images);
   // 이 템플릿은 학술 논문 관례를 흉내 낸 게 컨셉이라 Background/Problem/...
   // 같은 소제목은 ko/en 상관없이 항상 영어로 둡니다(디자인 의도). "제목
   // 없음" fallback만 언어에 맞춥니다.
@@ -114,8 +115,25 @@ export default function ResearchTemplate({ portfolio, projects, bodyFontStack, l
                 </p>
               )}
 
+              {/* [2026-09-22] "간단히" 프로젝트는 한 줄 설명을 라벨 없이
+                  제목 아래에 둡니다 — BACKGROUND 같은 소제목을 얹으면
+                  한 줄짜리 글이 도로 케이스 스터디처럼 보입니다. */}
+              {briefLead(p) && (
+                <p className="text-[14px] leading-[1.8] mb-5" style={{ color: palette.textMuted }}>
+                  {briefLead(p)}
+                </p>
+              )}
+
+              <ProjectImages
+                projectId={p.id}
+                images={images}
+                borderColor={palette.border}
+                captionColor={palette.textFaint}
+                className={byDensity(d, { roomy: "mb-7", normal: "mb-5", tight: "mb-3" })}
+              />
+
               <div className={byDensity(d, { roomy: "space-y-7", normal: "space-y-5", tight: "space-y-3" })}>
-                {fieldLabels.map(({ key, label }) => {
+                {caseStudyFields(p, fieldLabels).map(({ key, label }) => {
                   const value = p[key];
                   if (!value.trim()) return null;
                   return (

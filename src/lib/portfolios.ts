@@ -43,10 +43,16 @@ export interface PortfolioRow {
   updated_at: string;
 }
 
+/** 프로젝트를 얼마나 깊게 보여줄지. 설계는 docs/editor-redesign.md 3절.
+ *  brief = 제목 + 한 줄 설명(context) + 이미지 + 스택.
+ *  full  = 5필드 전부 + 이미지. */
+export type ProjectDepth = "brief" | "full";
+
 export interface PortfolioProjectRow {
   id: string;
   portfolio_id: string;
   position: number;
+  depth: ProjectDepth;
   name: string;
   context: string;
   role: string;
@@ -166,6 +172,7 @@ export async function updatePortfolioProject(
       | "outcome"
       | "reflection"
       | "stack"
+      | "depth"
     >
   >
 ): Promise<void> {
@@ -203,6 +210,7 @@ export async function createPortfolioProject(
       outcome: "",
       reflection: "",
       stack: [],
+      depth: "full",
     })
     .select()
     .single();
@@ -215,9 +223,23 @@ export async function createPortfolioProject(
 
 export async function deletePortfolioProject(id: string): Promise<void> {
   const sb = await requireClient();
+
+  // [2026-09-22] 이미지 파일을 먼저 챙깁니다. 행을 지우면 cascade 로
+  // portfolio_project_images 도 따라 지워지는데, 그러면 어떤 파일이
+  // 이 프로젝트 것이었는지 알 방법이 없어져 버킷에 영원히 남습니다.
+  const { data: images } = await sb
+    .from("portfolio_project_images")
+    .select("storage_path")
+    .eq("project_id", id);
+  const paths = ((images ?? []) as Array<{ storage_path: string }>).map((i) => i.storage_path);
+
   const { error } = await sb.from("portfolio_projects").delete().eq("id", id);
   if (error) {
     throw new PortfolioError("프로젝트를 삭제하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+  }
+
+  if (paths.length > 0) {
+    await sb.storage.from(COVER_IMAGE_BUCKET).remove(paths);
   }
 }
 
@@ -440,6 +462,126 @@ export async function updatePortfolioYear(id: string, year: string): Promise<voi
     .eq("id", id);
   if (error) {
     throw new PortfolioError("연도를 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* 프로젝트별 이미지                                                    */
+/* ------------------------------------------------------------------ */
+
+export interface ProjectImageRow {
+  id: string;
+  project_id: string;
+  storage_path: string;
+  caption: string;
+  position: number;
+  created_at: string;
+}
+
+/** 프로젝트당 상한. 그 이상은 포트폴리오가 아니라 갤러리입니다. */
+export const MAX_PROJECT_IMAGES = 8;
+
+/**
+ * 파일은 기존 portfolio-covers 버킷에 넣습니다 — 새 버킷을 만들지 않습니다.
+ * 그 버킷의 Storage 정책이 (storage.foldername(name))[1] = auth.uid() 라서,
+ * 경로 첫 칸만 userId 로 맞추면 정책을 새로 쓸 필요가 없습니다. 버킷
+ * 이름이 내용과 어긋나는 것은 감수합니다(버킷 이름은 나중에 못 바꿉니다).
+ */
+function projectImageFolder(userId: string, portfolioId: string, projectId: string) {
+  return `${userId}/${portfolioId}/projects/${projectId}`;
+}
+
+export async function listProjectImages(projectIds: string[]): Promise<ProjectImageRow[]> {
+  if (projectIds.length === 0) return [];
+  const sb = await getSupabase();
+  if (!sb) return [];
+
+  const { data } = await sb
+    .from("portfolio_project_images")
+    .select()
+    .in("project_id", projectIds)
+    .order("position", { ascending: true });
+
+  return (data ?? []) as ProjectImageRow[];
+}
+
+export async function uploadProjectImage(input: {
+  userId: string;
+  portfolioId: string;
+  projectId: string;
+  file: File;
+  position: number;
+}): Promise<ProjectImageRow> {
+  const sb = await requireClient();
+
+  // 파일명은 시각 + 난수입니다. 사용자가 올린 이름을 그대로 쓰면 한글이나
+  // 공백 때문에 경로가 깨지고, 같은 이름을 두 번 올리면 덮어씁니다.
+  const stamp = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const ext = input.file.type === "image/webp" ? "webp" : (input.file.name.split(".").pop()?.toLowerCase() || "jpg");
+  const path = `${projectImageFolder(input.userId, input.portfolioId, input.projectId)}/${stamp}.${ext}`;
+
+  const { error: uploadError } = await sb.storage
+    .from(COVER_IMAGE_BUCKET)
+    .upload(path, input.file, { upsert: false, cacheControl: "3600" });
+  if (uploadError) {
+    throw new PortfolioError("이미지를 업로드하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+  }
+
+  const { data, error } = await sb
+    .from("portfolio_project_images")
+    .insert({ project_id: input.projectId, storage_path: path, position: input.position })
+    .select()
+    .single();
+
+  if (error || !data) {
+    // 행을 못 만들면 올린 파일은 아무도 참조하지 않는 쓰레기가 됩니다.
+    await sb.storage.from(COVER_IMAGE_BUCKET).remove([path]);
+    throw new PortfolioError("이미지를 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+  }
+  return data as ProjectImageRow;
+}
+
+/**
+ * 행과 파일을 함께 지웁니다.
+ *
+ * 행만 지우면 파일이 버킷에 영원히 남습니다 — 테이블의 cascade 는
+ * Storage 까지 닿지 않습니다. 표지에서 이미 한 번 겪은 함정입니다.
+ */
+export async function deleteProjectImage(image: ProjectImageRow): Promise<void> {
+  const sb = await requireClient();
+
+  const { error } = await sb.from("portfolio_project_images").delete().eq("id", image.id);
+  if (error) {
+    throw new PortfolioError("이미지를 삭제하지 못했습니다.");
+  }
+  // 파일 삭제가 실패해도 화면에서는 이미 사라졌습니다. 여기서 예외를
+  // 던지면 "삭제 실패"로 보이는데 사실은 삭제된 상태라 더 혼란스럽습니다.
+  await sb.storage.from(COVER_IMAGE_BUCKET).remove([image.storage_path]);
+}
+
+/** 끌어서 순서를 바꾼 뒤 한 번에 반영합니다. */
+export async function reorderProjectImages(ordered: ProjectImageRow[]): Promise<void> {
+  const sb = await requireClient();
+  for (let i = 0; i < ordered.length; i += 1) {
+    if (ordered[i].position === i) continue;
+    const { error } = await sb
+      .from("portfolio_project_images")
+      .update({ position: i })
+      .eq("id", ordered[i].id);
+    if (error) {
+      throw new PortfolioError("이미지 순서를 저장하지 못했습니다.");
+    }
+  }
+}
+
+export async function updateProjectImageCaption(id: string, caption: string): Promise<void> {
+  const sb = await requireClient();
+  const { error } = await sb
+    .from("portfolio_project_images")
+    .update({ caption })
+    .eq("id", id);
+  if (error) {
+    throw new PortfolioError("설명을 저장하지 못했습니다.");
   }
 }
 

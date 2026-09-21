@@ -128,15 +128,35 @@ export async function deletePortfolios(ids: string[]): Promise<void> {
     .map((r) => r.cover_image_path)
     .filter((p): p is string => Boolean(p));
 
+  // [2026-09-22] 프로젝트 이미지 파일도 같이 챙깁니다. 포트폴리오를 지우면
+  // 프로젝트와 이미지 "행"은 cascade 로 따라가지만, Storage 파일은 그대로
+  // 남습니다. 지우고 나면 어떤 파일이 그 포트폴리오 것이었는지 알 수
+  // 없으므로 지우기 전에 읽어둬야 합니다.
+  const { data: projects } = await sb
+    .from("portfolio_projects")
+    .select("id")
+    .in("portfolio_id", ids);
+  const projectIds = ((projects ?? []) as Array<{ id: string }>).map((p) => p.id);
+
+  let imagePaths: string[] = [];
+  if (projectIds.length > 0) {
+    const { data: images } = await sb
+      .from("portfolio_project_images")
+      .select("storage_path")
+      .in("project_id", projectIds);
+    imagePaths = ((images ?? []) as Array<{ storage_path: string }>).map((i) => i.storage_path);
+  }
+
   const { error } = await sb.from("portfolios").delete().in("id", ids);
   if (error) {
     throw new PortfolioError("포트폴리오를 삭제하지 못했습니다.");
   }
 
-  if (coverPaths.length > 0) {
+  const allPaths = [...coverPaths, ...imagePaths];
+  if (allPaths.length > 0) {
     // 이미지 삭제가 실패해도 본문은 이미 지워졌습니다. 여기서 예외를
     // 던지면 "삭제 실패" 로 보이는데 사실은 삭제된 상태라 더 혼란스럽습니다.
-    await sb.storage.from(COVER_IMAGE_BUCKET).remove(coverPaths);
+    await sb.storage.from(COVER_IMAGE_BUCKET).remove(allPaths);
   }
 }
 

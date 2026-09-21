@@ -1,6 +1,7 @@
 import { getPortfolioPalette, byDensity } from "../../lib/portfolioTheme";
 import type { PortfolioTemplateProps } from "./types";
-import { hasContent } from "./types";
+import { caseStudyFields, briefLead, visibleProjects } from "./types";
+import ProjectImages from "./ProjectImages";
 
 type FieldKey = "context" | "problem" | "execution" | "outcome" | "reflection";
 
@@ -33,9 +34,9 @@ const fieldLabelsByLang: Record<"ko" | "en", Array<{ key: FieldKey; label: strin
  * 요소로 삼아 한 편의 "기사"처럼 배치합니다. layout이 2단이면 프로젝트를
  * 좌우로 나눠 잡지 지면처럼 두 편씩 보이게 합니다.
  */
-export default function MagazineTemplate({ portfolio, projects, coverUrl, bodyFontStack, lang = "ko" }: PortfolioTemplateProps) {
+export default function MagazineTemplate({ portfolio, projects, coverUrl, images = {}, bodyFontStack, lang = "ko" }: PortfolioTemplateProps) {
   const palette = getPortfolioPalette(portfolio.color_theme);
-  const visible = projects.filter(hasContent);
+  const visible = visibleProjects(projects, images);
   const isTwoCol = portfolio.layout === "2col";
   const d = portfolio.density;
   const fieldLabels = fieldLabelsByLang[lang];
@@ -107,8 +108,25 @@ export default function MagazineTemplate({ portfolio, projects, coverUrl, bodyFo
                 </div>
               </div>
 
+              {/* 이미지가 주인공인 템플릿이라 "간단히" 와 가장 잘 맞습니다.
+                  큰 인덱스 숫자 아래 들여쓰기에 맞춰 이미지를 둡니다. */}
+              <div className="pl-[56px]">
+                {briefLead(p) && (
+                  <p className="text-[14px] leading-[1.9] mb-4" style={{ color: palette.textMuted }}>
+                    {briefLead(p)}
+                  </p>
+                )}
+                <ProjectImages
+                  projectId={p.id}
+                  images={images}
+                  borderColor={palette.border}
+                  captionColor={palette.textFaint}
+                  className={byDensity(d, { roomy: "mb-6", normal: "mb-4", tight: "mb-2.5" })}
+                />
+              </div>
+
               <div className={`pl-[56px] ${byDensity(d, { roomy: "space-y-6", normal: "space-y-4", tight: "space-y-2.5" })}`}>
-                {fieldLabels.map(({ key, label }) => {
+                {caseStudyFields(p, fieldLabels).map(({ key, label }) => {
                   const value = p[key];
                   if (!value.trim()) return null;
                   return (

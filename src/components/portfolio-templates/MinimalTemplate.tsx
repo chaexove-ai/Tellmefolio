@@ -1,6 +1,7 @@
 import { getPortfolioPalette, byDensity } from "../../lib/portfolioTheme";
 import type { PortfolioTemplateProps } from "./types";
-import { hasContent } from "./types";
+import { caseStudyFields, briefLead, visibleProjects } from "./types";
+import ProjectImages from "./ProjectImages";
 
 type FieldKey = "context" | "problem" | "execution" | "outcome" | "reflection";
 
@@ -34,9 +35,9 @@ const fieldLabelsByLang: Record<"ko" | "en", Array<{ key: FieldKey; label: strin
  * 무채색(grayscale)으로 눌러서 튀지 않게 — "여백이 주인공"이라는
  * 컨셉을 색이 방해하지 않게 하려는 선택입니다.
  */
-export default function MinimalTemplate({ portfolio, projects, coverUrl, bodyFontStack, lang = "ko" }: PortfolioTemplateProps) {
+export default function MinimalTemplate({ portfolio, projects, coverUrl, images = {}, bodyFontStack, lang = "ko" }: PortfolioTemplateProps) {
   const palette = getPortfolioPalette(portfolio.color_theme);
-  const visible = projects.filter(hasContent);
+  const visible = visibleProjects(projects, images);
   const d = portfolio.density;
   const isTwoCol = portfolio.layout === "2col";
   const fieldLabels = fieldLabelsByLang[lang];
@@ -82,8 +83,25 @@ export default function MinimalTemplate({ portfolio, projects, coverUrl, bodyFon
                 {[p.role, p.stack.join(", ")].filter(Boolean).join(" · ")}
               </p>
 
+              {briefLead(p) && (
+                <p className="text-[15px] leading-[1.9] mb-8" style={{ color: palette.textMuted }}>
+                  {briefLead(p)}
+                </p>
+              )}
+
+              {/* 이 템플릿은 "여백이 주인공"이라 이미지도 모서리를 죽이고
+                  테두리를 옅게 둡니다. */}
+              <ProjectImages
+                projectId={p.id}
+                images={images}
+                borderColor={palette.border}
+                captionColor={palette.textFaint}
+                rounded="rounded-none"
+                className="mb-8"
+              />
+
               <div className={byDensity(d, { roomy: "space-y-9", normal: "space-y-7", tight: "space-y-4" })}>
-                {fieldLabels.map(({ key, label }) => {
+                {caseStudyFields(p, fieldLabels).map(({ key, label }) => {
                   const value = p[key];
                   if (!value.trim()) return null;
                   return (

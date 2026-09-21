@@ -73,23 +73,36 @@ Deno.serve(async (req) => {
   //    실패해도 계정 삭제 자체는 진행합니다 — 사용자가 "지워달라" 고 한
   //    본체는 계정이고, 여기서 멈추면 계정이 남습니다. 남은 파일은
   //    복구 가능한 실수지만, 지워달라는 계정이 남는 건 그렇지 않습니다.
+  //
+  // [2026-09-22] 한 단계만 훑던 것을 재귀로 바꿨습니다. 표지는
+  // {userId}/{portfolioId}/cover.webp 로 두 단계였지만, 프로젝트 이미지가
+  // 생기면서 {userId}/{portfolioId}/projects/{projectId}/{n}.webp 로 네
+  // 단계가 됐습니다. 예전 코드는 그 깊이를 못 봐서 이미지가 전부 남았습니다.
+  //
+  // Storage 의 list 는 재귀가 안 됩니다. 폴더인지 파일인지는 id 로
+  // 구분합니다 — 실제 객체는 id 를 갖고, 경로 중간의 가짜 폴더는 null 입니다.
   try {
     const paths: string[] = [];
-    const { data: folders } = await admin.storage
-      .from(COVER_BUCKET)
-      .list(userId, { limit: 1000 });
 
-    for (const folder of folders ?? []) {
-      const { data: files } = await admin.storage
+    const walk = async (prefix: string, depth: number): Promise<void> => {
+      // 깊이 상한은 무한 루프 방어입니다. 실제로 필요한 건 4단계입니다.
+      if (depth > 6) return;
+      const { data: entries } = await admin.storage
         .from(COVER_BUCKET)
-        .list(`${userId}/${folder.name}`, { limit: 1000 });
-      for (const f of files ?? []) {
-        paths.push(`${userId}/${folder.name}/${f.name}`);
-      }
-    }
+        .list(prefix, { limit: 1000 });
 
-    if (paths.length > 0) {
-      await admin.storage.from(COVER_BUCKET).remove(paths);
+      for (const entry of entries ?? []) {
+        const full = `${prefix}/${entry.name}`;
+        if (entry.id) paths.push(full);
+        else await walk(full, depth + 1);
+      }
+    };
+
+    await walk(userId, 0);
+
+    // remove 는 한 번에 받는 개수에 한계가 있어 나눠 보냅니다.
+    for (let i = 0; i < paths.length; i += 100) {
+      await admin.storage.from(COVER_BUCKET).remove(paths.slice(i, i + 100));
     }
   } catch (_) {
     // 위 주석대로 계속 진행합니다.
