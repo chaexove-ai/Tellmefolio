@@ -80,9 +80,15 @@ export default function Login() {
       </div>
 
       <div className="flex items-center justify-center px-6 py-14 lg:px-16">
-        <div className="w-full max-w-sm">
-          <h2 className="font-heading text-xl lg:text-2xl mb-1.5">로그인하기</h2>
-          <p className="text-sm text-neutral-500 mb-8">
+        {/* [2026-09] max-w-sm(384px)에서 520px 로. 오른쪽 면이 화면
+            절반인데 내용이 384px 이면 양옆 여백이 내용보다 넓어 작아
+            보입니다. 그렇다고 면 전체를 채우면 버튼이 가로로 길쭉해지니,
+            버튼이 버튼으로 보이는 선까지만 넓힙니다. */}
+        <div className="w-full max-w-sm lg:max-w-[520px]">
+          <h2 className="font-heading text-xl lg:text-[34px] lg:leading-tight mb-1.5 lg:mb-3">
+            로그인하기
+          </h2>
+          <p className="text-sm lg:text-base text-neutral-500 mb-8 lg:mb-10">
             Google, GitHub, Figma 계정으로 시작하세요
           </p>
 
@@ -100,7 +106,7 @@ export default function Login() {
             </p>
           )}
 
-          <p className="text-xs text-neutral-600 mt-10 leading-relaxed">
+          <p className="text-xs lg:text-sm text-neutral-600 mt-10 lg:mt-12 leading-relaxed">
             계속 진행하면 Tellmefolio 이용약관과 개인정보처리방침에 동의합니다
           </p>
         </div>
