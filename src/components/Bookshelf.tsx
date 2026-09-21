@@ -1,11 +1,18 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Plus } from "lucide-react";
+import { BookOpen, LoaderCircle, Pencil, Plus } from "lucide-react";
 import GrainCover from "./GrainCover";
-import type { LibraryPortfolio } from "../lib/portfolios";
+import {
+  updatePortfolioTitle,
+  updatePortfolioColor,
+  PortfolioError,
+  type LibraryPortfolio,
+} from "../lib/portfolios";
 
 interface BookshelfProps {
   portfolios: LibraryPortfolio[];
+  /** 제목·색을 고친 뒤 목록을 가진 쪽이 자기 상태를 갱신하도록 알려줍니다. */
+  onUpdated?: (portfolio: LibraryPortfolio) => void;
 }
 
 /**
@@ -54,18 +61,66 @@ interface BookshelfProps {
  * - prefers-reduced-motion 에서는 폭이 늘어나지 않고 테두리 강조만 남깁니다
  *   (표지 면은 아예 감춥니다 — 넓어지지 않으면 책등과 겹쳐 보이므로).
  */
-export default function Bookshelf({ portfolios }: BookshelfProps) {
+export default function Bookshelf({ portfolios, onUpdated }: BookshelfProps) {
   const [active, setActive] = useState<LibraryPortfolio | null>(null);
+
+  // 수정 창은 책 옆이 아니라 화면 가운데 띄웁니다. 가로 스크롤 컨테이너는
+  // CSS 규칙상 세로도 함께 자르기 때문에(위 주석 참고), 책에 붙인 팝오버는
+  // 반드시 잘립니다. 제목 표시줄을 바깥에 둔 것과 같은 이유입니다.
+  const [editing, setEditing] = useState<LibraryPortfolio | null>(null);
+  const [draftTitle, setDraftTitle] = useState("");
+  const [draftColor, setDraftColor] = useState("#c2703d");
+  const [saving, setSaving] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+
+  const openEditor = (p: LibraryPortfolio) => {
+    setEditing(p);
+    setDraftTitle(p.title);
+    setDraftColor(p.jobColor);
+    setEditError(null);
+  };
+
+  const saveEdit = async () => {
+    if (!editing) return;
+    setSaving(true);
+    setEditError(null);
+    try {
+      const title = draftTitle.trim();
+      if (title !== editing.title) await updatePortfolioTitle(editing.id, title);
+      if (draftColor !== editing.jobColor) await updatePortfolioColor(editing.id, draftColor);
+      const next = { ...editing, title: title || editing.title, jobColor: draftColor };
+      onUpdated?.(next);
+      setActive((cur) => (cur && cur.id === next.id ? next : cur));
+      setEditing(null);
+    } catch (e) {
+      setEditError(e instanceof PortfolioError ? e.message : "저장하지 못했습니다.");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div>
       {/* 제목 표시줄 — 스크롤 영역 바깥이라 잘리지 않습니다 */}
       <div className="h-8 flex items-center gap-2.5 text-sm text-neutral-400 mb-2">
-        <span
-          aria-hidden="true"
-          className="w-[9px] h-[9px] rounded-[2px] transition-colors"
-          style={{ backgroundColor: active ? active.jobColor : "transparent" }}
-        />
+        {/* 커서를 올리기 전에는 색 칸이 투명이라 문장 앞이 빈 자리로
+            보였습니다. 아무 책도 안 짚은 상태에는 라인 책 아이콘을 두고,
+            책을 짚으면 그 책의 색 칸으로 바뀝니다 — 자리 크기가 같아서
+            문장이 흔들리지 않습니다. */}
+        {active ? (
+          <span
+            aria-hidden="true"
+            className="w-[9px] h-[9px] rounded-[2px] shrink-0"
+            style={{ backgroundColor: active.jobColor }}
+          />
+        ) : (
+          <BookOpen
+            size={14}
+            strokeWidth={1.5}
+            className="shrink-0 text-neutral-500 -ml-[2.5px]"
+            aria-hidden="true"
+          />
+        )}
         {active ? (
           <span className="truncate">
             <span className="text-neutral-100">{active.title}</span>
@@ -85,15 +140,21 @@ export default function Bookshelf({ portfolios }: BookshelfProps) {
           여유를 더 뒀습니다(안 그러면 확대된 책이 위쪽에서 살짝 잘립니다). */}
       <div className="shelf flex items-end gap-[5px] border-b-2 border-neutral-800 overflow-x-auto overflow-y-hidden pt-12 pb-0">
         {portfolios.map((p) => (
-          <Link
+          /* [2026-09] 연필 버튼을 넣으면서 책 한 권의 구조가 바뀌었습니다.
+             전에는 책 자체가 <a> 하나였는데, <a> 안에 <button> 을 넣는 것은
+             중첩 대화형 요소라 HTML 규칙 위반이고 탭 순서와 클릭이 서로
+             먹힙니다. 그래서 .book 은 <div> 가 되고 그 안에 링크와 버튼이
+             형제로 들어갑니다. .book-face 들은 여전히 .book 기준으로
+             절대배치됩니다(<a> 가 static 이라 기준이 되지 않습니다). */
+          <div
             key={p.id}
-            to={`/wizard/editor/${p.id}`}
             onMouseEnter={() => setActive(p)}
             onMouseLeave={() => setActive(null)}
             onFocus={() => setActive(p)}
             onBlur={() => setActive(null)}
-            className="book group relative block h-[224px]"
+            className="book group relative h-[224px]"
           >
+            <Link to={`/wizard/editor/${p.id}`} className="block h-full">
             {/* 책등 면 — 평소 보이는 얼굴. hover 시 서서히 사라집니다 */}
             <div
               className="book-face book-face-spine flex flex-col items-center
@@ -144,7 +205,23 @@ export default function Bookshelf({ portfolios }: BookshelfProps) {
                 </div>
               </div>
             </div>
-          </Link>
+            </Link>
+
+            {/* 책이 펼쳐졌을 때만 보입니다. 접힌 책등은 54px 라 아이콘을
+                올릴 자리가 없고, 있어도 제목을 가립니다. 키보드로 탭해
+                왔을 때도 보이도록 focus-visible 을 같이 겁니다. */}
+            <button
+              type="button"
+              onClick={() => openEditor(p)}
+              aria-label={`${p.title} 이름과 색상 수정`}
+              className="absolute right-1.5 top-1.5 z-30 grid size-6 place-items-center rounded-md
+                bg-neutral-950/55 text-neutral-200 opacity-0 backdrop-blur-[2px]
+                transition-opacity duration-150
+                group-hover:opacity-100 focus-visible:opacity-100 hover:text-white"
+            >
+              <Pencil size={12} strokeWidth={1.75} aria-hidden="true" />
+            </button>
+          </div>
         ))}
 
         <Link
@@ -160,6 +237,82 @@ export default function Bookshelf({ portfolios }: BookshelfProps) {
       </div>
 
       <p className="text-sm text-neutral-500 mt-4">눌러서 포트폴리오를 열어보세요.</p>
+
+      {editing && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 px-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="포트폴리오 이름과 색상 수정"
+        >
+          <div className="surface w-full max-w-sm space-y-4">
+            <h3 className="font-heading text-base text-neutral-100">이름과 색상</h3>
+
+            <label className="block space-y-1.5">
+              <span className="text-xs text-neutral-500">제목</span>
+              <input
+                className="field"
+                value={draftTitle}
+                autoFocus
+                onChange={(e) => setDraftTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") void saveEdit();
+                  if (e.key === "Escape") setEditing(null);
+                }}
+              />
+            </label>
+
+            <div className="space-y-1.5">
+              <span className="text-xs text-neutral-500">색상</span>
+              <div className="flex items-center gap-2.5">
+                <input
+                  type="color"
+                  value={draftColor}
+                  onChange={(e) => setDraftColor(e.target.value)}
+                  aria-label="색상 선택"
+                  className="h-9 w-12 shrink-0 cursor-pointer rounded-lg border border-neutral-800 bg-transparent p-1"
+                />
+                <input
+                  className="field font-mono text-xs"
+                  value={draftColor}
+                  onChange={(e) => setDraftColor(e.target.value)}
+                  aria-label="색상 코드"
+                />
+              </div>
+              <p className="text-[11px] text-neutral-600">
+                이 포트폴리오 한 건의 색만 바뀝니다. 같은 직무 전체를 한 번에
+                칠하려면 내 서재의 직무 색상 설정을 쓰세요.
+              </p>
+            </div>
+
+            {editError && (
+              <p role="alert" className="text-xs text-brand">
+                {editError}
+              </p>
+            )}
+
+            <div className="flex justify-end gap-2 pt-1">
+              <button
+                type="button"
+                className="btn-secondary text-xs px-3 py-2"
+                onClick={() => setEditing(null)}
+                disabled={saving}
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                className="btn-primary text-xs px-3 py-2 disabled:opacity-40 inline-flex items-center gap-1.5"
+                onClick={() => void saveEdit()}
+                disabled={saving || !draftTitle.trim()}
+              >
+                {saving && <LoaderCircle size={12} className="animate-spin" aria-hidden="true" />}
+                저장
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

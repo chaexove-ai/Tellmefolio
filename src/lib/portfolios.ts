@@ -343,6 +343,40 @@ export async function updatePortfolioJob(id: string, job: string): Promise<void>
   }
 }
 
+/**
+ * [2026-09] 책장에서 책 한 권의 제목을 바로 고칩니다.
+ *
+ * 전에는 제목을 바꾸려면 편집기까지 들어가야 했는데, 책장은 제목이 가장
+ * 잘 보이는 자리라 거기서 고치는 게 자연스럽습니다.
+ */
+export async function updatePortfolioTitle(id: string, title: string): Promise<void> {
+  const sb = await requireClient();
+  const trimmed = title.trim();
+  if (!trimmed) {
+    throw new PortfolioError("제목을 입력해 주세요.");
+  }
+  const { error } = await sb.from("portfolios").update({ title: trimmed }).eq("id", id);
+  if (error) {
+    throw new PortfolioError("제목을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+  }
+}
+
+/**
+ * [2026-09] 포트폴리오 한 건의 색만 바꿉니다.
+ *
+ * updateJobColor 와 대상이 다릅니다 — 그쪽은 "같은 직무를 가진 포트폴리오
+ * 전부"를 한 번에 칠하는 도구이고, 이건 이 책 한 권입니다. 같은 컬럼을
+ * 쓰기 때문에 둘 중 나중에 한 쪽이 이깁니다. 직무 색상은 "기본값을
+ * 일괄로 정하는 수단", 책 색은 "그 책만 예외로 두는 수단"으로 씁니다.
+ */
+export async function updatePortfolioColor(id: string, color: string): Promise<void> {
+  const sb = await requireClient();
+  const { error } = await sb.from("portfolios").update({ job_color: color }).eq("id", id);
+  if (error) {
+    throw new PortfolioError("색상을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+  }
+}
+
 /** 로그인한 사용자의 포트폴리오 전체를 최근 수정순으로. */
 export async function listMyPortfolios(userId: string): Promise<LibraryPortfolio[]> {
   const sb = await requireClient();

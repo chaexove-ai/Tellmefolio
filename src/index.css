@@ -181,8 +181,14 @@ summary::marker { content: ""; }
 
 /* 책이 넓어지며(width) 앞으로 살짝 떠오릅니다. 옆 책들은 이 폭 변화를
    실제 레이아웃으로 느끼고 자리를 비켜줍니다. */
+/* [2026-09] :focus-visible → :focus-within.
+   책 한 권이 <a> 하나였을 때는 .book 자신이 포커스를 받았지만, 연필
+   버튼이 들어오면서 .book 은 <a>와 <button>을 담는 <div>가 됐습니다.
+   div 는 포커스를 받지 않으므로 :focus-visible 이 영영 안 맞습니다.
+   안쪽 어느 것이든 포커스를 받으면 책이 펼쳐지도록 :focus-within 으로
+   바꿉니다 — 키보드로 탭해서 오는 경우가 여기에 해당합니다. */
 .book:hover,
-.book:focus-visible {
+.book:focus-within {
   width: 156px;
   transform: translateY(-14px);
   box-shadow: -10px 20px 30px rgb(0 0 0 / 0.35);
@@ -201,7 +207,7 @@ summary::marker { content: ""; }
 }
 
 .book:hover .book-face-spine,
-.book:focus-visible .book-face-spine {
+.book:focus-within .book-face-spine {
   opacity: 0;
   pointer-events: none;
 }
@@ -216,7 +222,7 @@ summary::marker { content: ""; }
 }
 
 .book:hover .book-face-cover,
-.book:focus-visible .book-face-cover {
+.book:focus-within .book-face-cover {
   opacity: 1;
 }
 
@@ -268,7 +274,7 @@ summary::marker { content: ""; }
 @media (prefers-reduced-motion: reduce) {
   .book,
   .book:hover,
-  .book:focus-visible {
+  .book:focus-within {
     width: 54px;
     transform: none;
     transition: none;
@@ -277,7 +283,7 @@ summary::marker { content: ""; }
 
   .book-face-spine,
   .book:hover .book-face-spine,
-  .book:focus-visible .book-face-spine {
+  .book:focus-within .book-face-spine {
     opacity: 1;
   }
 
@@ -285,7 +291,7 @@ summary::marker { content: ""; }
      이 환경에서는 표지 면 자체를 감추고, 테두리 강조만 남깁니다. */
   .book-face-cover,
   .book:hover .book-face-cover,
-  .book:focus-visible .book-face-cover {
+  .book:focus-within .book-face-cover {
     opacity: 0;
     display: none;
   }

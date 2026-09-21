@@ -177,7 +177,12 @@ export default function Dashboard() {
       ) : (
         <>
           <Reveal>
-            <Bookshelf portfolios={portfolios} />
+            <Bookshelf
+              portfolios={portfolios}
+              onUpdated={(u) =>
+                setPortfolios((list) => list.map((p) => (p.id === u.id ? u : p)))
+              }
+            />
           </Reveal>
 
           <div>
