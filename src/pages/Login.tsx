@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import ThemeToggle from "../components/ThemeToggle";
 import SocialLoginButtons from "../components/SocialLoginButtons";
 import { useAuth } from "../auth/AuthProvider";
 import type { SocialProviderId } from "../components/BrandIcons";
@@ -49,7 +48,7 @@ export default function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-neutral-950 px-4 relative">
       <div className="absolute top-6 right-6">
-        <ThemeToggle />
+        {/* 다크 테마를 감추면서 토글을 내렸습니다 — index.html 주석 참고 */}
       </div>
       <div className="w-full max-w-sm border border-neutral-800 p-8">
         <p className="text-xs tracking-[0.2em] text-brand uppercase mb-4">Tellmefolio</p>

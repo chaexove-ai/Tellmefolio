@@ -5,7 +5,6 @@ import { LibraryBig, Sparkles, Repeat, Users, Settings, Menu, X } from "lucide-r
 import AIUsageBadge from "./AIUsageBadge";
 import RouteFallback from "./RouteFallback";
 import UserMenu from "./UserMenu";
-import ThemeToggle from "./ThemeToggle";
 
 const navItems = [
   { to: "/library", label: "홈", icon: LibraryBig },
@@ -95,7 +94,7 @@ export default function AppLayout() {
         <NavList />
         <div className="pt-6 border-t border-neutral-800 px-2 space-y-4">
           <AIUsageBadge />
-          <ThemeToggle />
+          {/* 다크 테마를 감추면서 토글을 내렸습니다 — index.html 주석 참고 */}
           <UserMenu />
         </div>
       </aside>
@@ -110,7 +109,7 @@ export default function AppLayout() {
           <Menu size={22} />
         </button>
         <Link to="/library" className="text-base font-heading text-neutral-100">Tellmefolio</Link>
-        <ThemeToggle />
+        {/* 다크 테마를 감추면서 토글을 내렸습니다 — index.html 주석 참고 */}
       </header>
 
       {/* 모바일 드로어 */}

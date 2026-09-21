@@ -129,6 +129,28 @@ export default function Dashboard() {
         </Link>
       </div>
 
+      {/* [2026-09] 통계를 다시 위로 올렸습니다.
+          전에 아래로 내린 이유는 "전체 2, 공개 1" 같은 숫자가 첫 화면을
+          차지할 이유가 없다는 것이었는데, 문제는 위치가 아니라 크기였습니다.
+          48px 아이콘 원과 p-6 여백을 두른 카드 네 개가 화면 맨 위를 채우면
+          그게 이 페이지의 주인공처럼 보입니다. 라벨과 숫자만 남긴 얇은
+          띠로 줄이면 "현재 상태"로 읽히고, 아래 책장이 주인공 자리를
+          되찾습니다. */}
+      <div className="grid grid-cols-4 gap-4">
+        {stats.map((s, i) => (
+          <div key={s.label} className="entry p-5">
+            <p className="text-[11px] tracking-wide text-neutral-500">{s.label}</p>
+            <p
+              className="mt-2 text-[26px] leading-none font-heading text-neutral-100"
+              style={s.accent ? { color: s.accent } : undefined}
+            >
+              {statValues[i]}
+            </p>
+            <p className="mt-2 text-xs text-neutral-600">{s.sub}</p>
+          </div>
+        ))}
+      </div>
+
       {!configured ? (
         <p className="text-sm text-neutral-500">
           Supabase 설정이 없어 서재를 불러올 수 없습니다.
@@ -205,37 +227,6 @@ export default function Dashboard() {
                 <Link to={s.to} className="text-sm text-brand hover:underline">
                   {s.cta} →
                 </Link>
-              </div>
-            </Reveal>
-          ))}
-        </div>
-      </div>
-
-      {/* 통계는 아래로 내렸습니다. 포트폴리오가 두세 개인 사용자에게
-          "전체 2, 공개 1"은 첫 화면에서 볼 이유가 없는 숫자입니다.
-          위쪽은 만들기와 최근 작업이 차지하는 게 맞습니다. */}
-      <div>
-        <h2 className="text-lg font-heading text-neutral-200 mb-4">현황</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-5">
-          {stats.map((s, i) => (
-            <Reveal key={s.label} delay={i * 0.06}>
-              <div className="entry p-6">
-                <div
-                  className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 ${
-                    s.accent ? "" : "bg-brand/10 text-brand"
-                  }`}
-                  style={s.accent ? { backgroundColor: `${s.accent}1a`, color: s.accent } : undefined}
-                >
-                  <s.icon size={20} strokeWidth={2.25} />
-                </div>
-                <p
-                  className="text-3xl font-heading text-neutral-100"
-                  style={s.accent ? { color: s.accent } : undefined}
-                >
-                  {statValues[i]}
-                </p>
-                <p className="text-sm text-neutral-300 mt-1.5">{s.label}</p>
-                <p className="text-xs text-neutral-600">{s.sub}</p>
               </div>
             </Reveal>
           ))}

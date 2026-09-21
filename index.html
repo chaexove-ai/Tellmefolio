@@ -63,12 +63,16 @@
       (function () {
         try {
           var stored = localStorage.getItem("tellmefolio-theme");
-          var theme =
-            stored === "light" || stored === "dark"
-              ? stored
-              : window.matchMedia("(prefers-color-scheme: light)").matches
-                ? "light"
-                : "dark";
+          // [2026-09] 다크를 감췄습니다. OS 설정을 따라가지 않고 라이트가
+          // 기본이며, 화면의 테마 토글도 내렸습니다.
+          //
+          // 지우지 않고 감춘 이유: 다크는 :root 에 정의된 "기반"이고
+          // 라이트가 :root.light 로 덮어쓰는 구조라, 없애려면 토큰을
+          // 승격시키는 리팩터링이 됩니다. 되돌릴 여지를 남겨두고, 새 화면을
+          // 만들 때 다크를 검토하지 않아도 되는 이득만 먼저 가져갑니다.
+          // 되살리려면 이 줄을 예전 분기로 돌리고 ThemeToggle 을 다시
+          // 렌더하면 됩니다(코드는 그대로 있습니다).
+          var theme = stored === "dark" ? "dark" : "light";
           if (theme === "light") document.documentElement.classList.add("light");
         } catch (e) {}
       })();

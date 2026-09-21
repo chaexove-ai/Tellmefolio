@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { GraduationCap, Layers, Shuffle, Sparkles } from "lucide-react";
-import ThemeToggle from "../components/ThemeToggle";
 import HeroRewrite from "../components/HeroRewrite";
 import Reveal from "../components/Reveal";
 import PerspectiveScroller from "../components/PerspectiveScroller";
@@ -133,7 +132,7 @@ export default function Landing() {
       <header className="sticky top-0 z-50 flex items-center justify-between px-4 sm:px-8 py-4 sm:py-6 border-b border-neutral-800 bg-neutral-950/85 backdrop-blur-md supports-[backdrop-filter]:bg-neutral-950/70">
         <span className="text-base sm:text-lg font-heading">Tellmefolio</span>
         <nav className="flex items-center gap-2 sm:gap-6" aria-label="주요 메뉴">
-          <ThemeToggle />
+          {/* 다크 테마를 감추면서 토글을 내렸습니다 — index.html 주석 참고 */}
           <Link to="/login" className="btn-primary text-xs sm:text-sm px-3 sm:px-4">
             지금 시작하기
           </Link>
