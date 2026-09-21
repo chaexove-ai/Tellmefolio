@@ -220,13 +220,17 @@ export default function SourceInput() {
   };
 
   return (
-    <div className="max-w-2xl space-y-6">
+    // [2026-09] 폭을 절충했습니다. 칸(카드·목록)은 남는 가로를 쓰고,
+    // 읽는 글만 60~62ch 로 묶습니다. 전부 넓히면 설명 한 줄이 100자에
+    // 가까워져 눈이 줄 앞으로 되돌아오는 거리가 길어지고, 전부 좁히면
+    // 저장소 목록이 한 줄짜리 항목으로 길게 내려갑니다.
+    <div className="space-y-6">
       <div>
         <Link to="/library" className="text-xs text-brand hover:underline">
           내 서재로
         </Link>
         <h1 className="text-xl font-heading mt-2">원본 자료 입력</h1>
-        <p className="text-sm text-neutral-400 mt-1">
+        <p className="text-sm text-neutral-400 mt-1 max-w-[62ch]">
           포트폴리오 생성에 사용할 원본 자료를 자료함에 모으세요. 여러 형식의 자료를
           함께 추가할 수 있습니다.
         </p>
@@ -369,8 +373,11 @@ export default function SourceInput() {
                 공개 저장소가 없습니다. 위에 주소를 직접 넣거나 메모를 이용해 주세요.
               </p>
             )}
+            {/* 폭이 넓어진 만큼 목록을 2열로 흘립니다 — 저장소 이름은 짧아서
+                한 줄을 통째로 쓸 이유가 없고, 열이 둘이면 같은 높이에 두 배가
+                보입니다. */}
             {repos.length > 0 && (
-              <ul className="space-y-1.5 text-sm max-h-48 overflow-y-auto">
+              <ul className="grid grid-cols-1 xl:grid-cols-2 gap-x-6 gap-y-1.5 text-sm max-h-56 overflow-y-auto">
                 {repos.map((r) => (
                   <li key={r.id} className="flex items-center gap-2">
                     <input
@@ -423,7 +430,7 @@ export default function SourceInput() {
               onChange={(e) => setNote(e.target.value)}
               placeholder="경력 사항, 프로젝트 설명, 성과 등을 자유롭게 작성하세요"
               rows={4}
-              className="field-area"
+              className="field-area max-w-[80ch]"
             />
             <p className="text-xs text-neutral-600">
               작성한 내용은 AI 초안 생성의 기초 자료로 활용됩니다. 비공개 저장소의

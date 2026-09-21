@@ -171,7 +171,8 @@ export default function AIDraftGeneration() {
   };
 
   return (
-    <div className="max-w-2xl space-y-6">
+    // 폭 기준은 SourceInput 주석 참고 — 칸은 넓게, 읽는 글만 좁게.
+    <div className="space-y-6">
       <div>
         <Link to="/wizard/source" className="text-xs text-brand hover:underline">
           원본 자료 수정
@@ -344,7 +345,7 @@ export default function AIDraftGeneration() {
                     onKeyDown={extraTabFill}
                     rows={2}
                     placeholder="예: 팀 리딩 경험을 좀 더 부각해줘"
-                    className="field-area peer"
+                    className="field-area max-w-[80ch] peer"
                   />
                   <span className="pointer-events-none absolute right-3 top-2.5 inline-flex items-center gap-1 text-[11px] text-neutral-500 opacity-0 transition-opacity peer-focus:opacity-100">
                     <kbd className="rounded border border-neutral-600 bg-neutral-800 px-1 py-0.5 font-mono text-[10px] text-neutral-300">
