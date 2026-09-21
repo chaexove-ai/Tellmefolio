@@ -74,7 +74,12 @@ export default function JobSwitchResult() {
         합격 가능성이나 채용 결과를 예측하지 않습니다.
       </p>
 
-      <button className="btn-primary" onClick={() => navigate("/wizard/editor")}>
+      {/* [2026-09] 이 페이지는 여전히 전부 mock 데이터라 실제 draft/포트폴리오
+          id 가 없습니다. 마법사 쪽(AIDraftGeneration/PortfolioEditor)이 이제
+          /wizard/editor/:id 처럼 id 를 요구하도록 바뀌어서, id 없이 이동하면
+          라우트가 없어 그냥 랜딩으로 튕겼습니다. id 없는 곳으로 보내는 대신
+          원본 자료 입력부터 실제 마법사를 시작하도록 연결해뒀습니다. */}
+      <button className="btn-primary" onClick={() => navigate("/wizard/source")}>
         이 초안으로 편집 시작
       </button>
     </div>

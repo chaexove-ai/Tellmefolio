@@ -1,12 +1,45 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { getPortfolio, PortfolioError, type PortfolioRow } from "../../lib/portfolios";
+import { templateName } from "../../lib/templates";
 
+/**
+ * [2026-09] "적용 템플릿" 줄이 항상 "라이브에디터"로 고정돼 있던 걸 고쳤습니다
+ * — 실제로는 TemplateStyle 에서 뭘 고르든 이 화면은 그 값을 아예 몰랐습니다.
+ * 이제 :id 로 실제 포트폴리오를 불러와 제목과 적용 템플릿을 그대로 보여줍니다.
+ *
+ * 내보내기 자체(실제 PDF·HTML 생성)는 이번 작업 범위가 아니라 여전히 mock
+ * 입니다 — 우선순위상 다음 단계로 남겨뒀습니다.
+ */
 export default function Export() {
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+
+  const [portfolio, setPortfolio] = useState<PortfolioRow | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
   const [lang, setLang] = useState<"한국어" | "영어">("한국어");
   const [format, setFormat] = useState<"pdf" | "web">("pdf");
   const [confirming, setConfirming] = useState(false);
   const [exporting, setExporting] = useState(false);
+
+  useEffect(() => {
+    if (!id) {
+      setLoadError("포트폴리오 id가 없습니다.");
+      return;
+    }
+    let alive = true;
+    getPortfolio(id)
+      .then((p) => {
+        if (alive) setPortfolio(p);
+      })
+      .catch((e) => {
+        if (alive) setLoadError(e instanceof PortfolioError ? e.message : "불러오지 못했습니다.");
+      });
+    return () => {
+      alive = false;
+    };
+  }, [id]);
 
   const startExport = () => {
     setConfirming(false);
@@ -19,10 +52,16 @@ export default function Export() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <Link to="/wizard/style" className="text-xs text-brand hover:underline">
+      <Link to={id ? `/wizard/style/${id}` : "/wizard"} className="text-xs text-brand hover:underline">
         템플릿·스타일 설정으로 돌아가기
       </Link>
       <h1 className="text-xl font-heading">내보내기</h1>
+
+      {loadError && (
+        <p role="alert" className="text-sm text-brand">
+          {loadError}
+        </p>
+      )}
 
       <div className="entry">
         <h2 className="entry-title">내보내기 언어 선택</h2>
@@ -72,7 +111,10 @@ export default function Export() {
 
       <div className="entry text-sm">
         <h2 className="entry-title">템플릿 및 스타일 반영 확인</h2>
-        <p className="text-neutral-400">적용 템플릿: 라이브에디터</p>
+        <p className="text-neutral-400">
+          {portfolio ? `제목: ${portfolio.title}` : "포트폴리오 정보를 불러오는 중입니다."}
+        </p>
+        {portfolio && <p className="text-neutral-400">적용 템플릿: {templateName(portfolio.template_id)}</p>}
         <p className="text-neutral-400">현재 편집 상태가 내보내기 결과에 반영되는 것을 확인했습니다.</p>
       </div>
 

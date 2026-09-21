@@ -16,8 +16,10 @@ import {
 } from "lucide-react";
 import AIRequestStatus from "../../components/AIRequestStatus";
 import { aiUsage, type AIRequestStatus as Status } from "../../mockData";
+import { useAuth } from "../../auth/AuthProvider";
 import type { RepoMaterial } from "../../lib/github";
 import { generateDraft, DraftError, type Draft } from "../../lib/draft";
+import { createPortfolioFromDraft, PortfolioError } from "../../lib/portfolios";
 
 /** 앞 단계에서 넘겨준 재료. 주소로 바로 들어오면 비어 있습니다. */
 interface WizardState {
@@ -70,6 +72,7 @@ function TabHint() {
 export default function AIDraftGeneration() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { session } = useAuth();
   const { materials = [], note = "", links = [], failed = [] } =
     (location.state as WizardState | null) ?? {};
   const [status, setStatus] = useState<Status>("idle");
@@ -82,8 +85,14 @@ export default function AIDraftGeneration() {
   const [draft, setDraft] = useState<Draft | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+
   const limitReached = aiUsage.dailyUsed >= aiUsage.dailyLimit;
-  const hasMaterial = materials.length > 0 || note.trim().length > 0;
+  // [2026-09] 자료함에 웹 링크만 담고 GitHub 저장소나 메모가 없으면
+  // "생성할 자료가 없습니다"로 버튼이 계속 비활성이었던 버그를 고쳤습니다
+  // — links 를 안 보고 있었습니다.
+  const hasMaterial = materials.length > 0 || note.trim().length > 0 || links.length > 0;
 
   const titleTabFill = useTabFill(title, setTitle, TITLE_EXAMPLE);
   const extraTabFill = useTabFill(extra, setExtra, EXTRA_EXAMPLE);
@@ -128,6 +137,35 @@ export default function AIDraftGeneration() {
         e instanceof DraftError ? e.message : "초안 생성 중 문제가 생겼습니다."
       );
       setStatus("failed");
+    }
+  };
+
+  /**
+   * [2026-09] "편집기에서 열기"가 이제 실제로 portfolios/portfolio_projects
+   * 행을 만듭니다. 전에는 draft 를 location.state 로만 다음 화면에 넘겼고,
+   * 그 화면에서 새로고침하면 통째로 사라졌습니다. 여기서 만든 id 로
+   * /wizard/editor/:id 에 들어가면 그 다음부터는 항상 DB 에서 다시 읽습니다.
+   */
+  const openInEditor = async () => {
+    if (!draft) return;
+    if (!session?.user?.id) {
+      setCreateError("로그인이 필요합니다.");
+      return;
+    }
+    setCreating(true);
+    setCreateError(null);
+    try {
+      const { portfolio } = await createPortfolioFromDraft({
+        userId: session.user.id,
+        title: title.trim() || draft.title,
+        job,
+        draft,
+      });
+      navigate(`/wizard/editor/${portfolio.id}`);
+    } catch (e) {
+      setCreateError(e instanceof PortfolioError ? e.message : "포트폴리오를 만들지 못했습니다.");
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -396,12 +434,20 @@ export default function AIDraftGeneration() {
       )}
 
       {status === "completed" && (
-        <button
-          className="btn-primary"
-          onClick={() => navigate("/wizard/editor", { state: { draft } })}
-        >
-          편집기에서 열기
-        </button>
+        <div className="space-y-2">
+          <button
+            className="btn-primary disabled:opacity-40 disabled:cursor-not-allowed"
+            disabled={creating}
+            onClick={() => void openInEditor()}
+          >
+            {creating ? "저장하는 중" : "편집기에서 열기"}
+          </button>
+          {createError && (
+            <p role="alert" className="text-xs text-brand">
+              {createError}
+            </p>
+          )}
+        </div>
       )}
     </div>
   );

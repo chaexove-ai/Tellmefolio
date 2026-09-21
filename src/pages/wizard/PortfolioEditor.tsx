@@ -1,7 +1,14 @@
 import { useEffect, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Info } from "lucide-react";
-import type { Draft, DraftProject } from "../../lib/draft";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { Check, Info, LoaderCircle } from "lucide-react";
+import {
+  getPortfolioWithProjects,
+  updatePortfolioProject,
+  PortfolioError,
+  type PortfolioProjectRow,
+  type PortfolioRow,
+} from "../../lib/portfolios";
+import { formatRelativeTime } from "../../lib/formatRelativeTime";
 
 interface EvidenceItem {
   id: string;
@@ -29,36 +36,30 @@ const mismatchItems = [
   },
 ];
 
-/** 앞 단계(AIDraftGeneration)가 navigate 로 넘겨준 값. 주소로 바로 들어오면 비어 있습니다. */
-interface WizardEditorState {
-  draft?: Draft;
-}
-
 /**
- * [2026-09] "AI 돌리면 여기 자동 입력되는 거 아니었어?" 라는 질문에서 시작된
- * 수정입니다. 실제로는 이 화면이 location.state.draft 를 전혀 읽지 않고
- * 있었습니다 — 이전 단계에서 만든 초안이 그냥 버려지고 있었던 것입니다.
+ * [2026-09] location.state.draft 대신 실제 DB(portfolios/portfolio_projects)에서
+ * 읽고 씁니다. 이전에는 이 화면이 새로고침하면 통째로 비어버렸습니다 —
+ * AI 초안이 location.state 에만 있었고 어디에도 저장되지 않았기 때문입니다.
+ * 이제는 주소의 :id 로 포트폴리오를 찾아 불러오고, 프로젝트 탭을 바꾸거나
+ * "수동 저장"을 누르면 그 시점의 7칸 내용이 portfolio_projects 행에 그대로
+ * 저장됩니다.
  *
- * 채워지는 항목 / 못 채우는 항목
- *   Draft.projects[i] 는 { name, oneLiner, body, highlights, stack } 만 갖고
- *   있어서, 아래 7칸 중 "프로젝트 제목·맥락 및 배경·실행 내용·핵심 성과 및
- *   수치" 네 개만 자동으로 채울 수 있습니다. "담당 역할·문제 정의·배운 점 및
- *   회고" 는 AI 응답에 대응하는 필드가 없어 계속 빈 칸으로 둡니다 — 채워진
- *   척 가짜 문장을 넣는 대신, 직접 쓰라고 안내만 합니다.
+ * 담당 역할·문제 정의·배운 점은 여전히 AI 응답에 대응하는 필드가 없어
+ * 빈 칸으로 시작합니다 — DB 컬럼 자체는 있으니(role/problem/reflection)
+ * 한 번 채워서 저장하면 그다음부터는 그대로 남습니다.
  *
- * 프로젝트가 여러 개일 수 있어(자료함에 리포를 여러 개 담을 수 있으므로)
- * 위에 프로젝트 탭을 두고, 탭을 바꾸면 그 프로젝트 값으로 다시 채웁니다.
- *
- * "AI 근거 및 사실 확인" / "이력서·포트폴리오 불일치 확인" 두 섹션은 이번에
- * 건드리지 않았습니다 — 실제로 문장-출처를 연결하거나 이력서와 대조하는
- * 기능 자체가 아직 없어서, 지금 손대면 또 다른 가짜 데이터를 진짜처럼
- * 보이게 만드는 것밖에 안 됩니다. 여전히 예시 데이터라는 것만 명시했습니다.
+ * "AI 근거 및 사실 확인" / "이력서·포트폴리오 불일치 확인" 두 섹션은 이번에도
+ * 건드리지 않았습니다 — 문장-출처 연결이나 이력서 대조 기능 자체가 아직
+ * 없어서, 여전히 예시 데이터라는 것만 명시합니다.
  */
 export default function PortfolioEditor() {
   const navigate = useNavigate();
-  const location = useLocation();
-  const { draft } = (location.state as WizardEditorState | null) ?? {};
-  const projects: DraftProject[] = draft?.projects ?? [];
+  const { id } = useParams<{ id: string }>();
+
+  const [portfolio, setPortfolio] = useState<PortfolioRow | null>(null);
+  const [projects, setProjects] = useState<PortfolioProjectRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const [sentence, setSentence] = useState("");
   const [showRefine, setShowRefine] = useState(false);
@@ -72,28 +73,110 @@ export default function PortfolioEditor() {
   const [outcome, setOutcome] = useState("");
   const [reflection, setReflection] = useState("");
 
-  const loadProject = (index: number) => {
-    const p = projects[index];
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
+
+  const loadProject = (index: number, list: PortfolioProjectRow[]) => {
+    const p = list[index];
     setProjectIndex(index);
     setTitleField(p?.name ?? "");
-    setContext(p?.oneLiner ?? "");
-    setExecution(p?.body ?? "");
-    setOutcome(p?.highlights?.length ? p.highlights.join("\n") : "");
-    // 담당 역할 · 문제 정의 · 배운 점은 AI 응답에 없는 항목이라, 프로젝트를
-    // 바꿀 때도 항상 빈 칸으로 초기화합니다(다른 프로젝트 내용이 남지 않게).
-    setRole("");
-    setProblem("");
-    setReflection("");
+    setContext(p?.context ?? "");
+    setRole(p?.role ?? "");
+    setProblem(p?.problem ?? "");
+    setExecution(p?.execution ?? "");
+    setOutcome(p?.outcome ?? "");
+    setReflection(p?.reflection ?? "");
   };
 
   useEffect(() => {
-    if (projects.length > 0) loadProject(0);
-    // draft 는 이 화면에 들어올 때 한 번 정해지고 이후 바뀌지 않으므로,
-    // 마운트 시 한 번만 채웁니다.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [draft]);
+    if (!id) {
+      setLoadError("포트폴리오 id가 없습니다.");
+      setLoading(false);
+      return;
+    }
+    let alive = true;
+    setLoading(true);
+    setLoadError(null);
+    getPortfolioWithProjects(id)
+      .then(({ portfolio: p, projects: ps }) => {
+        if (!alive) return;
+        setPortfolio(p);
+        setProjects(ps);
+        if (ps.length > 0) loadProject(0, ps);
+        setLastSavedAt(new Date(p.updated_at).getTime());
+      })
+      .catch((e) => {
+        if (!alive) return;
+        setLoadError(e instanceof PortfolioError ? e.message : "불러오지 못했습니다.");
+      })
+      .finally(() => {
+        if (alive) setLoading(false);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [id]);
 
   const currentProject = projects[projectIndex];
+
+  /** 지금 탭에 보이는 7칸을 현재 프로젝트 행에 저장합니다. 저장 버튼과
+   *  프로젝트 탭 전환 둘 다 여기를 거칩니다 — 탭을 바꿀 때 저장하지 않으면
+   *  방금 고친 내용이 조용히 사라지기 때문입니다. */
+  const saveCurrentProject = async () => {
+    const current = projects[projectIndex];
+    if (!current) return;
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const patch = {
+        name: titleField,
+        context,
+        role,
+        problem,
+        execution,
+        outcome,
+        reflection,
+      };
+      await updatePortfolioProject(current.id, patch);
+      setProjects((prev) => prev.map((p, i) => (i === projectIndex ? { ...p, ...patch } : p)));
+      setLastSavedAt(Date.now());
+    } catch (e) {
+      setSaveError(e instanceof PortfolioError ? e.message : "저장하지 못했습니다.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const switchProject = async (index: number) => {
+    if (index === projectIndex) return;
+    await saveCurrentProject();
+    loadProject(index, projects);
+  };
+
+  if (loading) {
+    return (
+      <div className="max-w-3xl">
+        <p className="text-sm text-neutral-500 inline-flex items-center gap-2">
+          <LoaderCircle size={14} className="animate-spin" />
+          포트폴리오를 불러오는 중입니다.
+        </p>
+      </div>
+    );
+  }
+
+  if (loadError || !portfolio) {
+    return (
+      <div className="max-w-3xl space-y-2">
+        <p role="alert" className="text-sm text-brand">
+          {loadError ?? "포트폴리오를 찾을 수 없습니다."}
+        </p>
+        <Link to="/wizard/source" className="text-xs text-brand hover:underline">
+          원본 자료 입력부터 다시 시작하기
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-3xl space-y-6">
@@ -101,27 +184,18 @@ export default function PortfolioEditor() {
         <Link to="/wizard/draft" className="text-xs text-brand hover:underline">
           AI 초안 생성으로 돌아가기
         </Link>
-        <button
-          className="btn-primary"
-          onClick={() => navigate("/wizard/style")}
-        >
+        <button className="btn-primary" onClick={() => navigate(`/wizard/style/${portfolio.id}`)}>
           템플릿/스타일 설정
         </button>
       </div>
       <div>
-        <h1 className="text-xl font-heading">포트폴리오 편집기</h1>
-        {draft ? (
-          <p className="text-sm text-neutral-400 mt-1">{draft.summary}</p>
+        <h1 className="text-xl font-heading">{portfolio.title}</h1>
+        {portfolio.summary ? (
+          <p className="text-sm text-neutral-400 mt-1">{portfolio.summary}</p>
         ) : (
           <p className="text-xs text-neutral-600 mt-1 flex items-start gap-1.5">
             <Info size={13} strokeWidth={1.5} className="text-neutral-500 shrink-0 mt-0.5" />
-            <span>
-              전달된 AI 초안이 없습니다. 빈 칸에 직접 작성하거나,{" "}
-              <Link to="/wizard/source" className="text-brand hover:underline">
-                원본 자료 입력
-              </Link>
-              부터 다시 시작해 주세요.
-            </span>
+            <span>요약이 아직 없습니다. 아래 항목을 직접 채워 주세요.</span>
           </p>
         )}
       </div>
@@ -129,26 +203,36 @@ export default function PortfolioEditor() {
       <div className="entry space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="entry-title mb-0">프로젝트 개요</h2>
-          {draft && <span className="badge bg-brand/10 text-brand">AI 초안 반영됨</span>}
+          {portfolio.summary && <span className="badge bg-brand/10 text-brand">AI 초안 반영됨</span>}
         </div>
 
         {projects.length > 1 && (
           <div className="flex flex-wrap gap-2">
             {projects.map((p, i) => (
               <button
-                key={`${p.name}-${i}`}
+                key={p.id}
                 type="button"
-                onClick={() => loadProject(i)}
+                onClick={() => void switchProject(i)}
                 className={`rounded-full border px-3.5 py-1.5 text-xs transition-all ${
                   i === projectIndex
                     ? "border-brand bg-brand/10 text-brand font-medium"
                     : "border-neutral-700 text-neutral-400 hover:border-neutral-500"
                 }`}
               >
-                {p.name}
+                {p.name || "제목 없음"}
               </button>
             ))}
           </div>
+        )}
+
+        {projects.length === 0 && (
+          <p className="text-sm text-neutral-500">
+            프로젝트가 없습니다.{" "}
+            <Link to="/wizard/source" className="text-brand hover:underline">
+              원본 자료 입력
+            </Link>
+            부터 다시 시작해 주세요.
+          </p>
         )}
 
         {currentProject && currentProject.stack.length > 0 && (
@@ -161,59 +245,63 @@ export default function PortfolioEditor() {
           </div>
         )}
 
-        <input
-          value={titleField}
-          onChange={(e) => setTitleField(e.target.value)}
-          placeholder="프로젝트 제목"
-          className="field"
-        />
-        <textarea
-          value={context}
-          onChange={(e) => setContext(e.target.value)}
-          placeholder="맥락 및 배경"
-          rows={2}
-          className="field-area"
-        />
-        <input
-          value={role}
-          onChange={(e) => setRole(e.target.value)}
-          placeholder="담당 역할"
-          className="field"
-        />
-        <textarea
-          value={problem}
-          onChange={(e) => setProblem(e.target.value)}
-          placeholder="문제 정의"
-          rows={2}
-          className="field-area"
-        />
-        <textarea
-          value={execution}
-          onChange={(e) => setExecution(e.target.value)}
-          placeholder="실행 내용"
-          rows={2}
-          className="field-area"
-        />
-        <textarea
-          value={outcome}
-          onChange={(e) => setOutcome(e.target.value)}
-          placeholder="핵심 성과 및 수치"
-          rows={2}
-          className="field-area"
-        />
-        <textarea
-          value={reflection}
-          onChange={(e) => setReflection(e.target.value)}
-          placeholder="배운 점 및 회고"
-          rows={2}
-          className="field-area"
-        />
-        {draft && (
-          <p className="text-xs text-neutral-600 flex items-start gap-1.5">
-            <Info size={13} strokeWidth={1.5} className="text-neutral-500 shrink-0 mt-0.5" />
-            담당 역할·문제 정의·배운 점은 AI가 아직 채우지 못하는 항목이라 비워
-            뒀습니다. 직접 적어주세요.
-          </p>
+        {projects.length > 0 && (
+          <>
+            <input
+              value={titleField}
+              onChange={(e) => setTitleField(e.target.value)}
+              placeholder="프로젝트 제목"
+              className="field"
+            />
+            <textarea
+              value={context}
+              onChange={(e) => setContext(e.target.value)}
+              placeholder="맥락 및 배경"
+              rows={2}
+              className="field-area"
+            />
+            <input
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              placeholder="담당 역할"
+              className="field"
+            />
+            <textarea
+              value={problem}
+              onChange={(e) => setProblem(e.target.value)}
+              placeholder="문제 정의"
+              rows={2}
+              className="field-area"
+            />
+            <textarea
+              value={execution}
+              onChange={(e) => setExecution(e.target.value)}
+              placeholder="실행 내용"
+              rows={2}
+              className="field-area"
+            />
+            <textarea
+              value={outcome}
+              onChange={(e) => setOutcome(e.target.value)}
+              placeholder="핵심 성과 및 수치"
+              rows={2}
+              className="field-area"
+            />
+            <textarea
+              value={reflection}
+              onChange={(e) => setReflection(e.target.value)}
+              placeholder="배운 점 및 회고"
+              rows={2}
+              className="field-area"
+            />
+            {portfolio.summary && (
+              <p className="text-xs text-neutral-600 flex items-start gap-1.5">
+                <Info size={13} strokeWidth={1.5} className="text-neutral-500 shrink-0 mt-0.5" />
+                담당 역할·문제 정의·배운 점은 AI가 아직 채우지 못하는 항목이라 비워
+                뒀습니다. 직접 적어주세요.
+              </p>
+            )}
+          </>
         )}
       </div>
 
@@ -333,14 +421,33 @@ export default function PortfolioEditor() {
 
       <div className="entry flex items-center justify-between">
         <div>
-          <p className="text-sm text-neutral-200">마지막 자동 저장: 방금 전</p>
-          <button className="text-xs text-brand hover:underline mt-1">변경 이력 확인</button>
+          <p className="text-sm text-neutral-200">
+            마지막 저장: {formatRelativeTime(lastSavedAt)}
+          </p>
+          {saveError && (
+            <p role="alert" className="text-xs text-brand mt-1">
+              {saveError}
+            </p>
+          )}
           <p className="text-xs text-neutral-600 mt-1">
-            AI 생성, 직접 수정, 저장 시점이 버전으로 기록됩니다. 원하는 버전으로
-            되돌릴 수 있습니다.
+            현재 프로젝트 탭의 내용을 저장합니다. 다른 탭으로 옮기면 자동으로 먼저
+            저장됩니다.
           </p>
         </div>
-        <button className="btn-secondary">수동 저장</button>
+        <button
+          className="btn-secondary disabled:opacity-40 inline-flex items-center gap-1.5"
+          disabled={saving || projects.length === 0}
+          onClick={() => void saveCurrentProject()}
+        >
+          {saving ? (
+            "저장하는 중"
+          ) : (
+            <>
+              <Check size={13} strokeWidth={2.5} aria-hidden="true" />
+              수동 저장
+            </>
+          )}
+        </button>
       </div>
     </div>
   );

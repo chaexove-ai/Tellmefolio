@@ -66,13 +66,17 @@ export default function App() {
         <Route path="/library/portfolios" element={<PortfolioList />} />
         <Route path="/library/portfolios/:id/versions" element={<VersionHistory />} />
 
-        {/* 포트폴리오 생성 위저드 */}
+        {/* 포트폴리오 생성 위저드.
+            editor/style/export 는 :id 가 필요합니다 — [2026-09] 마법사가
+            실제 portfolios 테이블에 저장하도록 바뀌면서, "지금 만들고 있는
+            포트폴리오가 어느 행인지"를 주소에 직접 담습니다. 전에는
+            location.state 로만 넘겨서 새로고침하면 통째로 사라졌습니다. */}
         <Route path="/wizard" element={<WizardOverview />} />
         <Route path="/wizard/source" element={<SourceInput />} />
         <Route path="/wizard/draft" element={<AIDraftGeneration />} />
-        <Route path="/wizard/editor" element={<PortfolioEditor />} />
-        <Route path="/wizard/style" element={<TemplateStyle />} />
-        <Route path="/wizard/export" element={<Export />} />
+        <Route path="/wizard/editor/:id" element={<PortfolioEditor />} />
+        <Route path="/wizard/style/:id" element={<TemplateStyle />} />
+        <Route path="/wizard/export/:id" element={<Export />} />
 
         {/* 직무 전환 재구성 */}
         <Route path="/job-switch" element={<JobSwitchRequest />} />

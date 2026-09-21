@@ -1,22 +1,28 @@
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Check } from "lucide-react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { Check, LoaderCircle } from "lucide-react";
 import GrainCover from "../../components/GrainCover";
-
-const templates = [
-  { id: "research", name: "연구노트", desc: "학술적이고 정제된 레이아웃" },
-  { id: "live", name: "라이브에디터", desc: "개발자 감성의 다크 코드 스타일" },
-  { id: "minimal", name: "클린 미니멀", desc: "여백 중심의 깔끔한 구성" },
-  { id: "magazine", name: "매거진형", desc: "이미지 중심의 감각적인 레이아웃" },
-];
-
-type ColorTheme = "dark" | "light";
-type LayoutDirection = "1col" | "2col";
+import { templates } from "../../lib/templates";
+import { formatRelativeTime } from "../../lib/formatRelativeTime";
+import {
+  getPortfolio,
+  updatePortfolioStyle,
+  PortfolioError,
+  type ColorTheme,
+  type LayoutDirection,
+  type TemplateId,
+} from "../../lib/portfolios";
 
 interface StyleSettings {
   colorTheme: ColorTheme;
   font: string;
   layout: LayoutDirection;
+}
+
+/** 저장 대상 전체(템플릿 포함). AI 추천은 템플릿까지는 안 건드리므로
+ *  applyStyle 쪽은 여전히 StyleSettings(3개)만 씁니다. */
+interface FullStyle extends StyleSettings {
+  templateId: TemplateId;
 }
 
 const recommendations: Array<{ id: string; name: string; desc: string; style: StyleSettings }> = [
@@ -76,84 +82,90 @@ const GOOGLE_FONT_HREF: Record<string, string> = {
   "Nanum Gothic": "https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700&display=swap",
 };
 
-const STORAGE_KEY = "tellmefolio-wizard-style";
-const DEFAULT_STYLE: StyleSettings = { colorTheme: "dark", font: fontOptions[0], layout: "1col" };
-
-function loadStoredStyle(): { settings: StyleSettings; savedAt: number | null } {
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { settings: DEFAULT_STYLE, savedAt: null };
-    const parsed = JSON.parse(raw) as Partial<StyleSettings & { savedAt: number }>;
-    return {
-      settings: {
-        colorTheme: parsed.colorTheme === "light" ? "light" : "dark",
-        font: typeof parsed.font === "string" && fontOptions.includes(parsed.font) ? parsed.font : DEFAULT_STYLE.font,
-        layout: parsed.layout === "2col" ? "2col" : "1col",
-      },
-      savedAt: typeof parsed.savedAt === "number" ? parsed.savedAt : null,
-    };
-  } catch {
-    return { settings: DEFAULT_STYLE, savedAt: null };
-  }
-}
-
-function formatRelativeTime(ms: number | null): string {
-  if (ms === null) return "아직 저장하지 않음";
-  const diffSec = Math.max(0, Math.round((Date.now() - ms) / 1000));
-  if (diffSec < 60) return "방금 전";
-  const diffMin = Math.round(diffSec / 60);
-  if (diffMin < 60) return `${diffMin}분 전`;
-  const diffHour = Math.round(diffMin / 60);
-  if (diffHour < 24) return `${diffHour}시간 전`;
-  return `${Math.round(diffHour / 24)}일 전`;
-}
+const DEFAULT_FONT = fontOptions[0];
 
 /**
- * [2026-09] "직접 편집" 패널이 셀렉트만 나열돼 있고 아무것도 하지 않는다는
- * 문제를 고쳤습니다. 서버에 저장할 곳이 없는(포트폴리오별 스타일을 담는
- * 테이블/필드가 아직 없는) 상태라 "저장"을 진짜 백엔드에 연결할 수는
- * 없었지만, 그 안에서 진짜로 되는 일은 진짜로 만들었습니다.
+ * [2026-09] localStorage 대신 실제 portfolios 테이블에 저장합니다.
  *
- *   - 색상 테마·서체·레이아웃 방향은 실제 React 상태이고, 아래 "실시간
- *     미리보기"에 그대로 반영됩니다(더 이상 selectedTemplate 하나만 보고
- *     있지 않습니다).
- *   - 서체는 진짜로 로드됩니다 — 구글 폰트 서체는 선택 시점에 <link> 를
- *     주입하고, Pretendard/Gowun Batang 은 index.html에서 이미 전역
- *     로드돼 있어 이름만 그대로 씁니다. Spoqa Han Sans 만 아직 로딩을
- *     연결하지 않아 옵션에 "로딩 준비 중"이라고 정직하게 표시합니다.
- *   - "대표 이미지 교체"는 실제 파일 선택 + object URL 미리보기입니다.
- *     다만 올릴 서버가 없어 새로고침하면 사라진다고 바로 옆에 적어둡니다.
- *   - "스타일 저장"은 브라우저 localStorage 에 저장합니다(포트폴리오별이
- *     아니라 이 마법사 세션 전체에 하나 — 여러 포트폴리오를 구분해서
- *     저장하려면 포트폴리오 id 별 필드가 생긴 다음에 다시 손봐야 합니다).
- *     "되돌리기"는 마지막 저장 시점 값으로 되돌리고, 저장 전에는 두 버튼
- *     다 비활성화됩니다(되돌릴 것도 저장할 것도 없으므로).
- *   - "AI 스타일 추천"의 "이 스타일 적용" 버튼도 이번에 실제로 위 세 값을
- *     채우도록 연결했습니다 — 안 그러면 옆에 진짜로 동작하는 셀렉트를 두고
- *     이 버튼만 죽어 있는 게 더 이상해 보였습니다.
+ * 전에는 "스타일 저장"이 브라우저 localStorage 에 하나만 저장돼서 포트폴리오가
+ * 여러 개면 서로 설정을 덮어썼습니다(이 마법사 세션 전체에 값이 하나뿐이라고
+ * 코드 주석에도 적어뒀던 그 문제). 이제 :id 로 들어온 포트폴리오의
+ * template_id/color_theme/font/layout 컬럼을 직접 읽고 씁니다.
+ *
+ * 디자인 템플릿 카드도 이번에 저장 대상에 포함했습니다 — 전에는 선택만 되고
+ * 어디에도 저장되지 않는 화면 전용 상태였는데, 스키마에 template_id 컬럼이
+ * 이미 있어서 색상 테마·서체·레이아웃과 같은 저장/되돌리기 흐름에 자연스럽게
+ * 넣었습니다.
+ *
+ * 대표 이미지는 여전히 로컬 미리보기만 됩니다 — 마이그레이션 주석에도 있듯
+ * Storage 버킷 연결은 다음 단계라 cover_image_path 컬럼은 아직 안 씁니다.
  */
 export default function TemplateStyle() {
   const navigate = useNavigate();
-  const [selectedTemplate, setSelectedTemplate] = useState("research");
+  const { id } = useParams<{ id: string }>();
+
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  const [selectedTemplate, setSelectedTemplate] = useState<TemplateId>("research");
   const [moodInput, setMoodInput] = useState("");
   const [showRecommendations, setShowRecommendations] = useState(false);
 
-  const [stored] = useState(loadStoredStyle);
-  const [colorTheme, setColorTheme] = useState<ColorTheme>(stored.settings.colorTheme);
-  const [font, setFont] = useState(stored.settings.font);
-  const [layout, setLayout] = useState<LayoutDirection>(stored.settings.layout);
-  const [savedSnapshot, setSavedSnapshot] = useState<StyleSettings>(stored.settings);
-  const [lastSavedAt, setLastSavedAt] = useState<number | null>(stored.savedAt);
+  const [colorTheme, setColorTheme] = useState<ColorTheme>("dark");
+  const [font, setFont] = useState(DEFAULT_FONT);
+  const [layout, setLayout] = useState<LayoutDirection>("1col");
+  const [savedSnapshot, setSavedSnapshot] = useState<FullStyle | null>(null);
+  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
   const [, forceTick] = useState(0);
+
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    if (!id) {
+      setLoadError("포트폴리오 id가 없습니다.");
+      setLoading(false);
+      return;
+    }
+    let alive = true;
+    setLoading(true);
+    setLoadError(null);
+    getPortfolio(id)
+      .then((p) => {
+        if (!alive) return;
+        const snapshot: FullStyle = {
+          templateId: p.template_id,
+          colorTheme: p.color_theme,
+          font: fontOptions.includes(p.font) ? p.font : DEFAULT_FONT,
+          layout: p.layout,
+        };
+        setSelectedTemplate(snapshot.templateId);
+        setColorTheme(snapshot.colorTheme);
+        setFont(snapshot.font);
+        setLayout(snapshot.layout);
+        setSavedSnapshot(snapshot);
+        setLastSavedAt(new Date(p.updated_at).getTime());
+      })
+      .catch((e) => {
+        if (!alive) return;
+        setLoadError(e instanceof PortfolioError ? e.message : "불러오지 못했습니다.");
+      })
+      .finally(() => {
+        if (alive) setLoading(false);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [id]);
+
   // "n분 전" 표시가 페이지를 오래 열어 둬도 계속 최신으로 보이도록 30초마다
   // 다시 그립니다. 값 자체(lastSavedAt)는 안 바뀌니 forceTick 으로만 리렌더.
   useEffect(() => {
-    const id = window.setInterval(() => forceTick((n) => n + 1), 30_000);
-    return () => window.clearInterval(id);
+    const t = window.setInterval(() => forceTick((n) => n + 1), 30_000);
+    return () => window.clearInterval(t);
   }, []);
 
   // 구글 폰트 서체를 고르면 그때 <link> 를 넣습니다. 처음부터 7종을 다
@@ -178,7 +190,11 @@ export default function TemplateStyle() {
   }, [coverImageUrl]);
 
   const isDirty =
-    colorTheme !== savedSnapshot.colorTheme || font !== savedSnapshot.font || layout !== savedSnapshot.layout;
+    !savedSnapshot ||
+    selectedTemplate !== savedSnapshot.templateId ||
+    colorTheme !== savedSnapshot.colorTheme ||
+    font !== savedSnapshot.font ||
+    layout !== savedSnapshot.layout;
 
   const applyStyle = (style: StyleSettings) => {
     setColorTheme(style.colorTheme);
@@ -186,19 +202,34 @@ export default function TemplateStyle() {
     setLayout(style.layout);
   };
 
-  const handleSave = () => {
-    const now = Date.now();
-    const snapshot: StyleSettings = { colorTheme, font, layout };
+  const handleSave = async () => {
+    if (!id) return;
+    setSaving(true);
+    setSaveError(null);
     try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...snapshot, savedAt: now }));
-    } catch {
-      // localStorage가 막혀 있어도(프라이빗 모드 등) 화면 상태는 그대로 반영합니다.
+      await updatePortfolioStyle(id, {
+        template_id: selectedTemplate,
+        color_theme: colorTheme,
+        font,
+        layout,
+      });
+      const snapshot: FullStyle = { templateId: selectedTemplate, colorTheme, font, layout };
+      setSavedSnapshot(snapshot);
+      setLastSavedAt(Date.now());
+    } catch (e) {
+      setSaveError(e instanceof PortfolioError ? e.message : "저장하지 못했습니다.");
+    } finally {
+      setSaving(false);
     }
-    setSavedSnapshot(snapshot);
-    setLastSavedAt(now);
   };
 
-  const handleRevert = () => applyStyle(savedSnapshot);
+  const handleRevert = () => {
+    if (!savedSnapshot) return;
+    setSelectedTemplate(savedSnapshot.templateId);
+    setColorTheme(savedSnapshot.colorTheme);
+    setFont(savedSnapshot.font);
+    setLayout(savedSnapshot.layout);
+  };
 
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -211,13 +242,37 @@ export default function TemplateStyle() {
   const previewBg = colorTheme === "dark" ? "#0a0a0a" : "#faf7f1";
   const previewFg = colorTheme === "dark" ? "#fafafa" : "#171310";
 
+  if (loading) {
+    return (
+      <div className="max-w-3xl">
+        <p className="text-sm text-neutral-500 inline-flex items-center gap-2">
+          <LoaderCircle size={14} className="animate-spin" />
+          불러오는 중입니다.
+        </p>
+      </div>
+    );
+  }
+
+  if (loadError || !id) {
+    return (
+      <div className="max-w-3xl space-y-2">
+        <p role="alert" className="text-sm text-brand">
+          {loadError ?? "포트폴리오를 찾을 수 없습니다."}
+        </p>
+        <Link to="/wizard/source" className="text-xs text-brand hover:underline">
+          원본 자료 입력부터 다시 시작하기
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-3xl space-y-6">
       <div className="flex items-center justify-between">
-        <Link to="/wizard/editor" className="text-xs text-brand hover:underline">
+        <Link to={`/wizard/editor/${id}`} className="text-xs text-brand hover:underline">
           편집기로 돌아가기
         </Link>
-        <button className="btn-primary" onClick={() => navigate("/wizard/export")}>
+        <button className="btn-primary" onClick={() => navigate(`/wizard/export/${id}`)}>
           내보내기
         </button>
       </div>
@@ -289,8 +344,8 @@ export default function TemplateStyle() {
       <div className="entry space-y-3">
         <h2 className="entry-title mb-0">직접 편집</h2>
         <p className="text-xs text-neutral-600">
-          아래 설정은 이 브라우저에만 저장되고, 내보내기 결과물에는 아직 반영되지
-          않습니다 — 먼저 실시간 미리보기에서 느낌을 잡아 보세요.
+          아래 설정은 "스타일 저장"을 눌러야 이 포트폴리오에 반영됩니다 — 먼저
+          실시간 미리보기에서 느낌을 잡아 보세요.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
           <div>
@@ -365,24 +420,24 @@ export default function TemplateStyle() {
           <div className="flex gap-2">
             <button
               className="btn-secondary disabled:opacity-40 disabled:grayscale disabled:cursor-not-allowed"
-              disabled={!isDirty}
+              disabled={!isDirty || saving}
               onClick={handleRevert}
             >
               변경 사항 되돌리기
             </button>
             {/* [2026-09] 저장 완료 상태에서 btn-primary(진한 브랜드색)가
                 disabled:opacity-40 만으로는 여전히 "눌러도 되는" 색으로
-                보인다는 피드백을 받았습니다 — 옆의 btn-secondary(원래
-                옅은 색)는 흐려지면 확실히 꺼진 티가 나는데, 진한 색은
-                40% 로 낮춰도 여전히 선명해 보였습니다. 저장 완료 시
-                라벨과 아이콘 자체를 바꿔서("저장됨" + 체크) 눌러도
-                되는 상태인지 색만으로 판단하지 않아도 되게 했습니다. */}
+                보인다는 피드백을 받았습니다 — 저장 완료 시 라벨과 아이콘
+                자체를 바꿔서("저장됨" + 체크) 눌러도 되는 상태인지 색만으로
+                판단하지 않아도 되게 했습니다. */}
             <button
               className="btn-primary disabled:bg-neutral-700 disabled:text-neutral-400 disabled:shadow-none disabled:hover:translate-y-0 disabled:cursor-not-allowed"
-              disabled={!isDirty}
-              onClick={handleSave}
+              disabled={!isDirty || saving}
+              onClick={() => void handleSave()}
             >
-              {isDirty ? (
+              {saving ? (
+                "저장하는 중"
+              ) : isDirty ? (
                 "스타일 저장"
               ) : (
                 <>
@@ -393,6 +448,11 @@ export default function TemplateStyle() {
             </button>
           </div>
         </div>
+        {saveError && (
+          <p role="alert" className="text-xs text-brand">
+            {saveError}
+          </p>
+        )}
       </div>
 
       <div className="entry">
