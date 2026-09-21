@@ -164,13 +164,13 @@ summary::marker { content: ""; }
    있을 때 hover 판정 영역이 매 프레임 미묘하게 달라져 깜빡이듯
    흔들렸습니다(회전된 요소의 히트테스트가 perspective 아래에서
    불안정). width + translateY 만 남기니 사라졌습니다. */
-/* [2026-09] "책등 올리는 구역도 크게" 피드백으로 치수를 키웠습니다.
-   38px → 54px(스핀), hover 112px → 156px. 아래 .book-title line-height도
-   세로쓰기 칸 너비라 같이 54px로 맞춰야 합니다(다른 값이면 글자가
-   책등 폭 안에서 위아래로 안 맞습니다). */
+/* [2026-09] 치수를 두 번 키웠습니다. 38 → 54 → 64px(책등),
+   hover 112 → 156 → 190px, 높이 164 → 224 → 280px.
+   아래 .book-title line-height 도 세로쓰기 칸 너비라 책등 폭과 같은
+   값이어야 합니다(다르면 글자가 책등 폭 안에서 좌우로 안 맞습니다). */
 .book {
   position: relative;
-  width: 54px;
+  width: 64px;
   flex-shrink: 0;
   transition:
     width 380ms cubic-bezier(0.2, 0.8, 0.25, 1),
@@ -189,8 +189,8 @@ summary::marker { content: ""; }
    바꿉니다 — 키보드로 탭해서 오는 경우가 여기에 해당합니다. */
 .book:hover,
 .book:focus-within {
-  width: 156px;
-  transform: translateY(-14px);
+  width: 190px;
+  transform: translateY(-16px);
   box-shadow: -10px 20px 30px rgb(0 0 0 / 0.35);
   z-index: 10;
 }
@@ -286,7 +286,7 @@ summary::marker { content: ""; }
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  line-height: 54px; /* 세로쓰기에서 line-height 는 칸 너비입니다 = 책등 폭(.book width) */
+  line-height: 64px; /* 세로쓰기에서 line-height 는 칸 너비입니다 = 책등 폭(.book width) */
   text-align: left;
 }
 
@@ -294,7 +294,7 @@ summary::marker { content: ""; }
   .book,
   .book:hover,
   .book:focus-within {
-    width: 54px;
+    width: 64px;
     transform: none;
     transition: none;
     box-shadow: none;
@@ -544,15 +544,18 @@ summary::marker { content: ""; }
      기존에는 모든 섹션 제목이 text-sm text-neutral-500 하나뿐이라
      위계가 없었습니다. */
   .sec-eyebrow {
-    @apply text-[11px] tracking-[0.18em] uppercase text-brand mb-2.5;
+    @apply text-[13px] tracking-[0.18em] uppercase text-brand mb-2.5;
   }
 
   .sec-title {
-    @apply font-heading text-[22px] sm:text-[23px] mb-2;
+    /* [2026-09] 데스크탑에서 제목이 본문과 거의 같은 크기라 섹션 구분이
+       약했습니다. 큰 화면에서만 키웁니다 — 랜딩은 데스크탑 전용이 아니라
+       모바일에서도 열립니다. */
+    @apply font-heading text-[24px] sm:text-[26px] lg:text-[32px] mb-2;
   }
 
   .sec-sub {
-    @apply text-sm text-neutral-500 mb-10;
+    @apply text-sm lg:text-base text-neutral-500 mb-10;
   }
 
   /* 단계·순서를 나타내는 원형 배지. */

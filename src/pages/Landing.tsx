@@ -143,7 +143,7 @@ export default function Landing() {
         {/* ── 히어로 (기본 면) ───────────────────────────────── */}
         <section
           id="hero-section"
-          className="relative overflow-hidden px-4 sm:px-8 pt-20 sm:pt-24 pb-20"
+          className="relative overflow-hidden px-4 sm:px-8 pt-20 sm:pt-24 lg:pt-32 pb-20 lg:pb-28"
         >
           {/* [2026-09] 장식용 배경. 히어로가 텍스트 두 줄 + 버튼뿐이라 첫
               화면이 밋밋하다는 피드백을 받았습니다. 이미지 대신 --brand 토큰
@@ -160,14 +160,16 @@ export default function Landing() {
             />
           </div>
 
-          <div className="relative z-10 max-w-2xl mx-auto text-center">
+          {/* [2026-09] 데스크탑에서 히어로가 672px 안에 갇혀 있어 화면
+              대부분이 빈 여백이었습니다. 큰 화면에서만 넓힙니다. */}
+          <div className="relative z-10 max-w-2xl lg:max-w-3xl mx-auto text-center">
             <p className="hero-eyebrow sec-eyebrow">Tellmefolio</p>
-            <h1 className="hero-title text-3xl sm:text-4xl font-heading leading-[1.4] sm:leading-[1.5]">
+            <h1 className="hero-title text-3xl sm:text-4xl lg:text-[52px] font-heading leading-[1.4] sm:leading-[1.5] lg:leading-[1.35]">
               내 경험을 직무 언어로,
               <br />
               AI 포트폴리오 제작 도구
             </h1>
-            <p className="hero-sub text-sm text-neutral-400 mt-6">
+            <p className="hero-sub text-sm lg:text-base text-neutral-400 mt-6 lg:mt-8">
               이야기하면 포트폴리오가 됩니다 — 원본 자료를 케이스 스터디로, 같은 프로젝트를
               여러 직무 관점으로.
             </p>
@@ -191,7 +193,7 @@ export default function Landing() {
 
         {/* ── 작동 방식 (기본 면 · 세로 연결선) ─────────────────── */}
         <section className="px-4 sm:px-8 py-24">
-          <div className="max-w-3xl mx-auto">
+          <div className="max-w-3xl lg:max-w-4xl mx-auto">
             <Reveal>
               <p className="sec-eyebrow">작동 방식</p>
               <h2 className="sec-title">어떻게 만들어지나요</h2>
@@ -235,7 +237,7 @@ export default function Landing() {
 
         {/* ── 대상 (기본 면 · 정의 목록) ──────────────────────── */}
         <section className="px-4 sm:px-8 py-24">
-          <div className="max-w-3xl mx-auto">
+          <div className="max-w-3xl lg:max-w-4xl mx-auto">
             <Reveal>
               <p className="sec-eyebrow">대상</p>
               <h2 className="sec-title">이런 분께 맞습니다</h2>

@@ -193,7 +193,7 @@ export default function Bookshelf({ portfolios, onUpdated }: BookshelfProps) {
           넓혀서(3px→5px) 더 큰 책들이 답답해 보이지 않게 했습니다. pt는
           10(40px)→12(48px): hover 시 위로 뜨는 폭이 12px→14px로 커진 만큼
           여유를 더 뒀습니다(안 그러면 확대된 책이 위쪽에서 살짝 잘립니다). */}
-      <div className="shelf flex items-end gap-[5px] border-b-2 border-neutral-800 overflow-x-auto overflow-y-hidden pt-12 pb-0">
+      <div className="shelf flex items-end gap-[5px] border-b-2 border-neutral-800 overflow-x-auto overflow-y-hidden pt-14 pb-0">
         {portfolios.map((p) => (
           /* [2026-09] 연필 버튼을 넣으면서 책 한 권의 구조가 바뀌었습니다.
              전에는 책 자체가 <a> 하나였는데, <a> 안에 <button> 을 넣는 것은
@@ -207,7 +207,7 @@ export default function Bookshelf({ portfolios, onUpdated }: BookshelfProps) {
             onMouseLeave={() => !editing && setActive(null)}
             onFocus={() => !editing && setActive(p)}
             onBlur={() => !editing && setActive(null)}
-            className="book group relative h-[224px]"
+            className="book group relative h-[280px]"
           >
             <Link to={`/wizard/editor/${p.id}`} className="block h-full">
             {/* 책등 면 — 평소 보이는 얼굴. hover 시 서서히 사라집니다 */}
@@ -217,7 +217,7 @@ export default function Bookshelf({ portfolios, onUpdated }: BookshelfProps) {
                 group-hover:border-brand/65 group-focus-visible:border-brand/65"
             >
               <span
-                className="block w-full h-[9px] rounded-t-[2px] shrink-0"
+                className="block w-full h-[11px] rounded-t-[2px] shrink-0"
                 style={{ backgroundColor: p.jobColor }}
                 aria-hidden="true"
               />
@@ -280,7 +280,7 @@ export default function Bookshelf({ portfolios, onUpdated }: BookshelfProps) {
 
         <Link
           to="/wizard"
-          className="shrink-0 w-[54px] h-[224px] ml-2 rounded-t-[3px]
+          className="shrink-0 w-[64px] h-[280px] ml-2 rounded-t-[3px]
             border-2 border-dashed border-neutral-700 border-b-0 text-neutral-600
             flex items-end justify-center pb-5 transition-colors duration-150
             hover:border-brand hover:text-brand focus-visible:border-brand focus-visible:text-brand"

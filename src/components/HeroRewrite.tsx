@@ -79,11 +79,13 @@ export default function HeroRewrite() {
   }, []);
 
   return (
-    <div className="max-w-xl mx-auto">
+    /* [2026-09] 히어로가 넓어진 만큼 이 데모도 같이 넓힙니다 — 위의
+       제목보다 좁으면 화면 가운데가 잘록해 보입니다. */
+    <div className="max-w-xl lg:max-w-2xl mx-auto">
       {/* 원본 메모 */}
       <div className="entry">
         <p className="text-xs tracking-[0.14em] text-brand mb-2.5">원본 메모</p>
-        <p className="text-sm text-neutral-400 leading-relaxed">“{heroRewrite.source}”</p>
+        <p className="text-sm lg:text-base text-neutral-400 leading-relaxed">“{heroRewrite.source}”</p>
       </div>
 
       {/* 흐름 표시 */}
@@ -103,7 +105,7 @@ export default function HeroRewrite() {
           />
           {heroRewrite.lines[jobIndex].job} 관점으로 재구성
         </p>
-        <p className="font-heading text-base sm:text-lg leading-relaxed text-neutral-100">
+        <p className="font-heading text-base sm:text-lg lg:text-xl leading-relaxed text-neutral-100">
           {typed}
           {!reduced && (
             <span className="inline-block w-[2px] h-[1em] align-[-0.15em] ml-0.5 bg-brand animate-pulse" />

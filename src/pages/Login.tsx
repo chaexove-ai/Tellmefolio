@@ -50,9 +50,13 @@ export default function Login() {
       <div className="absolute top-6 right-6">
         {/* 다크 테마를 감추면서 토글을 내렸습니다 — index.html 주석 참고 */}
       </div>
-      <div className="w-full max-w-sm border border-neutral-800 p-8">
+      {/* [2026-09] 1920px 화면에서 384px 카드가 가운데 떠 있으니 화면이
+          텅 비어 보였습니다. 큰 화면에서만 키웁니다 — 로그인은 데스크탑
+          전용 게이트 바깥이라 휴대폰에서도 열립니다. 모서리와 면도 줬습니다:
+          테두리만 있으면 배경과 구분이 약해 카드로 읽히지 않았습니다. */}
+      <div className="w-full max-w-sm lg:max-w-md rounded-2xl border border-neutral-800 bg-neutral-900/40 p-8 lg:p-10">
         <p className="text-xs tracking-[0.2em] text-brand uppercase mb-4">Tellmefolio</p>
-        <h1 className="text-xl font-heading mb-1">로그인하기</h1>
+        <h1 className="text-xl lg:text-2xl font-heading mb-1">로그인하기</h1>
         <p className="text-sm text-neutral-500 mb-8">
           Google, GitHub, Figma 계정으로 시작하세요
         </p>
