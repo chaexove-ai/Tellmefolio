@@ -157,13 +157,60 @@ export async function updatePortfolioProject(
 
 export async function updatePortfolioStyle(
   id: string,
-  patch: Partial<Pick<PortfolioRow, "template_id" | "color_theme" | "font" | "layout">>
+  patch: Partial<
+    Pick<PortfolioRow, "template_id" | "color_theme" | "font" | "layout" | "cover_image_path">
+  >
 ): Promise<void> {
   const sb = await requireClient();
   const { error } = await sb.from("portfolios").update(patch).eq("id", id);
   if (error) {
     throw new PortfolioError("스타일을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.");
   }
+}
+
+/**
+ * [2026-09] 대표 이미지 Storage 연결.
+ *
+ * cover_image_path 컬럼 자체는 처음 마이그레이션 때부터 있었지만 버킷이
+ * 없어 여기까지는 늘 로컬 미리보기(object URL)로만 존재했습니다. 이제
+ * `portfolio-covers` 버킷(supabase/migrations/20260921_portfolio_covers_storage.sql,
+ * Supabase 대시보드에서 직접 실행 필요)에 올리고, 컬럼에는 공개 URL이
+ * 아니라 "경로"만 저장합니다 — 버킷을 public→private 로 바꾸거나 CDN을
+ * 앞에 붙이는 식의 변경이 나중에 생겨도 URL 계산 로직(getCoverImageUrl)
+ * 한 곳만 고치면 되게 하려는 것입니다.
+ *
+ * 파일 이름은 항상 `${userId}/${portfolioId}/cover.<확장자>` 로 고정합니다.
+ * 매번 다른 이름을 쓰면(예: 타임스탬프) 다시 올릴 때마다 이전 파일이
+ * 버킷에 계속 쌓이기 때문에, upsert:true 로 같은 자리를 덮어씁니다.
+ */
+export const COVER_IMAGE_BUCKET = "portfolio-covers";
+
+export async function uploadCoverImage(input: {
+  userId: string;
+  portfolioId: string;
+  file: File;
+}): Promise<string> {
+  const sb = await requireClient();
+  const ext = input.file.name.split(".").pop()?.toLowerCase() || "jpg";
+  const path = `${input.userId}/${input.portfolioId}/cover.${ext}`;
+
+  const { error } = await sb.storage.from(COVER_IMAGE_BUCKET).upload(path, input.file, {
+    upsert: true,
+    cacheControl: "3600",
+  });
+  if (error) {
+    throw new PortfolioError("대표 이미지를 업로드하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+  }
+  return path;
+}
+
+/** cover_image_path 에 저장된 경로를 실제로 <img src> 에 쓸 수 있는 공개
+ *  URL로 바꿉니다. 네트워크 요청 없이(클라이언트가 URL 규칙을 알고 있어)
+ *  동기적으로 계산되지만, 클라이언트를 얻는 과정(getSupabase)이 비동기라
+ *  이 함수도 async 입니다. */
+export async function getCoverImageUrl(path: string): Promise<string> {
+  const sb = await requireClient();
+  return sb.storage.from(COVER_IMAGE_BUCKET).getPublicUrl(path).data.publicUrl;
 }
 
 /**

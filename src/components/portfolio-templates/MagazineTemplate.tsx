@@ -1,0 +1,106 @@
+import { getPortfolioPalette } from "../../lib/portfolioTheme";
+import type { PortfolioTemplateProps } from "./types";
+import { hasContent } from "./types";
+
+const fieldLabels: Array<{ key: "context" | "problem" | "execution" | "outcome" | "reflection"; label: string }> = [
+  { key: "context", label: "맥락 및 배경" },
+  { key: "problem", label: "문제 정의" },
+  { key: "execution", label: "실행 내용" },
+  { key: "outcome", label: "핵심 성과" },
+  { key: "reflection", label: "배운 점" },
+];
+
+/**
+ * 매거진형 — "이미지 중심의 감각적인 레이아웃".
+ *
+ * 표지 이미지를 화면 폭 전체로 깔고 그 위에 제목을 얹는 매거진 커버
+ * 방식을 씁니다(이미지가 없으면 accent 색 그라디언트 블록으로 대신 —
+ * 매거진 표지에 사진이 없을 순 없으니, 빈 화면 대신 색 블록이라도
+ * 채웁니다). 요약은 인용구처럼 크게, 프로젝트는 큰 인덱스 숫자를 그래픽
+ * 요소로 삼아 한 편의 "기사"처럼 배치합니다. layout이 2단이면 프로젝트를
+ * 좌우로 나눠 잡지 지면처럼 두 편씩 보이게 합니다.
+ */
+export default function MagazineTemplate({ portfolio, projects, coverUrl, bodyFontStack }: PortfolioTemplateProps) {
+  const palette = getPortfolioPalette(portfolio.color_theme);
+  const visible = projects.filter(hasContent);
+  const isTwoCol = portfolio.layout === "2col";
+
+  return (
+    <div style={{ background: palette.bg, color: palette.text, fontFamily: bodyFontStack }} className="w-full">
+      {/* 표지 */}
+      <div className="relative h-[340px] w-full overflow-hidden">
+        {coverUrl ? (
+          <img src={coverUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
+        ) : (
+          <div
+            className="absolute inset-0"
+            style={{ background: `linear-gradient(135deg, ${palette.accent}, ${palette.bgAlt})` }}
+          />
+        )}
+        <div
+          className="absolute inset-0"
+          style={{ background: "linear-gradient(0deg, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.15) 55%, transparent 100%)" }}
+        />
+        <div className="absolute inset-x-0 bottom-0 px-10 pb-8">
+          <p className="text-[11px] tracking-[0.25em] uppercase mb-3" style={{ color: "rgba(255,255,255,0.75)" }}>
+            {[portfolio.job, portfolio.year].filter(Boolean).join(" · ") || "Portfolio Issue"}
+          </p>
+          <h1 className="text-[38px] font-heading leading-[1.15]" style={{ color: "#ffffff" }}>
+            {portfolio.title}
+          </h1>
+        </div>
+      </div>
+
+      <div className="mx-auto max-w-[760px] px-10 py-14">
+        {portfolio.summary && (
+          <p
+            className="font-heading italic text-[22px] leading-[1.6] mb-16 max-w-[52ch]"
+            style={{ color: palette.textMuted }}
+          >
+            “{portfolio.summary}”
+          </p>
+        )}
+
+        <div className={isTwoCol ? "grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-16" : "space-y-16"}>
+          {visible.map((p, i) => (
+            <article key={p.id}>
+              <div className="flex items-start gap-4 mb-4">
+                <span
+                  className="font-heading text-[40px] leading-none shrink-0"
+                  style={{ color: palette.accent, opacity: 0.35 }}
+                >
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <div className="pt-1">
+                  <h2 className="text-xl font-heading leading-snug">{p.name || "제목 없음"}</h2>
+                  {(p.role || p.stack.length > 0) && (
+                    <p className="text-xs mt-1" style={{ color: palette.textFaint }}>
+                      {[p.role, p.stack.join(" · ")].filter(Boolean).join(" — ")}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-4 pl-[56px]">
+                {fieldLabels.map(({ key, label }) => {
+                  const value = p[key];
+                  if (!value.trim()) return null;
+                  return (
+                    <div key={key}>
+                      <p className="text-[11px] font-medium mb-1" style={{ color: palette.accent }}>
+                        {label}
+                      </p>
+                      <p className="text-sm leading-[1.75] whitespace-pre-wrap" style={{ color: palette.textMuted }}>
+                        {value}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            </article>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}

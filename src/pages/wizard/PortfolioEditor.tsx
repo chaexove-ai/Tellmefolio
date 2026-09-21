@@ -120,6 +120,75 @@ export default function PortfolioEditor() {
 
   const currentProject = projects[projectIndex];
 
+  /** "프로젝트 개요"의 7칸을 순서 있는 케이스 스터디 흐름으로 보여주기 위한
+   *  메타데이터입니다. 예전에는 placeholder 텍스트가 곧 라벨이라 필드를 다
+   *  채우고 나면 지금 뭘 적고 있는 칸인지 알 수 없었습니다 — 이제 칸마다
+   *  실제 <label>과 한 줄 안내, 그리고 순서(맥락→문제→실행→성과→회고)를
+   *  숫자로 보여줍니다. aiFilled 가 false 인 칸(담당 역할·문제 정의·배운
+   *  점)은 AI 초안에 대응 필드가 없어 항상 직접 입력해야 하는 칸이라는 걸
+   *  라벨 옆 배지로 표시합니다. */
+  const storyFields: Array<{
+    key: string;
+    label: string;
+    helper: string;
+    placeholder: string;
+    value: string;
+    onChange: (v: string) => void;
+    rows: number;
+    aiFilled: boolean;
+  }> = [
+    {
+      key: "context",
+      label: "맥락 및 배경",
+      helper: "이 프로젝트를 하게 된 상황이나 배경을 적어주세요.",
+      placeholder: "예: 기존 온보딩 퍼널의 이탈률이 40%를 넘어서면서 개선이 필요했습니다.",
+      value: context,
+      onChange: setContext,
+      rows: 3,
+      aiFilled: true,
+    },
+    {
+      key: "problem",
+      label: "문제 정의",
+      helper: "해결하려고 했던 핵심 문제를 한두 문장으로 정리하세요.",
+      placeholder: "예: 신규 사용자가 첫 화면에서 다음 단계로 넘어가지 못하고 있었습니다.",
+      value: problem,
+      onChange: setProblem,
+      rows: 2,
+      aiFilled: false,
+    },
+    {
+      key: "execution",
+      label: "실행 내용",
+      helper: "문제를 풀기 위해 실제로 한 일을 구체적으로 적으세요.",
+      placeholder: "예: 온보딩 단계를 5단계에서 3단계로 줄이고, 각 단계에 진행률 표시를 추가했습니다.",
+      value: execution,
+      onChange: setExecution,
+      rows: 3,
+      aiFilled: true,
+    },
+    {
+      key: "outcome",
+      label: "핵심 성과 및 수치",
+      helper: "수치나 결과로 보여줄 수 있는 성과를 적으세요.",
+      placeholder: "예: 온보딩 완료율이 52%에서 71%로 개선되었습니다.",
+      value: outcome,
+      onChange: setOutcome,
+      rows: 2,
+      aiFilled: true,
+    },
+    {
+      key: "reflection",
+      label: "배운 점 및 회고",
+      helper: "이 프로젝트를 통해 배운 점이나 아쉬웠던 점을 적으세요.",
+      placeholder: "예: 초기 가설 검증 없이 구현부터 시작해서 한 차례 방향을 수정해야 했습니다.",
+      value: reflection,
+      onChange: setReflection,
+      rows: 2,
+      aiFilled: false,
+    },
+  ];
+
   /** 지금 탭에 보이는 7칸을 현재 프로젝트 행에 저장합니다. 저장 버튼과
    *  프로젝트 탭 전환 둘 다 여기를 거칩니다 — 탭을 바꿀 때 저장하지 않으면
    *  방금 고친 내용이 조용히 사라지기 때문입니다. */
@@ -247,60 +316,81 @@ export default function PortfolioEditor() {
 
         {projects.length > 0 && (
           <>
-            <input
-              value={titleField}
-              onChange={(e) => setTitleField(e.target.value)}
-              placeholder="프로젝트 제목"
-              className="field"
-            />
-            <textarea
-              value={context}
-              onChange={(e) => setContext(e.target.value)}
-              placeholder="맥락 및 배경"
-              rows={2}
-              className="field-area"
-            />
-            <input
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              placeholder="담당 역할"
-              className="field"
-            />
-            <textarea
-              value={problem}
-              onChange={(e) => setProblem(e.target.value)}
-              placeholder="문제 정의"
-              rows={2}
-              className="field-area"
-            />
-            <textarea
-              value={execution}
-              onChange={(e) => setExecution(e.target.value)}
-              placeholder="실행 내용"
-              rows={2}
-              className="field-area"
-            />
-            <textarea
-              value={outcome}
-              onChange={(e) => setOutcome(e.target.value)}
-              placeholder="핵심 성과 및 수치"
-              rows={2}
-              className="field-area"
-            />
-            <textarea
-              value={reflection}
-              onChange={(e) => setReflection(e.target.value)}
-              placeholder="배운 점 및 회고"
-              rows={2}
-              className="field-area"
-            />
-            {portfolio.summary && (
-              <p className="text-xs text-neutral-600 flex items-start gap-1.5">
-                <Info size={13} strokeWidth={1.5} className="text-neutral-500 shrink-0 mt-0.5" />
-                담당 역할·문제 정의·배운 점은 AI가 아직 채우지 못하는 항목이라 비워
-                뒀습니다. 직접 적어주세요.
+            <div className="grid grid-cols-1 sm:grid-cols-[2fr_1fr] gap-4">
+              <div className="space-y-1.5">
+                <label htmlFor="proj-title" className="text-xs font-medium text-neutral-300">
+                  프로젝트 제목
+                </label>
+                <input
+                  id="proj-title"
+                  value={titleField}
+                  onChange={(e) => setTitleField(e.target.value)}
+                  placeholder="예: 사용자 온보딩 퍼널 개선"
+                  className="field"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="proj-role"
+                  className="text-xs font-medium text-neutral-300 inline-flex items-center gap-1.5"
+                >
+                  담당 역할
+                  <span className="badge bg-neutral-800 text-neutral-500 text-[10px] px-1.5 py-0">
+                    직접 입력
+                  </span>
+                </label>
+                <input
+                  id="proj-role"
+                  value={role}
+                  onChange={(e) => setRole(e.target.value)}
+                  placeholder="예: 프론트엔드 리드"
+                  className="field"
+                />
+              </div>
+            </div>
+
+            <div className="border-t border-neutral-800 pt-4">
+              <p className="text-xs text-neutral-500 mb-4">
+                아래 5가지는 케이스 스터디 흐름 순서(맥락 → 문제 → 실행 → 성과 → 회고)대로
+                적으면 자연스럽게 이어집니다.
               </p>
-            )}
+              <div className="space-y-5">
+                {storyFields.map((f, i) => (
+                  <div key={f.key} className="flex gap-3">
+                    <div className="flex flex-col items-center pt-0.5">
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-neutral-800 text-[10px] font-medium text-neutral-400">
+                        {i + 1}
+                      </span>
+                      {i < storyFields.length - 1 && (
+                        <span className="w-px flex-1 bg-neutral-800 mt-1" />
+                      )}
+                    </div>
+                    <div className="flex-1 space-y-1.5 pb-0.5">
+                      <label
+                        htmlFor={`proj-${f.key}`}
+                        className="text-xs font-medium text-neutral-300 inline-flex items-center gap-1.5"
+                      >
+                        {f.label}
+                        {!f.aiFilled && (
+                          <span className="badge bg-neutral-800 text-neutral-500 text-[10px] px-1.5 py-0">
+                            직접 입력
+                          </span>
+                        )}
+                      </label>
+                      <p className="text-xs text-neutral-600">{f.helper}</p>
+                      <textarea
+                        id={`proj-${f.key}`}
+                        value={f.value}
+                        onChange={(e) => f.onChange(e.target.value)}
+                        placeholder={f.placeholder}
+                        rows={f.rows}
+                        className="field-area"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </>
         )}
       </div>

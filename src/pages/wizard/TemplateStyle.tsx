@@ -4,9 +4,12 @@ import { Check, LoaderCircle } from "lucide-react";
 import GrainCover from "../../components/GrainCover";
 import { templates } from "../../lib/templates";
 import { formatRelativeTime } from "../../lib/formatRelativeTime";
+import { useAuth } from "../../auth/AuthProvider";
 import {
   getPortfolio,
   updatePortfolioStyle,
+  uploadCoverImage,
+  getCoverImageUrl,
   PortfolioError,
   type ColorTheme,
   type LayoutDirection,
@@ -97,12 +100,18 @@ const DEFAULT_FONT = fontOptions[0];
  * 이미 있어서 색상 테마·서체·레이아웃과 같은 저장/되돌리기 흐름에 자연스럽게
  * 넣었습니다.
  *
- * 대표 이미지는 여전히 로컬 미리보기만 됩니다 — 마이그레이션 주석에도 있듯
- * Storage 버킷 연결은 다음 단계라 cover_image_path 컬럼은 아직 안 씁니다.
+ * [2026-09 추가] 대표 이미지도 이제 실제로 저장됩니다 — 파일을 고르면
+ * 바로 미리보기가 바뀌지만(기존 동작 그대로), 실제 업로드와
+ * cover_image_path 저장은 다른 설정들과 똑같이 "스타일 저장"을 눌러야
+ * 일어납니다. 즉시 업로드하지 않는 이유는 색상/서체/레이아웃과 같은
+ * 되돌리기(revert) 흐름에 자연스럽게 태우기 위해서입니다 — 파일을
+ * 고르자마자 올려버리면 "변경 사항 되돌리기"를 눌러도 이미 버킷에는
+ * 올라간 상태가 되어 흐름이 어긋납니다.
  */
 export default function TemplateStyle() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const { session } = useAuth();
 
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -122,6 +131,10 @@ export default function TemplateStyle() {
   const [saveError, setSaveError] = useState<string | null>(null);
 
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
+  // 아직 저장 안 한 새 파일. null 이 아니면 "스타일 저장"을 누를 때 업로드합니다.
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  // 마지막으로 저장에 성공한 이미지의 공개 URL. "되돌리기"가 복원할 대상.
+  const [savedCoverUrl, setSavedCoverUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -148,6 +161,18 @@ export default function TemplateStyle() {
         setLayout(snapshot.layout);
         setSavedSnapshot(snapshot);
         setLastSavedAt(new Date(p.updated_at).getTime());
+        if (p.cover_image_path) {
+          getCoverImageUrl(p.cover_image_path)
+            .then((url) => {
+              if (!alive) return;
+              setSavedCoverUrl(url);
+              setCoverImageUrl(url);
+            })
+            .catch(() => {
+              // 대표 이미지 URL을 못 가져와도 나머지 설정은 정상 동작해야
+              // 하므로 여기서는 조용히 넘어갑니다(빈 미리보기로 표시됨).
+            });
+        }
       })
       .catch((e) => {
         if (!alive) return;
@@ -185,7 +210,7 @@ export default function TemplateStyle() {
   // 화면을 떠날 때 반드시 해제합니다.
   useEffect(() => {
     return () => {
-      if (coverImageUrl) URL.revokeObjectURL(coverImageUrl);
+      if (coverImageUrl?.startsWith("blob:")) URL.revokeObjectURL(coverImageUrl);
     };
   }, [coverImageUrl]);
 
@@ -194,7 +219,8 @@ export default function TemplateStyle() {
     selectedTemplate !== savedSnapshot.templateId ||
     colorTheme !== savedSnapshot.colorTheme ||
     font !== savedSnapshot.font ||
-    layout !== savedSnapshot.layout;
+    layout !== savedSnapshot.layout ||
+    coverFile !== null;
 
   const applyStyle = (style: StyleSettings) => {
     setColorTheme(style.colorTheme);
@@ -207,12 +233,34 @@ export default function TemplateStyle() {
     setSaving(true);
     setSaveError(null);
     try {
+      let coverImagePath: string | undefined;
+      if (coverFile) {
+        if (!session?.user?.id) {
+          throw new PortfolioError("로그인 정보를 확인할 수 없어 대표 이미지를 올릴 수 없습니다.");
+        }
+        coverImagePath = await uploadCoverImage({
+          userId: session.user.id,
+          portfolioId: id,
+          file: coverFile,
+        });
+      }
+
       await updatePortfolioStyle(id, {
         template_id: selectedTemplate,
         color_theme: colorTheme,
         font,
         layout,
+        ...(coverImagePath ? { cover_image_path: coverImagePath } : {}),
       });
+
+      if (coverImagePath) {
+        const url = await getCoverImageUrl(coverImagePath);
+        if (coverImageUrl?.startsWith("blob:")) URL.revokeObjectURL(coverImageUrl);
+        setSavedCoverUrl(url);
+        setCoverImageUrl(url);
+        setCoverFile(null);
+      }
+
       const snapshot: FullStyle = { templateId: selectedTemplate, colorTheme, font, layout };
       setSavedSnapshot(snapshot);
       setLastSavedAt(Date.now());
@@ -229,12 +277,22 @@ export default function TemplateStyle() {
     setColorTheme(savedSnapshot.colorTheme);
     setFont(savedSnapshot.font);
     setLayout(savedSnapshot.layout);
+    if (coverFile) {
+      if (coverImageUrl?.startsWith("blob:")) URL.revokeObjectURL(coverImageUrl);
+      setCoverFile(null);
+      setCoverImageUrl(savedCoverUrl);
+    }
   };
 
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (coverImageUrl) URL.revokeObjectURL(coverImageUrl);
+    // 새로 고른 파일은 "스타일 저장"을 눌러야 실제로 업로드됩니다 — 지금은
+    // 미리보기만 즉시 바꿉니다. 이전 미리보기가 이 함수가 만든 blob: URL일
+    // 때만 해제합니다(Storage에서 받아온 공개 URL은 우리가 만든 게 아니라
+    // revokeObjectURL 대상이 아닙니다).
+    if (coverImageUrl?.startsWith("blob:")) URL.revokeObjectURL(coverImageUrl);
+    setCoverFile(file);
     setCoverImageUrl(URL.createObjectURL(file));
     e.target.value = "";
   };
@@ -405,9 +463,9 @@ export default function TemplateStyle() {
             >
               {coverImageUrl ? "다른 이미지로 교체" : "이미지 교체"}
             </button>
-            {coverImageUrl && (
+            {coverFile && (
               <p className="text-[11px] text-neutral-600 mt-1">
-                미리보기에만 반영돼요 — 새로고침하면 초기화됩니다.
+                미리보기만 바뀐 상태예요 — "스타일 저장"을 눌러야 실제로 반영돼요.
               </p>
             )}
           </div>
