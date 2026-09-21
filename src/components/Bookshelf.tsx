@@ -214,10 +214,12 @@ export default function Bookshelf({ portfolios, onUpdated }: BookshelfProps) {
       </div>
 
       {/* [2026-09] "책등 올리는 구역도 크게" — 164px → 224px, gap도 살짝
-          넓혀서(3px→5px) 더 큰 책들이 답답해 보이지 않게 했습니다. pt는
-          10(40px)→12(48px): hover 시 위로 뜨는 폭이 12px→14px로 커진 만큼
-          여유를 더 뒀습니다(안 그러면 확대된 책이 위쪽에서 살짝 잘립니다). */}
-      <div className="shelf flex items-end gap-[5px] border-b-2 border-neutral-800 overflow-x-auto overflow-y-hidden pt-14 pb-0">
+          넓혀서(3px→5px) 더 큰 책들이 답답해 보이지 않게 했습니다.
+
+          [2026-09 수정] pt 를 14(56px)에서 8(32px)로 줄였습니다. 책이 위로
+          뜨는 폭은 16px 인데 56px 를 비워두고 있었습니다 — 잘림을 막는 데
+          필요한 건 16px 남짓이고, 나머지는 그냥 빈 공간이었습니다. */}
+      <div className="shelf flex items-end gap-[5px] border-b-2 border-neutral-800 overflow-x-auto overflow-y-hidden pt-8 pb-0">
         {portfolios.map((p) => (
           /* [2026-09] 연필 버튼을 넣으면서 책 한 권의 구조가 바뀌었습니다.
              전에는 책 자체가 <a> 하나였는데, <a> 안에 <button> 을 넣는 것은

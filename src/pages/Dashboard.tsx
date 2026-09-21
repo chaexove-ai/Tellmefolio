@@ -220,18 +220,25 @@ export default function Dashboard() {
         </div>
       ) : (
         <>
-          <div className="flex items-baseline justify-between mb-4">
-            <h2 className="text-lg font-heading text-neutral-200">내 서재</h2>
-            <span className="text-xs text-neutral-600">{portfolios.length}권</span>
+          {/* [2026-09] 제목과 책장을 한 덩어리로 묶습니다.
+              둘을 형제로 두니 바깥의 space-y-14(56px)가 그 사이에 통째로
+              들어갔고, 거기에 제목의 mb-4 와 책장 자체의 위 여백까지
+              더해져 제목과 책 사이가 100px 넘게 벌어져 있었습니다.
+              섹션 사이 간격과 섹션 안 간격은 다른 값이어야 합니다. */}
+          <div>
+            <div className="flex items-baseline justify-between mb-1">
+              <h2 className="text-lg font-heading text-neutral-200">내 서재</h2>
+              <span className="text-xs text-neutral-600">{portfolios.length}권</span>
+            </div>
+            <Reveal>
+              <Bookshelf
+                portfolios={portfolios}
+                onUpdated={(u) =>
+                  setPortfolios((list) => list.map((p) => (p.id === u.id ? u : p)))
+                }
+              />
+            </Reveal>
           </div>
-          <Reveal>
-            <Bookshelf
-              portfolios={portfolios}
-              onUpdated={(u) =>
-                setPortfolios((list) => list.map((p) => (p.id === u.id ? u : p)))
-              }
-            />
-          </Reveal>
 
           <div>
             <h2 className="text-lg font-heading text-neutral-200 mb-4">최근 작업</h2>
