@@ -568,7 +568,15 @@ export default function PortfolioEditor() {
               <label htmlFor="proj-stack" className="text-[13px] font-medium text-neutral-200">
                 사용한 툴 · 키워드
               </label>
-              <div className="flex flex-wrap items-center gap-1.5">
+              {/* 칩과 입력칸을 하나의 상자 안에 넣습니다. 전에는 입력칸이
+                  테두리 없이 투명이라 칩이 하나도 없을 때 그냥 안내 글자처럼
+                  보였습니다 — 누를 수 있는 곳이라는 신호가 없었습니다.
+                  <label>로 감싸서 상자 어디를 눌러도 입력칸에 커서가 갑니다. */}
+              <label
+                htmlFor="proj-stack"
+                className="field flex flex-wrap items-center gap-1.5 cursor-text
+                  focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/15"
+              >
                 {stack.map((tag) => (
                   <span
                     key={tag}
@@ -601,9 +609,10 @@ export default function PortfolioEditor() {
                   }}
                   onBlur={() => addStack(stackInput)}
                   placeholder={stack.length === 0 ? "예: Figma, UX 리서치, React" : "추가"}
-                  className="min-w-[7rem] flex-1 bg-transparent text-[13px] text-neutral-100 placeholder:text-neutral-600 focus:outline-none py-1"
+                  className="min-w-[7rem] flex-1 border-0 bg-transparent p-0 text-sm text-neutral-100
+                    placeholder:text-neutral-600 focus:outline-none focus:ring-0"
                 />
-              </div>
+              </label>
               {stack.length === 0 && (
                 <p className="text-xs text-neutral-600">
                   쉼표나 Enter 로 구분해 넣으세요. 템플릿에서 프로젝트 제목 아래
