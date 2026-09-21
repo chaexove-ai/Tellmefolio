@@ -46,40 +46,43 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-neutral-950 px-4 relative">
-      <div className="absolute top-6 right-6">
-        {/* 다크 테마를 감추면서 토글을 내렸습니다 — index.html 주석 참고 */}
-      </div>
-      {/* [2026-09] 카드를 크게 키웠습니다.
-          다만 폭만 늘리면 버튼 세 개가 가로로 길쭉해져서 오히려 이상해집니다
-          — 누르는 면적은 커지는데 시선이 갈 곳은 그대로라 빈 띠 세 개로
-          보입니다. 그래서 큰 화면에서는 좌우 2단으로 나눠, 왼쪽이 브랜드와
-          한 줄 설명을 맡고 오른쪽이 버튼을 맡습니다. 넓이가 내용으로 채워집니다.
-          lg 미만에서는 예전처럼 한 단으로 쌓입니다 — 로그인은 데스크탑 전용
-          게이트 바깥이라 휴대폰에서도 열립니다. */}
-      <div className="w-full max-w-sm lg:max-w-4xl rounded-2xl border border-neutral-800 bg-neutral-900/40 p-8 lg:p-0 lg:grid lg:grid-cols-[1.05fr_1fr] lg:overflow-hidden">
-        <div className="lg:flex lg:flex-col lg:justify-between lg:p-12 lg:border-r lg:border-neutral-800">
-          <div>
-            <p className="text-xs tracking-[0.2em] text-brand uppercase mb-4">Tellmefolio</p>
-            <h1 className="text-xl lg:text-[32px] font-heading leading-snug mb-2 lg:mb-3">
-              로그인하기
-            </h1>
-            <p className="text-sm lg:text-base text-neutral-500 mb-8 lg:mb-0 lg:leading-relaxed">
-              이야기하면 포트폴리오가 됩니다.
-              <br className="hidden lg:block" />
-              <span className="lg:hidden"> </span>
-              GitHub 저장소와 메모를 케이스 스터디로 바꿉니다.
-            </p>
-          </div>
+    /* [2026-09] 가운데 뜬 카드에서 전체 화면 분할로 바꿨습니다.
+       카드를 384 → 448 → 896px 로 키워 봤지만, 큰 화면에서는 무엇이든
+       가운데 떠 있으면 작아 보입니다. 화면을 반으로 나눠 한쪽을 면으로
+       채우면 크기 문제 자체가 없어집니다.
 
-          <p className="hidden lg:block text-xs text-neutral-600 leading-relaxed">
-            공개 저장소만 읽습니다. 비공개 코드에 접근하는 권한은 요청하지
-            않습니다.
+       왼쪽 면은 랜딩의 반전 구역과 같은 .surface-invert 입니다 — 로그인
+       화면만 다른 색을 쓰면 다른 사이트로 넘어온 것처럼 보입니다.
+
+       lg 미만에서는 위아래로 쌓입니다. 로그인은 데스크탑 전용 게이트
+       바깥이라 휴대폰에서도 열립니다. */
+    <div className="min-h-screen lg:grid lg:grid-cols-[1.1fr_1fr]">
+      <div className="surface-invert flex flex-col justify-between px-8 py-12 lg:px-16 lg:py-20">
+        <div>
+          <p className="text-xs tracking-[0.2em] text-brand uppercase mb-6 lg:mb-10">
+            Tellmefolio
+          </p>
+          <h1 className="font-heading text-2xl lg:text-[44px] leading-snug lg:leading-[1.3]">
+            이야기하면
+            <br />
+            포트폴리오가 됩니다
+          </h1>
+          <p className="mt-4 lg:mt-7 text-sm lg:text-base text-neutral-400 leading-relaxed max-w-[42ch]">
+            GitHub 저장소와 메모를 맥락 · 문제 · 실행 · 성과 · 회고의 케이스
+            스터디로 바꿉니다.
           </p>
         </div>
 
-        <div className="lg:flex lg:flex-col lg:justify-center lg:p-12">
-          <p className="hidden lg:block text-sm text-neutral-500 mb-5">
+        <p className="hidden lg:block text-xs text-neutral-600 leading-relaxed max-w-[44ch]">
+          공개 저장소만 읽습니다. 비공개 코드에 접근하는 권한은 요청하지
+          않습니다.
+        </p>
+      </div>
+
+      <div className="flex items-center justify-center px-6 py-14 lg:px-16">
+        <div className="w-full max-w-sm">
+          <h2 className="font-heading text-xl lg:text-2xl mb-1.5">로그인하기</h2>
+          <p className="text-sm text-neutral-500 mb-8">
             Google, GitHub, Figma 계정으로 시작하세요
           </p>
 
@@ -97,7 +100,7 @@ export default function Login() {
             </p>
           )}
 
-          <p className="text-xs text-neutral-600 mt-8 leading-relaxed">
+          <p className="text-xs text-neutral-600 mt-10 leading-relaxed">
             계속 진행하면 Tellmefolio 이용약관과 개인정보처리방침에 동의합니다
           </p>
         </div>
