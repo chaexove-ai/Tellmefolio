@@ -54,6 +54,39 @@ body {
   transition: background-color 150ms, color 150ms;
 }
 
+/* ── 데스크탑 전용 안내 화면의 크림 그레인 ────────────────────────────
+   갤러리 썸네일의 .grain-cover 와 같은 재료지만 화면 전체용으로 채도를
+   낮추고(92~96% → 70% 안팎) 블롭을 화면 밖까지 크게 번지게 했습니다.
+   작은 블롭 여러 개는 "무늬"로 보이고 큰 블롭은 "빛"으로 보입니다.
+   그레인도 두 겹이 아니라 한 겹입니다 — 전체 화면에서 두 겹은 필름
+   질감이 아니라 그냥 노이즈로 읽힙니다.
+
+   이 화면만 테마 변수를 쓰지 않고 색을 직접 박습니다. 테마는 OS 설정을
+   따라가는데 이 바탕은 명도 96% 크림이라, 다크 사용자에게 밝은 글자가
+   나오면 읽을 수 없습니다. 테마와 무관하게 항상 같은 모습이어야 하는
+   화면이라 변수 상속을 일부러 끊었습니다. */
+.gate-grain {
+  position: relative;
+  isolation: isolate;
+  background-color: #faf6ee;
+  background-image:
+    radial-gradient(ellipse 90% 80% at 6% -8%, hsl(24 72% 78% / 0.42) 0%, hsl(24 72% 78% / 0) 68%),
+    radial-gradient(ellipse 84% 74% at 86% -6%, hsl(36 74% 82% / 0.4) 0%, hsl(36 74% 82% / 0) 68%),
+    radial-gradient(ellipse 96% 86% at 72% 88%, hsl(44 70% 84% / 0.36) 0%, hsl(44 70% 84% / 0) 70%),
+    radial-gradient(ellipse 82% 78% at 2% 84%, hsl(14 70% 80% / 0.32) 0%, hsl(14 70% 80% / 0) 70%);
+}
+
+.gate-grain::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.16;
+  mix-blend-mode: multiply;
+}
+
 /* 제목은 본문과 다른 서체를 써서 "Inter/시스템 기본값 그대로"인 인상을 없앱니다. */
 h1,
 h2,
