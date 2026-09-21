@@ -187,7 +187,12 @@ export default function Landing() {
             스크롤 동작 자체를 직무 전환에 묶어, 차별점을 읽는 게 아니라
             겪게 만듭니다. 모바일·모션 감소 환경에서는 자동으로 탭 위젯으로
             대체됩니다(컴포넌트 안에서 분기). */}
-        <section className="surface-alt">
+        {/* [2026-09] 이 한 구역만 완전히 뒤집습니다.
+            차별점("GitHub에는 코드가 있지만 이야기는 없다")은 이 서비스가
+            파는 주장이고, 스크롤 잠금으로 이미 시간을 가장 오래 붙잡는
+            구간입니다. 화면이 어두워지면 그 멈춤이 의도한 것으로 읽힙니다.
+            다른 구역까지 뒤집으면 쉼표가 아니라 또 다른 반복이 됩니다. */}
+        <section className="surface-invert">
           <PerspectiveScroller />
         </section>
 
