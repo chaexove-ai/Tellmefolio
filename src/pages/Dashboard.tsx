@@ -1,25 +1,32 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   FolderOpen,
   Globe,
-  FileEdit,
+  Lock,
   Repeat,
   Sparkles,
   Users,
   CheckCircle2,
   AlertCircle,
+  LoaderCircle,
 } from "lucide-react";
-import { portfolios, aiUsage } from "../mockData";
+import { aiUsage } from "../mockData";
+import { useAuth } from "../auth/AuthProvider";
+import {
+  listMyPortfolios,
+  PortfolioError,
+  type LibraryPortfolio,
+} from "../lib/portfolios";
 import Reveal from "../components/Reveal";
 import Bookshelf from "../components/Bookshelf";
 
-const stats = [
-  { label: "전체 포트폴리오", sub: "저장된 작업물", icon: FolderOpen },
-  { label: "공개 포트폴리오", sub: "현재 공개 중", icon: Globe },
-  { label: "초안", sub: "편집 중인 작업물", icon: FileEdit },
-  { label: "직무 전환 생성", sub: "이번 달 재구성", icon: Repeat },
-];
-
+/**
+ * [2026-09] mockData.portfolios(고정 4건) 대신 로그인한 사용자의 실제
+ * portfolios 테이블을 읽습니다. DB 에는 "초안" 상태가 없어서(visibility 는
+ * private/public 뿐) 네 번째 통계를 "초안"에서 "비공개"로 바꿨습니다 —
+ * 전체/공개/비공개가 서로 겹치지 않게 나뉘는 편이 실제 값과 맞습니다.
+ */
 const nextSteps = [
   {
     icon: Sparkles,
@@ -45,13 +52,49 @@ const nextSteps = [
 ];
 
 export default function Dashboard() {
-  const recent = [...portfolios].sort(
-    (a, b) => +new Date(b.updatedAt) - +new Date(a.updatedAt)
-  );
+  const { session, configured } = useAuth();
+  const [portfolios, setPortfolios] = useState<LibraryPortfolio[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!configured) {
+      setLoading(false);
+      return;
+    }
+    const userId = session?.user?.id;
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
+    let alive = true;
+    setLoading(true);
+    setLoadError(null);
+    listMyPortfolios(userId)
+      .then((list) => {
+        if (alive) setPortfolios(list);
+      })
+      .catch((e) => {
+        if (alive) setLoadError(e instanceof PortfolioError ? e.message : "불러오지 못했습니다.");
+      })
+      .finally(() => {
+        if (alive) setLoading(false);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [configured, session?.user?.id]);
+
+  const stats = [
+    { label: "전체 포트폴리오", sub: "저장된 작업물", icon: FolderOpen },
+    { label: "공개 포트폴리오", sub: "현재 공개 중", icon: Globe },
+    { label: "비공개 포트폴리오", sub: "나만 볼 수 있음", icon: Lock },
+    { label: "직무 전환 생성", sub: "이번 달 재구성", icon: Repeat },
+  ];
   const statValues = [
     portfolios.length,
     portfolios.filter((p) => p.visibility === "공개").length,
-    portfolios.filter((p) => p.visibility === "초안").length,
+    portfolios.filter((p) => p.visibility === "비공개").length,
     2,
   ];
 
@@ -64,35 +107,62 @@ export default function Dashboard() {
         </Link>
       </div>
 
-      <Reveal>
-        <Bookshelf portfolios={portfolios} />
-      </Reveal>
+      {!configured ? (
+        <p className="text-sm text-neutral-500">
+          Supabase 설정이 없어 서재를 불러올 수 없습니다.
+        </p>
+      ) : loading ? (
+        <p className="text-sm text-neutral-500 inline-flex items-center gap-2">
+          <LoaderCircle size={14} className="animate-spin" />
+          서재를 불러오는 중입니다.
+        </p>
+      ) : loadError ? (
+        <p role="alert" className="text-sm text-brand">
+          {loadError}
+        </p>
+      ) : portfolios.length === 0 ? (
+        <div className="entry">
+          <p className="text-sm text-neutral-400">
+            아직 만든 포트폴리오가 없습니다.{" "}
+            <Link to="/wizard" className="text-brand hover:underline">
+              지금 첫 포트폴리오를 만들어보세요
+            </Link>
+            .
+          </p>
+        </div>
+      ) : (
+        <>
+          <Reveal>
+            <Bookshelf portfolios={portfolios} />
+          </Reveal>
 
-      <div>
-        <h2 className="text-sm text-neutral-500 mb-3">최근 작업</h2>
-        <Reveal>
-          <div className="entry divide-y divide-neutral-800 p-0">
-            {recent.map((p) => (
-              <Link
-                key={p.id}
-                to={`/library/portfolios/${p.id}/versions`}
-                className="flex items-center justify-between px-5 py-4 hover:bg-neutral-900 transition-colors first:rounded-t-2xl last:rounded-b-2xl"
-              >
-                <div>
-                  <p className="font-medium text-neutral-100">{p.title}</p>
-                  <p className="text-xs text-neutral-500 mt-0.5">
-                    직무: {p.job} · {p.year}년
-                  </p>
-                </div>
-                <div className="text-right">
-                  <span className="badge bg-neutral-800 text-neutral-300">{p.visibility}</span>
-                  <p className="text-xs text-neutral-500 mt-1">{p.updatedAt} 편집</p>
-                </div>
-              </Link>
-            ))}
+          <div>
+            <h2 className="text-sm text-neutral-500 mb-3">최근 작업</h2>
+            <Reveal>
+              <div className="entry divide-y divide-neutral-800 p-0">
+                {portfolios.map((p) => (
+                  <Link
+                    key={p.id}
+                    to={`/wizard/editor/${p.id}`}
+                    className="flex items-center justify-between px-5 py-4 hover:bg-neutral-900 transition-colors first:rounded-t-2xl last:rounded-b-2xl"
+                  >
+                    <div>
+                      <p className="font-medium text-neutral-100">{p.title}</p>
+                      <p className="text-xs text-neutral-500 mt-0.5">
+                        직무: {p.job} · {p.year}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <span className="badge bg-neutral-800 text-neutral-300">{p.visibility}</span>
+                      <p className="text-xs text-neutral-500 mt-1">{p.updatedAt.slice(0, 10)} 편집</p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </Reveal>
           </div>
-        </Reveal>
-      </div>
+        </>
+      )}
 
       <div>
         <h2 className="text-sm text-neutral-500 mb-3">다음으로 할 일</h2>

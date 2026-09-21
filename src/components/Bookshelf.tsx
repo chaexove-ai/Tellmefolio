@@ -2,10 +2,10 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Plus } from "lucide-react";
 import GrainCover from "./GrainCover";
-import type { Portfolio } from "../mockData";
+import type { LibraryPortfolio } from "../lib/portfolios";
 
 interface BookshelfProps {
-  portfolios: Portfolio[];
+  portfolios: LibraryPortfolio[];
 }
 
 /**
@@ -55,7 +55,7 @@ interface BookshelfProps {
  *   (표지 면은 아예 감춥니다 — 넓어지지 않으면 책등과 겹쳐 보이므로).
  */
 export default function Bookshelf({ portfolios }: BookshelfProps) {
-  const [active, setActive] = useState<Portfolio | null>(null);
+  const [active, setActive] = useState<LibraryPortfolio | null>(null);
 
   return (
     <div>
@@ -83,7 +83,7 @@ export default function Bookshelf({ portfolios }: BookshelfProps) {
         {portfolios.map((p) => (
           <Link
             key={p.id}
-            to={`/library/portfolios/${p.id}/versions`}
+            to={`/wizard/editor/${p.id}`}
             onMouseEnter={() => setActive(p)}
             onMouseLeave={() => setActive(null)}
             onFocus={() => setActive(p)}

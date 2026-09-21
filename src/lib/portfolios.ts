@@ -165,3 +165,52 @@ export async function updatePortfolioStyle(
     throw new PortfolioError("스타일을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.");
   }
 }
+
+/**
+ * 서재(Bookshelf/PortfolioList/Dashboard)가 쓰는 화면 전용 모양.
+ *
+ * [2026-09] 이 셋은 원래 mockData.ts 의 Portfolio 배열(고정 4건)을 그렸습니다.
+ * 실제 테이블 컬럼과 화면이 기대하는 필드가 조금 달라서(visibility 는 DB에
+ * "초안" 상태가 없고 private/public 뿐, year 는 아직 아무 데서도 채우지 않아
+ * null 일 수 있음) 변환을 여기서 한 번에 해둡니다 — 화면 쪽 컴포넌트는 예전
+ * mockData.Portfolio 와 거의 같은 모양을 그대로 받습니다.
+ */
+export interface LibraryPortfolio {
+  id: string;
+  title: string;
+  job: string;
+  year: string;
+  visibility: "공개" | "비공개";
+  updatedAt: string;
+  jobColor: string;
+}
+
+function toLibraryPortfolio(p: PortfolioRow): LibraryPortfolio {
+  return {
+    id: p.id,
+    title: p.title,
+    job: p.job?.trim() || "직무 미지정",
+    // year 컬럼은 아직 어디서도 채우지 않아 보통 null 입니다 — 만들어진
+    // 해로 대신 보여줍니다(없는 것보다는 낫습니다).
+    year: p.year?.trim() || String(new Date(p.created_at).getFullYear()),
+    visibility: p.visibility === "public" ? "공개" : "비공개",
+    updatedAt: p.updated_at,
+    jobColor: p.job_color,
+  };
+}
+
+/** 로그인한 사용자의 포트폴리오 전체를 최근 수정순으로. */
+export async function listMyPortfolios(userId: string): Promise<LibraryPortfolio[]> {
+  const sb = await requireClient();
+  const { data, error } = await sb
+    .from("portfolios")
+    .select()
+    .eq("user_id", userId)
+    .order("updated_at", { ascending: false });
+
+  if (error) {
+    throw new PortfolioError("서재 목록을 불러오지 못했습니다.");
+  }
+
+  return ((data ?? []) as PortfolioRow[]).map(toLibraryPortfolio);
+}
