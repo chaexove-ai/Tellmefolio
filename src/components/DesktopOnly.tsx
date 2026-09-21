@@ -15,7 +15,7 @@ export const DESKTOP_MIN_WIDTH = 1200;
 
 export default function DesktopOnly() {
   return (
-    <div className="min-h-screen flex items-center justify-center px-6 py-16 bg-neutral-950">
+    <div className="min-h-screen flex items-center justify-center px-6 py-16">
       <div className="w-full max-w-[520px] text-center">
         <div className="inline-flex items-center gap-2.5 mb-14">
           <Monitor size={20} strokeWidth={1.5} className="text-brand" aria-hidden="true" />
@@ -40,7 +40,7 @@ export default function DesktopOnly() {
           좁은 화면은 지원하지 않습니다.
         </p>
 
-        <div className="mt-12 rounded-2xl border border-neutral-800 px-6 py-5">
+        <div className="mt-12 rounded-2xl border border-neutral-800 bg-neutral-900/50 px-6 py-5">
           <p className="text-sm font-medium text-neutral-200">권장 환경</p>
           <p className="mt-2 text-sm text-neutral-500">
             가로 {DESKTOP_MIN_WIDTH}px 이상 · Chrome, Edge, Safari

@@ -79,7 +79,7 @@ export default function EditorPreview({ portfolio, projects, coverUrl }: Props) 
 
       <div
         ref={frameRef}
-        className="rounded-xl border border-neutral-800 overflow-y-auto overflow-x-hidden max-h-[calc(100vh-9rem)]"
+        className="rounded-xl border border-neutral-800 bg-neutral-900/50 overflow-y-auto overflow-x-hidden max-h-[calc(100vh-9rem)]"
       >
         {filled.length === 0 ? (
           <p className="text-xs text-neutral-600 px-4 py-10 text-center">

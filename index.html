@@ -63,12 +63,11 @@
       (function () {
         try {
           var stored = localStorage.getItem("tellmefolio-theme");
-          var theme =
-            stored === "light" || stored === "dark"
-              ? stored
-              : window.matchMedia("(prefers-color-scheme: light)").matches
-                ? "light"
-                : "dark";
+          // [2026-09] OS 설정을 따르지 않고 라이트를 기본으로 둡니다.
+          // 대표 디자인인 크림 그레인 배경이 라이트 테마에만 있어서,
+          // OS를 따라가면 다크를 쓰는 사람은 그 디자인을 아예 못 봅니다.
+          // 다크는 토글로 직접 고른 사람에게만 남습니다.
+          var theme = stored === "dark" ? "dark" : "light";
           if (theme === "light") document.documentElement.classList.add("light");
         } catch (e) {}
       })();
