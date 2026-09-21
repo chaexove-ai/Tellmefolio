@@ -192,7 +192,7 @@ export default function Landing() {
             파는 주장이고, 스크롤 잠금으로 이미 시간을 가장 오래 붙잡는
             구간입니다. 화면이 어두워지면 그 멈춤이 의도한 것으로 읽힙니다.
             다른 구역까지 뒤집으면 쉼표가 아니라 또 다른 반복이 됩니다. */}
-        <section className="surface-brand-bright">
+        <section className="surface-invert">
           <PerspectiveScroller />
         </section>
 
@@ -298,15 +298,11 @@ export default function Landing() {
             멈춘 것처럼 보이는데, 어두운 띠가 들어오면 "여기가 끝이고
             할 일은 이것"이라는 마침표가 생깁니다.
 
-            [2026-09] 어두운 면에서 짙은 테라코타(.surface-brand)로
-            바꿨습니다. 여기는 제목 한 줄·설명 한 줄·버튼 하나라 글자
-            단계가 애초에 필요 없어서, 글자 단계가 하나로 줄어드는 주황
-            면의 약점이 드러나지 않습니다. 오히려 마지막에 브랜드색이
-            한 번 크게 나오는 편이 기억에 남습니다.
-            차별점 구역은 어둠 그대로 둡니다 — 거기는 카드와 여러 단계의
-            글이 있고 스크롤 잠금으로 오래 머무는 구간이라 채도 높은
-            면이면 눈이 지칩니다. */}
-        <section className="surface-brand px-4 sm:px-8 py-28 lg:py-36 text-center">
+            차별점 구역과 같은 .surface-invert 를 씁니다 — 가운데의
+            주장과 끝의 행동이 같은 색으로 묶여 북엔드가 됩니다.
+            주황 면도 두 가지로 만들어 봤지만(커밋 bb3e689 / a3d32d9)
+            흑갈색이 나았습니다. 이유는 index.css 의 해당 주석 참고. */}
+        <section className="surface-invert px-4 sm:px-8 py-28 lg:py-36 text-center">
           <h2 className="font-heading text-2xl lg:text-[36px] leading-snug mb-3 lg:mb-4">
             지금 바로 첫 포트폴리오를 만들어 보세요
           </h2>
