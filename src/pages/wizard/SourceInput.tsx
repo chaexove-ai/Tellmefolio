@@ -55,11 +55,19 @@ type QuickAddPanel = "github" | "link" | "memo" | null;
 
 export default function SourceInput() {
   const navigate = useNavigate();
-  const { githubLogin } = useAuth();
+  const { githubLogin, signIn } = useAuth();
 
   const [repos, setRepos] = useState<GitHubRepo[]>([]);
   const [reposLoading, setReposLoading] = useState(false);
   const [reposError, setReposError] = useState<string | null>(null);
+  // [2026-09] GitHub OAuth 토큰은 Supabase 세션에 저장되지 않고 로그인
+  // 직후 메모리에만 있다가 새로고침하면 사라집니다(AuthProvider.tsx
+  // captureProviderToken 주석 참고). 토큰 없이 /user/repos 를 부르면
+  // 401이 나는데, 이건 "다시 로그인"이 아니라 "GitHub 연결을 새로
+  // 한 번 더"로 풀립니다 — 이미 로그인은 돼 있으니까요. 그래서 일반
+  // reposError 와 구분해서 재연결 버튼을 따로 보여줍니다.
+  const [reposAuthError, setReposAuthError] = useState(false);
+  const [reconnecting, setReconnecting] = useState(false);
   const [selected, setSelected] = useState<Set<number>>(new Set());
 
   const [repoUrl, setRepoUrl] = useState("");
@@ -81,6 +89,7 @@ export default function SourceInput() {
     if (!githubLogin) return;
     setReposLoading(true);
     setReposError(null);
+    setReposAuthError(false);
     try {
       const list = await fetchUserRepos(githubLogin);
       setRepos(list);
@@ -88,13 +97,33 @@ export default function SourceInput() {
       // 사람이 전부 선택된 화면을 보면 하나씩 끄는 일부터 하게 됩니다.
       setSelected(new Set(list.slice(0, 5).map((r) => r.id)));
     } catch (e) {
-      setReposError(
-        e instanceof GitHubError ? e.message : "저장소 목록을 불러오지 못했습니다."
-      );
+      if (e instanceof GitHubError && e.status === 401) {
+        setReposAuthError(true);
+        setReposError("GitHub 연결이 끊어졌어요. 새로고침하면 토큰이 사라지는 구조라 다시 연결해야 합니다.");
+      } else {
+        setReposError(
+          e instanceof GitHubError ? e.message : "저장소 목록을 불러오지 못했습니다."
+        );
+      }
     } finally {
       setReposLoading(false);
     }
   }, [githubLogin]);
+
+  /** "GitHub 다시 연결" 버튼. 이미 로그인은 돼 있는 상태에서 provider
+   *  토큰만 새로 받아오는 거라 signIn 을 한 번 더 호출하는 것만으로
+   *  충분합니다 — GitHub 쪽에서 이미 이 앱을 승인해둔 계정이면 동의
+   *  화면 없이 바로 돌아옵니다. 돌아오면 AuthProvider 가 새 토큰을
+   *  잡아서 loadRepos 가 자동으로 다시 돕니다(githubLogin 의존성). */
+  const reconnectGitHub = async () => {
+    setReconnecting(true);
+    try {
+      await signIn("github");
+    } catch {
+      setReposError("GitHub 재연결에 실패했습니다. 잠시 후 다시 시도해 주세요.");
+      setReconnecting(false);
+    }
+  };
 
   useEffect(() => {
     void loadRepos();
@@ -313,9 +342,21 @@ export default function SourceInput() {
 
             {reposLoading && <p className="text-sm text-neutral-500">저장소를 불러오는 중입니다.</p>}
             {reposError && (
-              <p role="alert" className="text-sm text-brand">
-                {reposError}
-              </p>
+              <div className="space-y-2">
+                <p role="alert" className="text-sm text-brand">
+                  {reposError}
+                </p>
+                {reposAuthError && (
+                  <button
+                    type="button"
+                    onClick={() => void reconnectGitHub()}
+                    disabled={reconnecting}
+                    className="btn-secondary disabled:opacity-40"
+                  >
+                    {reconnecting ? "연결하는 중" : "GitHub 다시 연결"}
+                  </button>
+                )}
+              </div>
             )}
             {!reposLoading && !reposError && !githubLogin && (
               <p className="text-sm text-neutral-500">
