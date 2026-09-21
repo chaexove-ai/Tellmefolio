@@ -424,6 +424,71 @@ summary::marker { content: ""; }
 }
 
 /* 가로 스크롤 리스트 (갤러리) — 그리드 반복을 피하고 "더 있다"를 보여줍니다 */
+/* ── 무한 가로 띠 ─────────────────────────────────────────────
+   같은 목록을 두 벌 이어 붙이고 -50% 까지 밀어냅니다. 두 벌째의 첫 칸이
+   첫 벌의 첫 칸 자리에 닿는 순간이 정확히 -50% 지점이라, 거기서 원점으로
+   되돌리면 이음매가 보이지 않습니다.
+
+   좌우 가장자리는 마스크로 페이드시킵니다. 칸이 화면 끝에서 뚝 잘리면
+   "잘못 잘린 것"처럼 보이는데, 흐려지면서 사라지면 계속 이어진다는
+   뜻으로 읽힙니다. */
+.marquee {
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+}
+
+.marquee-track {
+  display: flex;
+  gap: 14px;
+  width: max-content;
+  animation-name: marquee-slide;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.marquee-copy {
+  display: flex;
+  gap: 14px;
+}
+
+.marquee-track > *,
+.marquee-copy > * {
+  flex: 0 0 300px;
+}
+
+.marquee:hover .marquee-track,
+.marquee:focus-within .marquee-track {
+  animation-play-state: paused;
+}
+
+@keyframes marquee-slide {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    /* gap 한 칸만큼 더 밀어야 두 벌의 간격까지 맞습니다. */
+    transform: translateX(calc(-50% - 7px));
+  }
+}
+
+/* 모션 감소: 애니메이션을 끄고 평범한 가로 스크롤로 돌립니다.
+   단순히 멈추기만 하면 두 벌째가 화면 밖에 그대로 남아 접근할 수
+   없는 콘텐츠가 됩니다. */
+@media (prefers-reduced-motion: reduce) {
+  .marquee {
+    overflow-x: auto;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+  .marquee-track {
+    animation: none;
+  }
+  .marquee-copy {
+    display: none;
+  }
+}
+
 .h-rail {
   display: flex;
   gap: 14px;

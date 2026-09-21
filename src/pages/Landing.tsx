@@ -11,7 +11,8 @@ import Steps from "../components/Steps";
 import ScrollProgress from "../components/ScrollProgress";
 import { scheduleScrollRefresh } from "../lib/scrollRefresh";
 import GrainCover from "../components/GrainCover";
-import { galleryItems } from "../mockData";
+import MarqueeRail from "../components/MarqueeRail";
+import { sampleWorks } from "../landingContent";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -45,7 +46,6 @@ const audiences = [
   },
 ];
 
-const gallerySample = galleryItems.slice(0, 6);
 
 /**
  * [2026-08 랜딩 리듬 재설계]
@@ -214,29 +214,32 @@ export default function Landing() {
             <Reveal>
               {/* 커뮤니티는 로그인 뒤 영역이라, 여기서 링크를 걸면
                   방문자가 로그인 화면으로 튕깁니다. 카드도 링크를 뗐습니다.
-                  보여주되 클릭을 유도하지는 않습니다. */}
+                  보여주되 클릭을 유도하지는 않습니다.
+
+                  [2026-09] "다른 사람들이 만든" → "예시". 내용을 실제
+                  작업물로 바꿨으니 문구도 사실에 맞춥니다. 사용자가
+                  여럿인 것처럼 읽히게 두면, 눌러 들어가 빈 커뮤니티를
+                  본 사람에게는 거짓말이 됩니다. */}
               <div>
                 <p className="sec-eyebrow">결과물</p>
                 <h2 className="sec-title">이렇게 만들어집니다</h2>
-                <p className="sec-sub !mb-0">다른 사람들이 만든 포트폴리오를 먼저 보세요.</p>
+                <p className="sec-sub !mb-0">실제로 만든 포트폴리오 예시입니다.</p>
               </div>
             </Reveal>
-            <Reveal delay={0.08}>
-              {/* 3열 그리드 대신 가로 스크롤 — 형태 반복을 피하고
-                  "더 있다"는 것을 잘린 카드로 보여줍니다. */}
-              <div className="h-rail mt-10">
-                {gallerySample.map((g) => (
-                  <div key={g.id} className="entry !p-4">
-                    <GrainCover seed={g.id} className="aspect-[4/3] rounded-xl mb-3.5" />
-                    <span className="badge bg-brand/10 text-brand mb-3">{g.job}</span>
-                    <h3 className="entry-title">{g.title}</h3>
+            <div className="mt-10">
+              <MarqueeRail>
+                {sampleWorks.map((w) => (
+                  <div key={w.id} className="entry !p-4">
+                    <GrainCover seed={w.id} className="aspect-[4/3] rounded-xl mb-3.5" />
+                    <span className="badge bg-brand/10 text-brand mb-3">{w.job}</span>
+                    <h3 className="entry-title">{w.title}</h3>
                     <p className="text-sm text-neutral-400 leading-relaxed">
-                      {g.structure} · {g.author} · {g.year}
+                      {w.note || w.tools}
                     </p>
                   </div>
                 ))}
-              </div>
-            </Reveal>
+              </MarqueeRail>
+            </div>
           </div>
         </section>
 

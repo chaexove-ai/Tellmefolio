@@ -178,3 +178,38 @@ export const heroRewrite = {
     },
   ],
 };
+
+/* ------------------------------------------------------------------
+   결과물 예시
+   [2026-09] 전에는 mockData.galleryItems(김지수·박민준 … 가공 인물 5명)
+   를 "다른 사람들이 만든 포트폴리오"로 보여줬습니다. 없는 사회적 증거라,
+   눌러 들어간 사람이 빈 커뮤니티를 보면 신뢰가 한 번에 깎입니다.
+
+   실제로 만든 작업물로 바꿉니다. 내용이 진짜면 지어낸 것이 아니고,
+   라벨도 "예시"로 맞추면 문구까지 진짜가 됩니다. 커뮤니티가 실제로
+   차면 그때 다른 사람 작품으로 바꾸면 됩니다.
+
+   ⚠️ note 는 비워뒀습니다. 각 프로젝트에서 실제로 무엇을 했는지는
+   본인만 쓸 수 있습니다 — 여기에 그럴듯한 문장을 채워 넣으면 방금
+   없앤 문제를 형태만 바꿔 되살리는 셈입니다.
+------------------------------------------------------------------- */
+
+export interface SampleWork {
+  id: string;
+  title: string;
+  /** 이 포트폴리오가 겨냥한 직무 */
+  job: string;
+  /** 실제로 쓴 툴·키워드 */
+  tools: string;
+  /** 한 줄 설명 — 직접 채워주세요 */
+  note: string;
+}
+
+export const sampleWorks: SampleWork[] = [
+  { id: "w1", title: "스칼라 프로젝트", job: "프론트엔드 개발", tools: "UX 리서치 · 와이어프레임 · 정보 구조 설계", note: "" },
+  { id: "w2", title: "올리브영 UX/UI 디자인", job: "UX/UI 디자인", tools: "Figma · 사용자 리서치", note: "" },
+  { id: "w3", title: "도틀왓제주", job: "브랜드 · 웹", tools: "Figma · Illustrator · Wix", note: "" },
+  { id: "w4", title: "크라우드아카데미", job: "UX/UI", tools: "학습 로드맵 UX · CTR 분석", note: "" },
+  { id: "w5", title: "Tellmefolio", job: "기획 · 프론트엔드", tools: "React · TypeScript · LangChain", note: "" },
+  { id: "w6", title: "A11Y Manager", job: "접근성", tools: "TypeScript", note: "" },
+];
