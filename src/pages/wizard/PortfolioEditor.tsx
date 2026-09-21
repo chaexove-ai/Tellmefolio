@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { Check, Info, LoaderCircle, PanelRight, PanelRightClose, Plus, Trash2, X } from "lucide-react";
+import { Check, Info, LoaderCircle, Plus, Trash2, X } from "lucide-react";
 import {
   getPortfolioWithProjects,
   updatePortfolioProject,
@@ -121,8 +121,12 @@ export default function PortfolioEditor() {
   /** 미리보기는 xl(1280px) 이상에서만 자리가 납니다. 그 아래에서는 폼과
    *  미리보기가 둘 다 좁아져 양쪽 다 못 쓰게 되므로 감추고, 스타일 패널만
    *  왼쪽 열로 내려보냅니다(안 그러면 좁은 화면에서 스타일을 바꿀 방법이
-   *  아예 없어집니다 — 설정 페이지를 없앴으니 여기가 유일한 입구입니다). */
-  const [previewOpen, setPreviewOpen] = useState(true);
+   *  아예 없어집니다 — 설정 페이지를 없앴으니 여기가 유일한 입구입니다).
+   *
+   *  [2026-09] "미리보기 숨기기" 토글은 없앴습니다. 숨겨도 입력 폼이
+   *  넓어지지 않습니다 — 폼이 max-w-3xl 에 묶여 있어서 숨긴 자리가 그대로
+   *  빈 공간이 됩니다. 화면만 허전해지고 얻는 것이 없는 버튼이면서, 주
+   *  버튼(내보내기) 옆자리를 차지하고 있었습니다. */
   const isWide = useIsWide();
 
   const loadProject = (index: number, list: PortfolioProjectRow[]) => {
@@ -429,19 +433,6 @@ export default function PortfolioEditor() {
             AI 초안 생성으로 돌아가기
           </Link>
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              className="hidden xl:inline-flex items-center gap-1.5 text-xs text-neutral-500 hover:text-brand"
-              onClick={() => setPreviewOpen((v) => !v)}
-              aria-pressed={previewOpen}
-            >
-              {previewOpen ? (
-                <PanelRightClose size={14} strokeWidth={1.5} aria-hidden="true" />
-              ) : (
-                <PanelRight size={14} strokeWidth={1.5} aria-hidden="true" />
-              )}
-              {previewOpen ? "미리보기 숨기기" : "미리보기 보기"}
-            </button>
             <button className="btn-primary" onClick={() => navigate(`/wizard/export/${portfolio.id}`)}>
               내보내기
             </button>
@@ -875,15 +866,11 @@ export default function PortfolioEditor() {
       {isWide && (
         <aside className="sticky top-6 flex-1 min-w-[380px] space-y-3">
           {stylePanel}
-          {/* 토글이 감추는 것은 미리보기뿐입니다 — 스타일 패널까지 같이
-              사라지면 "미리보기 숨기기"라는 이름과 동작이 어긋납니다. */}
-          {previewOpen && (
-            <EditorPreview
-              portfolio={portfolio}
-              projects={previewProjects}
-              coverUrl={coverUrl}
-            />
-          )}
+          <EditorPreview
+            portfolio={portfolio}
+            projects={previewProjects}
+            coverUrl={coverUrl}
+          />
         </aside>
       )}
     </div>
