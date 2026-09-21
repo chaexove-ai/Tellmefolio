@@ -687,7 +687,7 @@ export default function PortfolioEditor() {
                           onChange={(e) => f.onChange(e.target.value)}
                           placeholder={f.placeholder}
                           rows={f.rows}
-                          // 본문 기준(15px)보다 한 단계 위입니다. 이 앱에서
+                          // 본문 기준(14px)보다 한 단계 위입니다. 이 앱에서
                           // 글을 가장 오래 쓰고 고치는 칸이라, 빽빽한 곳에
                           // 맞춘 기준을 그대로 적용할 이유가 없습니다.
                           className="field-area text-base leading-relaxed"
