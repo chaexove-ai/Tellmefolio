@@ -223,7 +223,7 @@ export default function Landing() {
               <div>
                 <p className="sec-eyebrow">결과물</p>
                 <h2 className="sec-title">이렇게 만들어집니다</h2>
-                <p className="sec-sub !mb-0">실제로 만든 포트폴리오 예시입니다.</p>
+                <p className="sec-sub !mb-0">직무에 따라 이런 포트폴리오가 만들어집니다.</p>
               </div>
             </Reveal>
             <div className="mt-10">
@@ -234,7 +234,7 @@ export default function Landing() {
                     <span className="badge bg-brand/10 text-brand mb-3">{w.job}</span>
                     <h3 className="entry-title">{w.title}</h3>
                     <p className="text-sm text-neutral-400 leading-relaxed">
-                      {w.note || w.tools}
+                      {w.sub}
                     </p>
                   </div>
                 ))}
