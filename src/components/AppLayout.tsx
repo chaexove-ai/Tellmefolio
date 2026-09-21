@@ -83,11 +83,9 @@ export default function AppLayout() {
   if (!isDesktop) return <DesktopOnly />;
 
   return (
-    // [2026-09] bg-neutral-950 제거 — body 가 크림 그레인을 칠하는데
-    // 껍데기가 불투명 단색으로 그 위를 덮고 있었습니다.
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex bg-neutral-950">
       {/* 데스크톱 사이드바 */}
-      <aside className="app-sidebar hidden md:flex w-60 shrink-0 border-r border-neutral-800 flex-col px-4 py-8">
+      <aside className="hidden md:flex w-60 shrink-0 border-r border-neutral-800 flex-col px-4 py-8">
         {/* 좌상단 로고는 홈으로 가는 버튼이라는 게 오래된 관습입니다.
             span 으로 두면 눌러도 아무 일이 없어서, 사용자는 "안 눌린다"가
             아니라 "다른 홈이 있나"로 해석합니다. */}

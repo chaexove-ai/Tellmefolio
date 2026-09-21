@@ -47,7 +47,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 relative">
+    <div className="min-h-screen flex items-center justify-center bg-neutral-950 px-4 relative">
       <div className="absolute top-6 right-6">
         <ThemeToggle />
       </div>

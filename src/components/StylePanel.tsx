@@ -218,7 +218,7 @@ export default function StylePanel({
   };
 
   return (
-    <div className="rounded-xl border border-neutral-800 bg-neutral-900/50 px-3 py-2.5 space-y-3">
+    <div className="rounded-xl border border-neutral-800 px-3 py-2.5 space-y-3">
       <button
         type="button"
         className="flex w-full items-center justify-between gap-2 text-left"
