@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { Check, Info, LoaderCircle, PanelRight, PanelRightClose, Plus, Trash2 } from "lucide-react";
+import { Check, Info, LoaderCircle, PanelRight, PanelRightClose, Plus, Trash2, X } from "lucide-react";
 import {
   getPortfolioWithProjects,
   updatePortfolioProject,
@@ -97,6 +97,11 @@ export default function PortfolioEditor() {
   const [execution, setExecution] = useState("");
   const [outcome, setOutcome] = useState("");
   const [reflection, setReflection] = useState("");
+  /** 툴·키워드. 지금까지 AI 초안이 넣어준 값을 보여주기만 하고 고칠 방법이
+   *  없었습니다 — 직접 추가한 프로젝트는 빈 배열로 시작하니 영영 비어
+   *  있었습니다. */
+  const [stack, setStack] = useState<string[]>([]);
+  const [stackInput, setStackInput] = useState("");
 
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -130,6 +135,24 @@ export default function PortfolioEditor() {
     setExecution(p?.execution ?? "");
     setOutcome(p?.outcome ?? "");
     setReflection(p?.reflection ?? "");
+    setStack(p?.stack ?? []);
+    setStackInput("");
+  };
+
+  /** 쉼표로 여러 개를 한 번에 붙여넣는 경우까지 받습니다. 중복과 빈 값은
+   *  버리고, 너무 긴 것은 자릅니다(배지 한 줄을 넘기면 목록이 안 읽힙니다). */
+  const addStack = (raw: string) => {
+    const added = raw
+      .split(",")
+      .map((v) => v.trim().slice(0, 24))
+      .filter(Boolean);
+    if (added.length === 0) return;
+    setStack((prev) => {
+      const next = [...prev];
+      for (const a of added) if (!next.includes(a)) next.push(a);
+      return next.slice(0, 12);
+    });
+    setStackInput("");
   };
 
   useEffect(() => {
@@ -183,10 +206,21 @@ export default function PortfolioEditor() {
     () =>
       projects.map((p, i) =>
         i === projectIndex
-          ? { ...p, name: titleField, context, role, problem, execution, outcome, reflection }
+          ? { ...p, name: titleField, context, role, problem, execution, outcome, reflection, stack }
           : p
       ),
-    [projects, projectIndex, titleField, context, role, problem, execution, outcome, reflection]
+    [
+      projects,
+      projectIndex,
+      titleField,
+      context,
+      role,
+      problem,
+      execution,
+      outcome,
+      reflection,
+      stack,
+    ]
   );
 
   /** "프로젝트 개요"의 7칸을 순서 있는 케이스 스터디 흐름으로 보여주기 위한
@@ -275,6 +309,7 @@ export default function PortfolioEditor() {
         execution,
         outcome,
         reflection,
+        stack,
       };
       await updatePortfolioProject(current.id, patch);
       setProjects((prev) => prev.map((p, i) => (i === projectIndex ? { ...p, ...patch } : p)));
@@ -528,13 +563,53 @@ export default function PortfolioEditor() {
             </p>
           )}
 
-          {currentProject && currentProject.stack.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {currentProject.stack.map((s) => (
-                <span key={s} className="badge bg-neutral-800 text-neutral-400">
-                  {s}
-                </span>
-              ))}
+          {currentProject && (
+            <div className="space-y-1.5">
+              <label htmlFor="proj-stack" className="text-[13px] font-medium text-neutral-200">
+                사용한 툴 · 키워드
+              </label>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {stack.map((tag) => (
+                  <span
+                    key={tag}
+                    className="badge bg-neutral-800 text-neutral-300 inline-flex items-center gap-1 pr-1"
+                  >
+                    {tag}
+                    <button
+                      type="button"
+                      onClick={() => setStack((prev) => prev.filter((t) => t !== tag))}
+                      aria-label={`${tag} 제거`}
+                      className="grid size-4 place-items-center rounded text-neutral-500 hover:text-brand"
+                    >
+                      <X size={11} strokeWidth={2} aria-hidden="true" />
+                    </button>
+                  </span>
+                ))}
+                <input
+                  id="proj-stack"
+                  value={stackInput}
+                  onChange={(e) => setStackInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === ",") {
+                      e.preventDefault();
+                      addStack(stackInput);
+                    } else if (e.key === "Backspace" && !stackInput) {
+                      // 빈 칸에서 지우면 마지막 것부터 떨어집니다 — 태그
+                      // 입력칸의 관례라 별도 안내 없이도 통합니다.
+                      setStack((prev) => prev.slice(0, -1));
+                    }
+                  }}
+                  onBlur={() => addStack(stackInput)}
+                  placeholder={stack.length === 0 ? "예: Figma, UX 리서치, React" : "추가"}
+                  className="min-w-[7rem] flex-1 bg-transparent text-[13px] text-neutral-100 placeholder:text-neutral-600 focus:outline-none py-1"
+                />
+              </div>
+              {stack.length === 0 && (
+                <p className="text-xs text-neutral-600">
+                  쉼표나 Enter 로 구분해 넣으세요. 템플릿에서 프로젝트 제목 아래
+                  줄에 나옵니다.
+                </p>
+              )}
             </div>
           )}
 

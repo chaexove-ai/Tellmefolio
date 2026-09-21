@@ -153,7 +153,17 @@ export async function getPortfolioWithProjects(
 export async function updatePortfolioProject(
   id: string,
   patch: Partial<
-    Pick<PortfolioProjectRow, "name" | "context" | "role" | "problem" | "execution" | "outcome" | "reflection">
+    Pick<
+      PortfolioProjectRow,
+      | "name"
+      | "context"
+      | "role"
+      | "problem"
+      | "execution"
+      | "outcome"
+      | "reflection"
+      | "stack"
+    >
   >
 ): Promise<void> {
   const sb = await requireClient();
