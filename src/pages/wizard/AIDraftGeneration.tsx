@@ -81,6 +81,15 @@ export default function AIDraftGeneration() {
   const [customJob, setCustomJob] = useState("");
   const [structure, setStructure] = useState<"결과 중심형" | "문제-실행-결과형">("결과 중심형");
   const [extra, setExtra] = useState("");
+  /**
+   * [2026-09-23] 부족했던 항목에 대한 답.
+   *
+   * 전에는 "자료가 부족했던 부분"을 보여주고 "이전 단계의 메모 칸에
+   * 내용을 보태면 결과가 좋아집니다"로 끝났습니다. 무엇이 없는지 알려준
+   * 뒤에 뒤로 가라고 하는 셈이라, 알려준 의미가 없었습니다. 여기서 바로
+   * 채우고 다시 만듭니다.
+   */
+  const [gapAnswers, setGapAnswers] = useState<Record<number, string>>({});
 
   const [draft, setDraft] = useState<Draft | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -117,6 +126,21 @@ export default function AIDraftGeneration() {
    * 넘깁니다. 실패하면 이유를 화면에 그대로 보여줍니다 — 조용히 실패하면
    * 사용자는 다시 눌러보는 것 말고 할 수 있는 게 없습니다.
    */
+  /** 부족 항목 + 사용자가 채운 답을 모델이 읽을 수 있는 한 덩어리로. */
+  const composeExtra = () => {
+    const filled = (draft?.gaps ?? [])
+      .map((g, i) => [g, (gapAnswers[i] ?? "").trim()] as const)
+      .filter(([, a]) => a.length > 0)
+      .map(([g, a]) => `- ${g}\n  → ${a}`);
+    if (filled.length === 0) return extra;
+    const block = ["[보완한 내용]", ...filled].join("\n");
+    return extra.trim() ? `${extra.trim()}\n\n${block}` : block;
+  };
+
+  const filledGapCount = (draft?.gaps ?? []).filter(
+    (_, i) => (gapAnswers[i] ?? "").trim().length > 0
+  ).length;
+
   const startGeneration = async () => {
     setStatus("processing");
     setErrorMessage(null);
@@ -128,7 +152,7 @@ export default function AIDraftGeneration() {
         links: links.map((l) => l.meta),
         job,
         structure,
-        extra,
+        extra: composeExtra(),
       });
       setDraft(result);
       setStatus("completed");
@@ -382,20 +406,43 @@ export default function AIDraftGeneration() {
             <TriangleAlert size={16} strokeWidth={1.75} className="text-amber-400" />
             자료가 부족했던 부분
           </h2>
+          <p className="text-xs text-neutral-500 mb-3">
+            아는 내용을 여기 적으면 그대로 반영해 다시 만듭니다. 모르는 항목은
+            비워두면 됩니다.
+          </p>
           <ul className="space-y-2">
             {draft.gaps.map((g, i) => (
-              <li
-                key={i}
-                className="flex items-start gap-2.5 rounded-lg bg-amber-500/[0.07] px-3.5 py-2.5 text-sm text-neutral-300"
-              >
-                <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" />
-                <span className="leading-relaxed">{g}</span>
+              <li key={i} className="rounded-lg bg-amber-500/[0.07] px-3.5 py-2.5">
+                <div className="flex items-start gap-2.5 text-sm text-neutral-300">
+                  <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" />
+                  <span className="leading-relaxed">{g}</span>
+                </div>
+                <input
+                  value={gapAnswers[i] ?? ""}
+                  onChange={(e) =>
+                    setGapAnswers((prev) => ({ ...prev, [i]: e.target.value }))
+                  }
+                  placeholder="예: 월 방문 1,200명 · 전환율 3.4% · 2025년 3월 기준"
+                  className="field mt-2 py-1.5 text-sm"
+                />
               </li>
             ))}
           </ul>
-          <p className="text-xs text-neutral-600 mt-3">
-            이전 단계의 메모 칸에 내용을 보태면 결과가 좋아집니다.
-          </p>
+
+          <div className="mt-4 flex items-center justify-between gap-3">
+            <p className="text-xs text-neutral-600 min-w-0">
+              {filledGapCount > 0
+                ? `${filledGapCount}개를 채웠습니다.`
+                : "채우지 않고 넘어가도 됩니다 — 나중에 직접 편집에서 고칠 수 있습니다."}
+            </p>
+            <button
+              className="btn-secondary shrink-0 whitespace-nowrap disabled:opacity-40"
+              disabled={filledGapCount === 0 || status === "processing"}
+              onClick={() => void startGeneration()}
+            >
+              {status === "processing" ? "다시 만드는 중" : "채운 내용으로 다시 만들기"}
+            </button>
+          </div>
         </div>
       )}
 
