@@ -1,4 +1,5 @@
 import { getSupabase } from "./supabase";
+import type { BlockMap } from "./blocks";
 import type { PortfolioRow, PortfolioProjectRow } from "./portfolios";
 
 /**
@@ -33,17 +34,27 @@ interface TranslatedProject {
   reflection: string;
 }
 
+interface TranslatedBlock {
+  id: string;
+  label: string;
+  text: string;
+}
+
 interface TranslationResult {
   title: string;
   summary: string;
   job: string;
   projects: TranslatedProject[];
+  blocks?: TranslatedBlock[];
 }
 
 export async function translatePortfolioToEnglish(
   portfolio: PortfolioRow,
-  projects: PortfolioProjectRow[]
-): Promise<{ portfolio: PortfolioRow; projects: PortfolioProjectRow[] }> {
+  projects: PortfolioProjectRow[],
+  /** [2026-09-22] 사용자가 다섯 칸 밖에 직접 쓴 글. 빠뜨리면 영어 PDF
+   *  가운데만 한국어로 남습니다. */
+  blocks: BlockMap = {}
+): Promise<{ portfolio: PortfolioRow; projects: PortfolioProjectRow[]; blocks: BlockMap }> {
   const sb = await getSupabase();
   if (!sb) {
     throw new TranslateError("Supabase 설정이 없어 번역할 수 없습니다.");
@@ -65,6 +76,14 @@ export async function translatePortfolioToEnglish(
         outcome: p.outcome,
         reflection: p.reflection,
       })),
+      blocks: Object.values(blocks)
+        .flat()
+        .filter((b) => b.content.kind === "text")
+        .map((b) => ({
+          id: b.id,
+          label: b.content.kind === "text" ? b.content.label : "",
+          text: b.content.kind === "text" ? b.content.text : "",
+        })),
     },
   });
 
@@ -121,6 +140,21 @@ export async function translatePortfolioToEnglish(
     };
   });
 
+  // 블록도 같은 규칙입니다 — id 로 맞추고, 못 찾으면 원문을 그대로 둡니다.
+  const blockById = new Map((translation.blocks ?? []).map((tb) => [tb.id, tb]));
+  const translatedBlocks: BlockMap = {};
+  for (const [projectId, list] of Object.entries(blocks)) {
+    translatedBlocks[projectId] = list.map((b) => {
+      if (b.content.kind !== "text") return b;
+      const tb = blockById.get(b.id);
+      if (!tb) return b;
+      return {
+        ...b,
+        content: { ...b.content, label: tb.label ?? b.content.label, text: tb.text ?? b.content.text },
+      };
+    });
+  }
+
   const translatedPortfolio: PortfolioRow = {
     ...portfolio,
     title: translation.title || portfolio.title,
@@ -128,5 +162,9 @@ export async function translatePortfolioToEnglish(
     job: translation.job || portfolio.job,
   };
 
-  return { portfolio: translatedPortfolio, projects: translatedProjects };
+  return {
+    portfolio: translatedPortfolio,
+    projects: translatedProjects,
+    blocks: translatedBlocks,
+  };
 }

@@ -2,6 +2,7 @@ import { getPortfolioPalette, byDensity } from "../../lib/portfolioTheme";
 import type { PortfolioTemplateProps } from "./types";
 import { caseStudyFields, briefLead, visibleProjects } from "./types";
 import ProjectImages from "./ProjectImages";
+import BlockList from "./BlockList";
 
 type FieldKey = "context" | "problem" | "execution" | "outcome" | "reflection";
 
@@ -34,7 +35,7 @@ const fieldLabelsByLang: Record<"ko" | "en", Array<{ key: FieldKey; label: strin
  * 요소로 삼아 한 편의 "기사"처럼 배치합니다. layout이 2단이면 프로젝트를
  * 좌우로 나눠 잡지 지면처럼 두 편씩 보이게 합니다.
  */
-export default function MagazineTemplate({ portfolio, projects, coverUrl, images = {}, eagerImages, bodyFontStack, lang = "ko" }: PortfolioTemplateProps) {
+export default function MagazineTemplate({ portfolio, projects, coverUrl, images = {}, blocks = {}, eagerImages, bodyFontStack, lang = "ko" }: PortfolioTemplateProps) {
   const palette = getPortfolioPalette(portfolio.color_theme);
   const visible = visibleProjects(projects, images);
   const isTwoCol = portfolio.layout === "2col";
@@ -141,6 +142,15 @@ export default function MagazineTemplate({ portfolio, projects, coverUrl, images
                     </div>
                   );
                 })}
+
+                <BlockList
+                  projectId={p.id}
+                  blocks={blocks}
+                  textColor={palette.textMuted}
+                  labelColor={palette.textFaint}
+                  borderColor={palette.border}
+                  className={byDensity(d, { roomy: "mt-6 space-y-6", normal: "mt-4 space-y-4", tight: "mt-2.5 space-y-2.5" })}
+                />
               </div>
             </article>
           ))}

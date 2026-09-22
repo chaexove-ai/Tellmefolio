@@ -45,11 +45,20 @@ interface ProjectInput {
   reflection: string;
 }
 
+/** [2026-09-22] 자유 블록. 사용자가 다섯 칸 밖에 직접 쓴 글이라,
+ *  번역에서 빠지면 영어 PDF 가운데만 한국어로 남습니다. */
+interface BlockInput {
+  id: string;
+  label: string;
+  text: string;
+}
+
 interface Payload {
   title?: string;
   summary?: string | null;
   job?: string | null;
   projects?: ProjectInput[];
+  blocks?: BlockInput[];
 }
 
 function json(body: unknown, status = 200) {
@@ -63,7 +72,7 @@ function trim(s: unknown, max = MAX_FIELD): string {
   return typeof s === "string" ? s.slice(0, max) : "";
 }
 
-function buildPrompt(title: string, summary: string, job: string, projects: ProjectInput[]) {
+function buildPrompt(title: string, summary: string, job: string, projects: ProjectInput[], blocks: BlockInput[]) {
   const payload = {
     title,
     summary,
@@ -79,6 +88,11 @@ function buildPrompt(title: string, summary: string, job: string, projects: Proj
       outcome: trim(p.outcome),
       reflection: trim(p.reflection),
     })),
+    blocks: blocks.map((b) => ({
+      id: b.id,
+      label: trim(b.label, 200),
+      text: trim(b.text),
+    })),
   };
 
   return [
@@ -92,6 +106,7 @@ function buildPrompt(title: string, summary: string, job: string, projects: Proj
     "- job(직무명)과 role(프로젝트 내 역할)은 채용 시장에서 쓰이는 자연스러운 영어 직함/역할 표현으로 옮기세요 (예: \"UX/UI 디자이너\" → \"UX/UI Designer\").",
     "- stack 배열은 각 항목을 자연스러운 영어로 옮기되, 이미 영어인 도구·기술 고유명사(React, Figma 등)는 그대로 두세요. 배열의 개수와 순서는 원문과 동일하게 유지하세요.",
     "- 각 프로젝트의 id는 절대 바꾸지 말고 그대로 돌려주세요.",
+    "- blocks 는 사용자가 직접 추가한 글입니다. label(소제목)과 text(본문)를 같은 기준으로 번역하고, id 는 그대로 돌려주세요. blocks 가 빈 배열이면 빈 배열로 두세요.",
     "",
     "## 원문 (JSON)",
     JSON.stringify(payload, null, 2),
@@ -104,6 +119,9 @@ function buildPrompt(title: string, summary: string, job: string, projects: Proj
     '  "job": "...",',
     '  "projects": [',
     '    { "id": "...", "name": "...", "role": "...", "stack": ["..."], "context": "...", "problem": "...", "execution": "...", "outcome": "...", "reflection": "..." }',
+    "  ],",
+    '  "blocks": [',
+    '    { "id": "...", "label": "...", "text": "..." }',
     "  ]",
     "}",
   ].join("\n");
@@ -144,8 +162,10 @@ Deno.serve(async (req) => {
   const summary = trim(payload.summary ?? "", MAX_FIELD);
   const job = trim(payload.job ?? "", 200);
   const projects = (payload.projects ?? []).slice(0, MAX_PROJECTS);
+  // 블록은 프로젝트마다 몇 개씩 붙을 수 있어 상한을 넉넉히 둡니다.
+  const blocks = (payload.blocks ?? []).slice(0, MAX_PROJECTS * 8);
 
-  if (!title && !summary && !job && projects.length === 0) {
+  if (!title && !summary && !job && projects.length === 0 && blocks.length === 0) {
     return json({ error: "번역할 내용이 없습니다." }, 400);
   }
 
@@ -160,7 +180,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         model: MODEL,
         max_tokens: 4000,
-        messages: [{ role: "user", content: buildPrompt(title, summary, job, projects) }],
+        messages: [{ role: "user", content: buildPrompt(title, summary, job, projects, blocks) }],
       }),
     });
 

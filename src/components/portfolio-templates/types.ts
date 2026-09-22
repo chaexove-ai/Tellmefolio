@@ -1,4 +1,6 @@
 import type { PortfolioProjectRow, PortfolioRow } from "../../lib/portfolios";
+import type { BlockMap } from "../../lib/blocks";
+import { blockHasContent } from "../../lib/blocks";
 
 /** 프로젝트 id → 그 프로젝트의 이미지들(공개 URL + 설명). 템플릿은 경로가
  *  아니라 이미 URL 로 바뀐 값을 받습니다 — getPublicUrl 이 비동기라
@@ -21,6 +23,8 @@ export interface PortfolioTemplateProps {
   coverUrl: string | null;
   /** [2026-09-22] 프로젝트별 이미지. 없으면 빈 객체. */
   images?: ProjectImageMap;
+  /** [2026-09-22] 프로젝트에 붙은 자유 블록. 5필드 뒤에 그립니다. */
+  blocks?: BlockMap;
   /** 이미지를 lazy 가 아니라 즉시 받습니다. PDF 내보내기에서 반드시 true —
    *  html2canvas 는 아직 안 받아진 이미지를 빈칸으로 캡처합니다. 공개
    *  링크처럼 사람이 스크롤하며 보는 화면에서는 끄는 편이 빠릅니다. */
@@ -60,9 +64,15 @@ export function hasContent(p: PortfolioProjectRow): boolean {
  */
 export function visibleProjects(
   projects: PortfolioProjectRow[],
-  images: ProjectImageMap = {}
+  images: ProjectImageMap = {},
+  blocks: BlockMap = {}
 ): PortfolioProjectRow[] {
-  return projects.filter((p) => hasContent(p) || (images[p.id]?.length ?? 0) > 0);
+  return projects.filter(
+    (p) =>
+      hasContent(p) ||
+      (images[p.id]?.length ?? 0) > 0 ||
+      (blocks[p.id] ?? []).some(blockHasContent)
+  );
 }
 
 /** "간단히" 로 둔 프로젝트인지. 설계는 docs/editor-redesign.md 3절. */

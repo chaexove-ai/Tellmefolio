@@ -17,6 +17,7 @@ import { exportNodeToPdf } from "../../lib/exportPdf";
 import { translatePortfolioToEnglish, TranslateError } from "../../lib/translate";
 import PortfolioRenderer from "../../components/portfolio-templates/PortfolioRenderer";
 import type { ProjectImageMap } from "../../components/portfolio-templates/types";
+import { listBlocks, type BlockMap } from "../../lib/blocks";
 
 /**
  * [2026-09] "적용 템플릿" 줄이 항상 "라이브에디터"로 고정돼 있던 걸 고친 게
@@ -40,6 +41,10 @@ export default function Export() {
   const [projects, setProjects] = useState<PortfolioProjectRow[]>([]);
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const [images, setImages] = useState<ProjectImageMap>({});
+  const [blocks, setBlocks] = useState<BlockMap>({});
+  /** 블록이 도착하기 전에 번역이 시작되면 블록이 빠진 채 번역됩니다.
+   *  번역은 한 번만 하므로(비용) 그 상태가 그대로 굳습니다. */
+  const [blocksLoaded, setBlocksLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -62,6 +67,7 @@ export default function Export() {
   const [translated, setTranslated] = useState<{
     portfolio: PortfolioRow;
     projects: PortfolioProjectRow[];
+    blocks: BlockMap;
   } | null>(null);
   const [translating, setTranslating] = useState(false);
   const [translateError, setTranslateError] = useState<string | null>(null);
@@ -80,6 +86,19 @@ export default function Export() {
         if (!alive) return;
         setPortfolio(p);
         setProjects(ps);
+
+        // 블록도 함께. 미리보기에 보이는 것이 곧 PDF 입니다.
+        listBlocks(p.id)
+          .then((m) => {
+            if (!alive) return;
+            setBlocks(m);
+            setBlocksLoaded(true);
+          })
+          .catch(() => {
+            // 블록을 못 읽어도 나머지는 내보낼 수 있어야 합니다. 번역이
+            // 영영 막히지 않도록 실패도 '끝났다'로 칩니다.
+            if (alive) setBlocksLoaded(true);
+          });
 
         // 이미지도 함께 읽습니다. 미리보기에 보이는 것이 곧 PDF 이므로
         // 여기서 빠지면 파일에서도 빠집니다.
@@ -131,11 +150,11 @@ export default function Export() {
   // 전부 무시됐습니다 — 사용자 눈에는 스피너가 끝없이 도는 것처럼 보입니다.
   // translating은 가드로만 쓰고 재실행 트리거에서는 빼야 합니다.
   useEffect(() => {
-    if (lang !== "영어" || !portfolio || translated || translating) return;
+    if (lang !== "영어" || !portfolio || !blocksLoaded || translated || translating) return;
     let alive = true;
     setTranslating(true);
     setTranslateError(null);
-    translatePortfolioToEnglish(portfolio, projects)
+    translatePortfolioToEnglish(portfolio, projects, blocks)
       .then((result) => {
         if (alive) setTranslated(result);
       })
@@ -154,13 +173,14 @@ export default function Export() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- translating은
     // 가드 용도일 뿐, 재실행 트리거로 넣으면 위 주석의 무한 대기 버그가 남.
-  }, [lang, portfolio, projects, translated]);
+  }, [lang, portfolio, projects, blocksLoaded, translated]);
 
   // 화면(미리보기·PDF 캡처·파일명)이 실제로 그릴 대상. 영어를 골랐고 번역이
   // 끝났으면 번역본을, 그 외에는 원문을 씁니다 — 아직 번역 중이거나 실패한
   // 동안은 원문을 계속 보여줘서 화면이 비지 않게 합니다.
   const displayPortfolio = lang === "영어" && translated ? translated.portfolio : portfolio;
   const displayProjects = lang === "영어" && translated ? translated.projects : projects;
+  const displayBlocks = lang === "영어" && translated ? translated.blocks : blocks;
 
   const startExport = async () => {
     if (!portfolio) return;
@@ -441,6 +461,7 @@ export default function Export() {
                 projects={displayProjects}
                 coverUrl={coverUrl}
                 images={images}
+                blocks={displayBlocks}
                 eagerImages
                 bodyFontStack={bodyFontStack}
                 lang={lang === "영어" ? "en" : "ko"}

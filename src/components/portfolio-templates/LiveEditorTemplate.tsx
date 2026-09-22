@@ -2,6 +2,7 @@ import { getPortfolioPalette, MONO_STACK, byDensity } from "../../lib/portfolioT
 import type { PortfolioTemplateProps } from "./types";
 import { caseStudyFields, briefLead, visibleProjects } from "./types";
 import ProjectImages from "./ProjectImages";
+import BlockList from "./BlockList";
 
 const fieldLabels: Array<{ key: "context" | "problem" | "execution" | "outcome" | "reflection"; label: string }> = [
   { key: "context", label: "background" },
@@ -31,7 +32,7 @@ function slugify(s: string) {
  * `project/{slug}.md` 라는 가짜 파일로, 각 필드를 YAML 프런트매터처럼,
  * 스택 배지를 npm 배지 스타일 pill로 표현합니다.
  */
-export default function LiveEditorTemplate({ portfolio, projects, images = {}, eagerImages }: PortfolioTemplateProps) {
+export default function LiveEditorTemplate({ portfolio, projects, images = {}, blocks = {}, eagerImages }: PortfolioTemplateProps) {
   // 이 템플릿의 정체성상 항상 다크 팔레트를 씁니다.
   const palette = getPortfolioPalette("dark");
   const visible = visibleProjects(projects, images);
@@ -162,6 +163,19 @@ export default function LiveEditorTemplate({ portfolio, projects, images = {}, e
                       </p>
                     );
                   })}
+
+                  {/* 이 템플릿의 문법(// label 아래 값)을 BlockList 도
+                      따르도록 라벨 모양만 바꿔 넘깁니다. */}
+                  <BlockList
+                    projectId={p.id}
+                    blocks={blocks}
+                    textColor={palette.textMuted}
+                    labelColor={palette.textFaint}
+                    borderColor={palette.border}
+                    labelClassName="text-[14px]"
+                    bodyClassName="text-[14px] leading-[1.8] whitespace-pre-wrap"
+                    className={byDensity(d, { roomy: "space-y-5", normal: "space-y-3", tight: "space-y-2" })}
+                  />
                 </div>
 
                 <p className="text-[13px] mt-3" style={{ color: palette.textFaint }}>

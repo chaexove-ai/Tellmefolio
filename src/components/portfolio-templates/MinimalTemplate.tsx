@@ -2,6 +2,7 @@ import { getPortfolioPalette, byDensity } from "../../lib/portfolioTheme";
 import type { PortfolioTemplateProps } from "./types";
 import { caseStudyFields, briefLead, visibleProjects } from "./types";
 import ProjectImages from "./ProjectImages";
+import BlockList from "./BlockList";
 
 type FieldKey = "context" | "problem" | "execution" | "outcome" | "reflection";
 
@@ -35,7 +36,7 @@ const fieldLabelsByLang: Record<"ko" | "en", Array<{ key: FieldKey; label: strin
  * 무채색(grayscale)으로 눌러서 튀지 않게 — "여백이 주인공"이라는
  * 컨셉을 색이 방해하지 않게 하려는 선택입니다.
  */
-export default function MinimalTemplate({ portfolio, projects, coverUrl, images = {}, eagerImages, bodyFontStack, lang = "ko" }: PortfolioTemplateProps) {
+export default function MinimalTemplate({ portfolio, projects, coverUrl, images = {}, blocks = {}, eagerImages, bodyFontStack, lang = "ko" }: PortfolioTemplateProps) {
   const palette = getPortfolioPalette(portfolio.color_theme);
   const visible = visibleProjects(projects, images);
   const d = portfolio.density;
@@ -116,6 +117,17 @@ export default function MinimalTemplate({ portfolio, projects, coverUrl, images 
                     </div>
                   );
                 })}
+
+                <BlockList
+                  projectId={p.id}
+                  blocks={blocks}
+                  textColor={palette.textMuted}
+                  labelColor={palette.textFaint}
+                  borderColor={palette.border}
+                  labelClassName="text-[12px] mb-1.5"
+                  bodyClassName="text-[15px] leading-[1.9] whitespace-pre-wrap"
+                  className={byDensity(d, { roomy: "mt-9 space-y-9", normal: "mt-7 space-y-7", tight: "mt-4 space-y-4" })}
+                />
               </div>
             </div>
           ))}

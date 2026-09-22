@@ -5,6 +5,7 @@ import type { PortfolioProjectRow, PortfolioRow } from "../lib/portfolios";
 import { DEFAULT_FONT, FONT_STACKS } from "../lib/portfolioTheme";
 import PortfolioRenderer from "../components/portfolio-templates/PortfolioRenderer";
 import type { ProjectImageMap } from "../components/portfolio-templates/types";
+import { listBlocks, type BlockMap } from "../lib/blocks";
 /** 프로젝트 이미지를 템플릿이 쓰는 모양으로 읽습니다.
  *  PDF·공개 링크 둘 다 이 경로를 씁니다 — 편집기와 다른 방법으로 읽으면
  *  "편집기엔 보이는데 PDF엔 없는" 상태가 생깁니다. */
@@ -47,6 +48,7 @@ export default function PublicPortfolio() {
   const [projects, setProjects] = useState<PortfolioProjectRow[]>([]);
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const [images, setImages] = useState<ProjectImageMap>({});
+  const [blocks, setBlocks] = useState<BlockMap>({});
 
   useEffect(() => {
     if (!id) {
@@ -70,6 +72,10 @@ export default function PublicPortfolio() {
         // 늦게 보이면, 링크를 연 사람에게 빈 화면이 더 길어집니다.
         loadImageMap(result.projects.map((p) => p.id))
           .then((m) => alive && setImages(m))
+          .catch(() => {});
+
+        listBlocks(result.portfolio.id)
+          .then((m) => alive && setBlocks(m))
           .catch(() => {});
 
         if (result.portfolio.cover_image_path) {
@@ -135,6 +141,7 @@ export default function PublicPortfolio() {
         projects={projects}
         coverUrl={coverUrl}
         images={images}
+        blocks={blocks}
         bodyFontStack={bodyFontStack}
       />
 

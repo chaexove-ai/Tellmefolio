@@ -2,6 +2,7 @@ import { getPortfolioPalette, SERIF_STACK, byDensity } from "../../lib/portfolio
 import type { PortfolioTemplateProps } from "./types";
 import { caseStudyFields, briefLead, visibleProjects } from "./types";
 import ProjectImages from "./ProjectImages";
+import BlockList from "./BlockList";
 
 const romanNumerals = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
 
@@ -23,7 +24,7 @@ const fieldLabels: Array<{ key: "context" | "problem" | "execution" | "outcome" 
  * 세리프 제목 + 여백으로 "정제된" 인상을 만듭니다 — 카드나 배지 없이
  * 가로줄(rule)만으로 구획을 나눕니다.
  */
-export default function ResearchTemplate({ portfolio, projects, images = {}, eagerImages, bodyFontStack, lang = "ko" }: PortfolioTemplateProps) {
+export default function ResearchTemplate({ portfolio, projects, images = {}, blocks = {}, eagerImages, bodyFontStack, lang = "ko" }: PortfolioTemplateProps) {
   const palette = getPortfolioPalette(portfolio.color_theme);
   const d = portfolio.density;
   const isTwoCol = portfolio.layout === "2col";
@@ -151,6 +152,15 @@ export default function ResearchTemplate({ portfolio, projects, images = {}, eag
                     </div>
                   );
                 })}
+
+                <BlockList
+                  projectId={p.id}
+                  blocks={blocks}
+                  textColor={palette.textMuted}
+                  labelColor={palette.textFaint}
+                  borderColor={palette.border}
+                  className={byDensity(d, { roomy: "mt-7 space-y-7", normal: "mt-5 space-y-5", tight: "mt-3 space-y-3" })}
+                />
               </div>
             </section>
           ))}

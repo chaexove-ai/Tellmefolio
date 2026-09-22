@@ -3,6 +3,7 @@ import { Maximize2 } from "lucide-react";
 import PortfolioRenderer from "./portfolio-templates/PortfolioRenderer";
 import { visibleProjects } from "./portfolio-templates/types";
 import type { ProjectImageMap } from "./portfolio-templates/types";
+import type { BlockMap } from "../lib/blocks";
 import { FONT_STACKS, DEFAULT_FONT } from "../lib/portfolioTheme";
 import type { PortfolioProjectRow, PortfolioRow } from "../lib/portfolios";
 
@@ -37,11 +38,12 @@ interface Props {
   coverUrl: string | null;
   /** [2026-09-22] 프로젝트별 이미지. */
   images?: ProjectImageMap;
+  blocks?: BlockMap;
   /** 전체화면으로 크게 보기. 없으면 버튼을 그리지 않습니다. */
   onExpand?: () => void;
 }
 
-export default function EditorPreview({ portfolio, projects, coverUrl, images = {}, onExpand }: Props) {
+export default function EditorPreview({ portfolio, projects, coverUrl, images = {}, blocks = {}, onExpand }: Props) {
   const frameRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(1);
   const [shown, setShown] = useState({ portfolio, projects });
@@ -72,7 +74,7 @@ export default function EditorPreview({ portfolio, projects, coverUrl, images = 
   }, []);
 
   const bodyFontStack = FONT_STACKS[shown.portfolio.font] ?? FONT_STACKS[DEFAULT_FONT];
-  const filled = visibleProjects(shown.projects, images);
+  const filled = visibleProjects(shown.projects, images, blocks);
 
   return (
     <div className="space-y-2">
@@ -107,6 +109,7 @@ export default function EditorPreview({ portfolio, projects, coverUrl, images = 
               projects={shown.projects}
               coverUrl={coverUrl}
               images={images}
+              blocks={blocks}
               bodyFontStack={bodyFontStack}
             />
           </div>

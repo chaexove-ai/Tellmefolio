@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { Check, GripVertical, ImagePlus, Info, LoaderCircle, Plus, Trash2, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, GripVertical, ImagePlus, Info, LoaderCircle, Minus, Plus, Trash2, Type, X } from "lucide-react";
 import {
   getPortfolioWithProjects,
   updatePortfolioProject,
@@ -26,6 +26,17 @@ import PortfolioRenderer from "../../components/portfolio-templates/PortfolioRen
 import type { ProjectImageMap } from "../../components/portfolio-templates/types";
 import { FONT_STACKS, DEFAULT_FONT } from "../../lib/portfolioTheme";
 import { shrinkImage } from "../../lib/images";
+import {
+  listBlocks,
+  createBlock,
+  updateBlock,
+  deleteBlock,
+  reorderBlocks,
+  type BlockMap,
+  type BlockRow,
+  type BlockContent,
+  type TextStyle,
+} from "../../lib/blocks";
 import { useAuth } from "../../auth/AuthProvider";
 
 interface EvidenceItem {
@@ -145,6 +156,12 @@ export default function PortfolioEditor() {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   /** 미리보기 전체화면. */
   const [expanded, setExpanded] = useState(false);
+
+  /** [2026-09-22] 자유 블록. 5필드 뒤에 사용자가 원하는 대로 쌓습니다.
+   *  설계는 docs/editor-freedom.md. */
+  const [blocks, setBlocks] = useState<BlockMap>({});
+  const [blockBusy, setBlockBusy] = useState(false);
+  const [blockError, setBlockError] = useState<string | null>(null);
   /** 미리보기는 xl(1280px) 이상에서만 자리가 납니다. 그 아래에서는 폼과
    *  미리보기가 둘 다 좁아져 양쪽 다 못 쓰게 되므로 감추고, 스타일 패널만
    *  왼쪽 열로 내려보냅니다(안 그러면 좁은 화면에서 스타일을 바꿀 방법이
@@ -324,6 +341,73 @@ export default function PortfolioEditor() {
     }
   };
 
+  /* ---------------- 자유 블록 ---------------- */
+
+  const currentBlocks = currentProjectId ? (blocks[currentProjectId] ?? []) : [];
+
+  const setCurrentBlocks = (next: BlockRow[]) => {
+    if (!currentProjectId) return;
+    setBlocks((prev) => ({ ...prev, [currentProjectId]: next }));
+  };
+
+  const addBlock = async (kind: "text" | "divider") => {
+    if (!currentProjectId || !id) return;
+    setBlockBusy(true);
+    setBlockError(null);
+    try {
+      const row = await createBlock({
+        portfolioId: id,
+        projectId: currentProjectId,
+        kind,
+        position: currentBlocks.length,
+      });
+      setCurrentBlocks([...currentBlocks, row]);
+    } catch (e) {
+      setBlockError(e instanceof PortfolioError ? e.message : "블록을 추가하지 못했습니다.");
+    } finally {
+      setBlockBusy(false);
+    }
+  };
+
+  /** 타이핑할 때마다 서버를 부르지 않습니다 — 화면 상태만 바꾸고,
+   *  저장은 칸에서 포커스가 빠질 때 한 번 합니다. */
+  const patchBlockLocal = (blockId: string, content: BlockContent) => {
+    setCurrentBlocks(currentBlocks.map((b) => (b.id === blockId ? { ...b, content } : b)));
+  };
+
+  const saveBlock = async (block: BlockRow) => {
+    try {
+      await updateBlock(block.id, { content: block.content });
+    } catch (e) {
+      setBlockError(e instanceof PortfolioError ? e.message : "블록을 저장하지 못했습니다.");
+    }
+  };
+
+  const removeBlock = async (blockId: string) => {
+    const before = currentBlocks;
+    setCurrentBlocks(before.filter((b) => b.id !== blockId));
+    try {
+      await deleteBlock(blockId);
+    } catch (e) {
+      setCurrentBlocks(before);
+      setBlockError(e instanceof PortfolioError ? e.message : "블록을 삭제하지 못했습니다.");
+    }
+  };
+
+  const moveBlock = async (index: number, dir: -1 | 1) => {
+    const to = index + dir;
+    if (to < 0 || to >= currentBlocks.length) return;
+    const next = [...currentBlocks];
+    [next[index], next[to]] = [next[to], next[index]];
+    const renumbered = next.map((b, i) => ({ ...b, position: i }));
+    setCurrentBlocks(renumbered);
+    try {
+      await reorderBlocks(renumbered);
+    } catch (e) {
+      setBlockError(e instanceof PortfolioError ? e.message : "순서를 저장하지 못했습니다.");
+    }
+  };
+
   useEffect(() => {
     if (!id) {
       setLoadError("포트폴리오 id가 없습니다.");
@@ -345,6 +429,11 @@ export default function PortfolioEditor() {
         if (ps.length > 0) {
           void loadImages(ps.map((x) => x.id));
         }
+        listBlocks(p.id)
+          .then((m) => alive && setBlocks(m))
+          .catch(() => {
+            // 블록을 못 읽어도 본문은 편집할 수 있어야 합니다.
+          });
         setLastSavedAt(new Date(p.updated_at).getTime());
         if (p.cover_image_path) {
           // 표지를 못 불러와도 나머지 미리보기는 그려져야 하므로 조용히
@@ -997,6 +1086,134 @@ export default function PortfolioEditor() {
                   </p>
                 )}
               </div>
+
+              {/* [2026-09-22] 자유 블록. 위 다섯 칸을 대체하지 않고 뒤에
+                  더합니다 — AI 초안과 직무 전환이 계속 다섯 칸에 쓰기
+                  때문입니다(docs/editor-freedom.md 3.2). */}
+              <div className="border-t border-neutral-800 pt-4">
+                <div className="flex items-center justify-between gap-3 mb-3">
+                  <span className="text-xs font-medium text-neutral-200">
+                    직접 추가한 내용
+                  </span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => void addBlock("text")}
+                      disabled={blockBusy}
+                      className="inline-flex items-center gap-1 rounded-full border border-dashed border-neutral-700 px-2.5 py-1 text-xs text-neutral-400 hover:border-neutral-500 hover:text-neutral-200 disabled:opacity-40"
+                    >
+                      <Type size={12} strokeWidth={2} />글 추가
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void addBlock("divider")}
+                      disabled={blockBusy}
+                      className="inline-flex items-center gap-1 rounded-full border border-dashed border-neutral-700 px-2.5 py-1 text-xs text-neutral-400 hover:border-neutral-500 hover:text-neutral-200 disabled:opacity-40"
+                    >
+                      <Minus size={12} strokeWidth={2} />구분선
+                    </button>
+                  </div>
+                </div>
+
+                {currentBlocks.length === 0 && (
+                  <p className="text-xs text-neutral-600">
+                    다섯 칸에 안 맞는 내용은 여기에 원하는 만큼 쌓으세요. 제목을
+                    직접 붙일 수 있습니다.
+                  </p>
+                )}
+
+                <div className="space-y-3">
+                  {currentBlocks.map((b, i) => (
+                    <div
+                      key={b.id}
+                      className="rounded-lg border border-neutral-800 p-2.5 space-y-2"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs text-neutral-600">
+                          {b.content.kind === "divider" ? "구분선" : "글"}
+                        </span>
+                        <div className="flex items-center gap-1 shrink-0">
+                          {b.content.kind === "text" && (
+                            <select
+                              value={b.content.style}
+                              onChange={(e) => {
+                                const content = {
+                                  ...b.content,
+                                  style: e.target.value as TextStyle,
+                                } as BlockContent;
+                                patchBlockLocal(b.id, content);
+                                void updateBlock(b.id, { content });
+                              }}
+                              className="bg-transparent border border-neutral-800 rounded px-1.5 py-0.5 text-xs text-neutral-400"
+                              aria-label="글 크기"
+                            >
+                              <option value="heading" className="bg-neutral-900">제목</option>
+                              <option value="body" className="bg-neutral-900">본문</option>
+                              <option value="small" className="bg-neutral-900">작게</option>
+                            </select>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => void moveBlock(i, -1)}
+                            disabled={i === 0}
+                            aria-label="위로"
+                            className="text-neutral-600 hover:text-neutral-300 disabled:opacity-25 p-0.5"
+                          >
+                            <ArrowUp size={13} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void moveBlock(i, 1)}
+                            disabled={i === currentBlocks.length - 1}
+                            aria-label="아래로"
+                            className="text-neutral-600 hover:text-neutral-300 disabled:opacity-25 p-0.5"
+                          >
+                            <ArrowDown size={13} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void removeBlock(b.id)}
+                            aria-label="블록 삭제"
+                            className="text-neutral-600 hover:text-brand p-0.5"
+                          >
+                            <X size={13} />
+                          </button>
+                        </div>
+                      </div>
+
+                      {b.content.kind === "text" && (
+                        <>
+                          <input
+                            value={b.content.label}
+                            onChange={(e) =>
+                              patchBlockLocal(b.id, { ...b.content, label: e.target.value } as BlockContent)
+                            }
+                            onBlur={() => void saveBlock(b)}
+                            placeholder="제목 (선택)"
+                            className="field py-1.5 text-sm"
+                          />
+                          <textarea
+                            value={b.content.text}
+                            onChange={(e) =>
+                              patchBlockLocal(b.id, { ...b.content, text: e.target.value } as BlockContent)
+                            }
+                            onBlur={() => void saveBlock(b)}
+                            rows={3}
+                            placeholder="내용"
+                            className="field-area text-base leading-relaxed"
+                          />
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {blockError && (
+                  <p role="alert" className="text-xs text-brand mt-2">
+                    {blockError}
+                  </p>
+                )}
+              </div>
             </>
           )}
         </div>
@@ -1175,6 +1392,7 @@ export default function PortfolioEditor() {
             projects={previewProjects}
             coverUrl={coverUrl}
             images={previewImages}
+            blocks={blocks}
             onExpand={() => setExpanded(true)}
           />
         </aside>
@@ -1209,6 +1427,7 @@ export default function PortfolioEditor() {
                 projects={previewProjects}
                 coverUrl={coverUrl}
                 images={previewImages}
+                blocks={blocks}
                 bodyFontStack={FONT_STACKS[portfolio.font] ?? FONT_STACKS[DEFAULT_FONT]}
               />
             </div>
