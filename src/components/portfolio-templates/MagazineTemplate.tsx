@@ -35,7 +35,7 @@ const fieldLabelsByLang: Record<"ko" | "en", Array<{ key: FieldKey; label: strin
  * 요소로 삼아 한 편의 "기사"처럼 배치합니다. layout이 2단이면 프로젝트를
  * 좌우로 나눠 잡지 지면처럼 두 편씩 보이게 합니다.
  */
-export default function MagazineTemplate({ portfolio, projects, coverUrl, images = {}, blocks = {}, eagerImages, bodyFontStack, lang = "ko" }: PortfolioTemplateProps) {
+export default function MagazineTemplate({ portfolio, projects, coverUrl, images = {}, blocks = {}, blockEditor, eagerImages, bodyFontStack, lang = "ko" }: PortfolioTemplateProps) {
   const palette = getPortfolioPalette(portfolio.color_theme);
   const visible = visibleProjects(projects, images);
   const isTwoCol = portfolio.layout === "2col";
@@ -146,6 +146,7 @@ export default function MagazineTemplate({ portfolio, projects, coverUrl, images
                 <BlockList
                   projectId={p.id}
                   blocks={blocks}
+                  editor={blockEditor}
                   textColor={palette.textMuted}
                   labelColor={palette.textFaint}
                   borderColor={palette.border}

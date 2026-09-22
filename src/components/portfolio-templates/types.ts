@@ -1,5 +1,5 @@
 import type { PortfolioProjectRow, PortfolioRow } from "../../lib/portfolios";
-import type { BlockMap } from "../../lib/blocks";
+import type { BlockMap, BlockEditorApi } from "../../lib/blocks";
 import { blockHasContent } from "../../lib/blocks";
 
 /** 프로젝트 id → 그 프로젝트의 이미지들(공개 URL + 설명). 템플릿은 경로가
@@ -25,6 +25,9 @@ export interface PortfolioTemplateProps {
   images?: ProjectImageMap;
   /** [2026-09-22] 프로젝트에 붙은 자유 블록. 5필드 뒤에 그립니다. */
   blocks?: BlockMap;
+  /** [2026-09-23] 있으면 블록을 그 자리에서 고칠 수 있습니다. 전체화면
+   *  미리보기에서만 넘깁니다 — 내보내기·공개 링크는 읽기 전용입니다. */
+  blockEditor?: BlockEditorApi;
   /** 이미지를 lazy 가 아니라 즉시 받습니다. PDF 내보내기에서 반드시 true —
    *  html2canvas 는 아직 안 받아진 이미지를 빈칸으로 캡처합니다. 공개
    *  링크처럼 사람이 스크롤하며 보는 화면에서는 끄는 편이 빠릅니다. */

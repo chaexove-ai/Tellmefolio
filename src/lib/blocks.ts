@@ -57,6 +57,28 @@ export interface BlockRow {
 /** 프로젝트 id → 그 프로젝트의 블록들. 템플릿이 받는 모양. */
 export type BlockMap = Record<string, BlockRow[]>;
 
+/**
+ * [2026-09-23] 미리보기에서 바로 고치기 위한 창구.
+ *
+ * 전에는 왼쪽 폼에서 블록을 추가하고 오른쪽 미리보기에서 결과를
+ * 확인해야 했습니다 — 한 가지를 고치는데 두 곳을 봐야 하는 구조라
+ * 불편했습니다. 이제 전체화면 미리보기가 편집면입니다.
+ *
+ * 오른쪽 패널의 작은 미리보기는 편집면으로 쓰지 않습니다: zoom 으로
+ * 눌려 있어 한글 입력이 어긋나고, 250ms 디바운스로 그려지는 복사본이라
+ * 입력과 화면이 서로 싸웁니다.
+ *
+ * 템플릿은 이 객체가 있을 때만 편집 도구를 그립니다. 없으면(내보내기,
+ * 공개 링크, 작은 미리보기) 평소처럼 읽기 전용입니다.
+ */
+export interface BlockEditorApi {
+  /** atIndex 자리에 끼워 넣습니다. 끝에 붙이려면 목록 길이를 넘깁니다. */
+  add: (projectId: string, kind: BlockKind, atIndex: number) => void;
+  update: (projectId: string, blockId: string, content: BlockContent) => void;
+  move: (projectId: string, index: number, dir: -1 | 1) => void;
+  remove: (projectId: string, blockId: string) => void;
+}
+
 /* ------------------------------------------------------------------ */
 /* 파서 — 바깥에서 들어온 것을 믿지 않습니다                            */
 /* ------------------------------------------------------------------ */

@@ -32,7 +32,7 @@ function slugify(s: string) {
  * `project/{slug}.md` 라는 가짜 파일로, 각 필드를 YAML 프런트매터처럼,
  * 스택 배지를 npm 배지 스타일 pill로 표현합니다.
  */
-export default function LiveEditorTemplate({ portfolio, projects, images = {}, blocks = {}, eagerImages }: PortfolioTemplateProps) {
+export default function LiveEditorTemplate({ portfolio, projects, images = {}, blocks = {}, blockEditor, eagerImages }: PortfolioTemplateProps) {
   // 이 템플릿의 정체성상 항상 다크 팔레트를 씁니다.
   const palette = getPortfolioPalette("dark");
   const visible = visibleProjects(projects, images);
@@ -169,6 +169,7 @@ export default function LiveEditorTemplate({ portfolio, projects, images = {}, b
                   <BlockList
                     projectId={p.id}
                     blocks={blocks}
+                    editor={blockEditor}
                     textColor={palette.textMuted}
                     labelColor={palette.textFaint}
                     borderColor={palette.border}
