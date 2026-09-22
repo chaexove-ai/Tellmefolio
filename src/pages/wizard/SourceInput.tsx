@@ -69,6 +69,28 @@ export default function SourceInput() {
   const [reposAuthError, setReposAuthError] = useState(false);
   const [reconnecting, setReconnecting] = useState(false);
   const [selected, setSelected] = useState<Set<number>>(new Set());
+  /**
+   * [2026-09-23] 자료함에서 "이번 생성에 뺄 것".
+   *
+   * 자료함 행의 체크 표시가 <span> 이라 눌러도 아무 일이 없었습니다.
+   * 체크박스처럼 생겼는데 동작하지 않는 것이고, 화면 아래 안내는
+   * "선택 해제한 자료는 AI 초안 생성에 포함되지 않으며"라고 그 없는
+   * 기능을 설명하고 있었습니다.
+   *
+   * 자료함에서 빼는 것(X)과는 다릅니다. X 는 목록에서 사라지고, 체크
+   * 해제는 목록에 남은 채 이번 생성에만 빠집니다 — 안내 문구가 말하는
+   * "언제든지 다시 추가할 수 있습니다"가 이 동작입니다.
+   */
+  const [excluded, setExcluded] = useState<Set<string>>(new Set());
+
+  const isIncluded = (key: string) => !excluded.has(key);
+  const toggleIncluded = (key: string) =>
+    setExcluded((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
 
   const [repoUrl, setRepoUrl] = useState("");
   const [repoAdding, setRepoAdding] = useState(false);
@@ -173,11 +195,22 @@ export default function SourceInput() {
     setSelected(new Set());
     setLinks([]);
     setNote("");
+    // 체크 해제 기록도 같이 지웁니다. 안 그러면 나중에 같은 저장소를
+    // 다시 담았을 때 예전 해제 상태를 물려받아, 담았는데 생성에는 안
+    // 들어가는 상태가 됩니다.
+    setExcluded(new Set());
   };
 
   const selectedRepos = repos.filter((r) => selected.has(r.id));
   const trayCount = selectedRepos.length + links.length + (note.trim() ? 1 : 0);
-  const hasSelection = trayCount > 0;
+
+  // 생성에 실제로 들어가는 것만 셉니다. 전부 체크 해제해놓고 "다음"이
+  // 눌리면, 자료 없이 초안을 만들라고 보내는 꼴입니다.
+  const includedRepos = selectedRepos.filter((r) => isIncluded(`repo:${r.id}`));
+  const includedLinks = links.filter((l) => isIncluded(`link:${l.id}`));
+  const includedNote = note.trim() && isIncluded("note") ? note : "";
+  const includedCount = includedRepos.length + includedLinks.length + (includedNote ? 1 : 0);
+  const hasSelection = includedCount > 0;
 
   /**
    * 다음 단계로 넘어가기 전에 선택한 저장소의 README 와 언어 구성을 모읍니다.
@@ -189,10 +222,12 @@ export default function SourceInput() {
    * 사용자는 뭘 고쳐야 할지 알 수 없습니다. 어느 저장소가 빠졌는지만 알립니다.
    */
   const startDraft = async () => {
-    const chosen = selectedRepos;
+    const chosen = includedRepos;
 
     if (chosen.length === 0) {
-      navigate("/wizard/draft", { state: { materials: [], note, links } });
+      navigate("/wizard/draft", {
+        state: { materials: [], note: includedNote, links: includedLinks },
+      });
       return;
     }
 
@@ -209,7 +244,7 @@ export default function SourceInput() {
         return;
       }
 
-      navigate("/wizard/draft", { state: { materials, note, links, failed } });
+      navigate("/wizard/draft", { state: { materials, note: includedNote, links: includedLinks, failed } });
     } catch (e) {
       setCollectError(
         e instanceof GitHubError ? e.message : "자료를 모으는 중 문제가 생겼습니다."
@@ -243,7 +278,12 @@ export default function SourceInput() {
             자료함
           </span>
           {trayCount > 0 && (
-            <span className="badge bg-brand/10 text-brand">{trayCount}개 반영 중</span>
+            <span className="badge bg-brand/10 text-brand">
+              {includedCount}개 반영 중
+              {includedCount < trayCount && (
+                <span className="text-brand/60"> · {trayCount - includedCount}개 뺌</span>
+              )}
+            </span>
           )}
         </div>
 
@@ -442,13 +482,24 @@ export default function SourceInput() {
         <div className="flex flex-col">
           {selectedRepos.map((r) => (
             <div key={r.id} className="flex items-center gap-3 border-t border-neutral-800 py-3 first:border-t-0 first:pt-0">
-              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-brand-solid text-white">
+              <button
+                type="button"
+                onClick={() => toggleIncluded(`repo:${r.id}`)}
+                aria-pressed={isIncluded(`repo:${r.id}`)}
+                aria-label={`${r.name} 이번 생성에서 ${isIncluded(`repo:${r.id}`) ? "빼기" : "넣기"}`}
+                title={isIncluded(`repo:${r.id}`) ? "이번 생성에 포함됩니다 — 누르면 뺍니다" : "이번 생성에서 빠져 있습니다 — 누르면 넣습니다"}
+                className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${
+                  isIncluded(`repo:${r.id}`)
+                    ? "bg-brand-solid border-brand-solid text-white"
+                    : "border-neutral-700 text-transparent hover:border-neutral-500"
+                }`}
+              >
                 <Check size={12} strokeWidth={3} />
-              </span>
+              </button>
               <span className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-lg bg-neutral-800 text-neutral-100">
                 <GitHubIcon size={16} />
               </span>
-              <div className="min-w-0 flex-1">
+              <div className={`min-w-0 flex-1 transition-opacity ${isIncluded(`repo:${r.id}`) ? "" : "opacity-40"}`}>
                 <p className="truncate text-xs text-neutral-100">{r.name}</p>
                 <div className="mt-1 flex items-center gap-2 text-xs text-neutral-500">
                   <span className="badge bg-neutral-800 text-neutral-400">README</span>
@@ -474,13 +525,24 @@ export default function SourceInput() {
 
           {links.map((l) => (
             <div key={l.id} className="flex items-center gap-3 border-t border-neutral-800 py-3 first:border-t-0 first:pt-0">
-              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-brand-solid text-white">
+              <button
+                type="button"
+                onClick={() => toggleIncluded(`link:${l.id}`)}
+                aria-pressed={isIncluded(`link:${l.id}`)}
+                aria-label={`${l.meta} 이번 생성에서 ${isIncluded(`link:${l.id}`) ? "빼기" : "넣기"}`}
+                title={isIncluded(`link:${l.id}`) ? "이번 생성에 포함됩니다 — 누르면 뺍니다" : "이번 생성에서 빠져 있습니다 — 누르면 넣습니다"}
+                className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${
+                  isIncluded(`link:${l.id}`)
+                    ? "bg-brand-solid border-brand-solid text-white"
+                    : "border-neutral-700 text-transparent hover:border-neutral-500"
+                }`}
+              >
                 <Check size={12} strokeWidth={3} />
-              </span>
+              </button>
               <span className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-lg bg-brand/10 text-brand">
                 <Link2 size={16} strokeWidth={1.75} />
               </span>
-              <div className="min-w-0 flex-1">
+              <div className={`min-w-0 flex-1 transition-opacity ${isIncluded(`link:${l.id}`) ? "" : "opacity-40"}`}>
                 <p className="truncate text-xs text-neutral-100">{l.meta}</p>
                 <div className="mt-1">
                   <span className="badge bg-brand/10 text-brand">웹</span>
@@ -499,13 +561,24 @@ export default function SourceInput() {
 
           {note.trim() ? (
             <div className="flex items-center gap-3 border-t border-neutral-800 py-3 first:border-t-0 first:pt-0">
-              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-brand-solid text-white">
+              <button
+                type="button"
+                onClick={() => toggleIncluded("note")}
+                aria-pressed={isIncluded("note")}
+                aria-label={`${"메모"} 이번 생성에서 ${isIncluded("note") ? "빼기" : "넣기"}`}
+                title={isIncluded("note") ? "이번 생성에 포함됩니다 — 누르면 뺍니다" : "이번 생성에서 빠져 있습니다 — 누르면 넣습니다"}
+                className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${
+                  isIncluded("note")
+                    ? "bg-brand-solid border-brand-solid text-white"
+                    : "border-neutral-700 text-transparent hover:border-neutral-500"
+                }`}
+              >
                 <Check size={12} strokeWidth={3} />
-              </span>
+              </button>
               <span className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-lg bg-neutral-900 border border-neutral-800 text-neutral-400">
                 <StickyNote size={16} strokeWidth={1.75} />
               </span>
-              <div className="min-w-0 flex-1">
+              <div className={`min-w-0 flex-1 transition-opacity ${isIncluded("note") ? "" : "opacity-40"}`}>
                 <p className="truncate text-xs text-neutral-100">
                   {note.trim().slice(0, 40)}
                   {note.trim().length > 40 ? "…" : ""}
@@ -538,7 +611,7 @@ export default function SourceInput() {
         <div className="mt-4 flex justify-end gap-2">
           {trayCount > 0 && (
             <button className="btn-secondary" onClick={clearAll}>
-              전체 해제
+              자료함 비우기
             </button>
           )}
           <button
@@ -570,8 +643,8 @@ export default function SourceInput() {
 
       <p className="text-xs text-neutral-600 flex items-start gap-1.5">
         <Ban size={13} strokeWidth={1.5} className="shrink-0 mt-0.5" />
-        선택 해제한 자료는 AI 초안 생성에 포함되지 않으며, 언제든지 다시 추가할 수
-        있습니다.
+        체크를 끈 자료는 이번 초안 생성에 들어가지 않습니다. 자료함에는 그대로
+        남아 있어서 다시 켜면 됩니다. X 를 누르면 자료함에서 아예 빠집니다.
       </p>
     </div>
   );
