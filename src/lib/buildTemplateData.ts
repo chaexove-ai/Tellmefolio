@@ -30,8 +30,19 @@ export function buildTemplateData(input: {
   blocks?: BlockMap;
   coverUrl?: string | null;
   lang?: "ko" | "en";
+  /** 연락처. 계정 이메일과 연결된 GitHub 에서 옵니다. 비면 템플릿의
+   *  연락처 버튼이 data-tf-if 로 사라집니다. */
+  contact?: { email?: string | null; github?: string | null; site?: string | null };
 }): TemplateData {
-  const { portfolio, projects, images = {}, blocks = {}, coverUrl = null, lang = "ko" } = input;
+  const {
+    portfolio,
+    projects,
+    images = {},
+    blocks = {},
+    coverUrl = null,
+    lang = "ko",
+    contact = {},
+  } = input;
 
   const projectData = projects
     .map((p) => {
@@ -72,12 +83,31 @@ export function buildTemplateData(input: {
     // 생기면 결과물이 미완성으로 보입니다.
     .filter((p) => p.name || p.lead || p.fields.length > 0 || p.images.length > 0 || p.blocks.length > 0);
 
+  // 프로젝트에 적은 스택을 모읍니다. 템플릿에 기술 목록을 박아두면
+  // 누가 쓰든 같은 기술이 적히므로, 템플릿은 자리만 두고 값은 여기서 옵니다.
+  const stack: string[] = [];
+  for (const p of projectData) {
+    for (const t of p.stack) if (!stack.includes(t)) stack.push(t);
+  }
+
+  const email = (contact.email ?? "").trim();
+
   return {
     title: portfolio.title.trim(),
     summary: (portfolio.summary ?? "").trim(),
     job: portfolio.job?.trim() || "",
     year: portfolio.year?.trim() || String(new Date(portfolio.created_at).getFullYear()),
     cover: coverUrl ?? "",
+    // 숫자는 실제로 셀 수 있는 것만 넘깁니다. 지어낸 숫자가 들어간
+    // 포트폴리오는 한 줄만 들켜도 나머지 전부를 의심받습니다.
+    projectCount: projectData.length > 0 ? String(projectData.length) : "",
+    stack: stack.slice(0, 24),
+    email,
+    // 템플릿이 <a data-tf="emailHref"> 로 링크 자리를 받습니다 — 눌러서
+    // 바로 메일이 열려야 연락처 구실을 합니다.
+    emailHref: email ? `mailto:${email}` : "",
+    github: (contact.github ?? "").trim(),
+    site: (contact.site ?? "").trim(),
     projects: projectData,
   };
 }

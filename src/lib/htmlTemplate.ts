@@ -167,6 +167,13 @@ function isDirectScope(el: Element, root: Element | DocumentFragment): boolean {
 export function fillTemplate(templateHtml: string, data: TemplateData): string {
   const doc = new DOMParser().parseFromString(templateHtml, "text/html");
   fillScope(doc.body, data);
+
+  // 템플릿 파일의 주석은 템플릿 만드는 사람을 위한 것입니다. 사용자
+  // 포트폴리오의 소스 보기에 우리 구현 설명이 실려 나갈 이유가 없습니다.
+  const walker = doc.createTreeWalker(doc.documentElement, NodeFilter.SHOW_COMMENT);
+  const comments: Comment[] = [];
+  while (walker.nextNode()) comments.push(walker.currentNode as Comment);
+  for (const c of comments) c.remove();
   // 남은 표시는 지웁니다 — 데이터에 없는 키가 템플릿에 있을 수 있고,
   // 그 흔적이 결과물 HTML 에 남을 이유가 없습니다.
   for (const el of Array.from(doc.querySelectorAll(`[${BIND}],[${REPEAT}],[${IF}]`))) {
