@@ -9,10 +9,10 @@
  * 템플릿 작성자와의 약속이라 생각하고 고치세요.
  */
 
-import type { PortfolioProjectRow, PortfolioRow } from "./portfolios";
+import type { PortfolioProjectRow, PortfolioRow, ProjectImageMap } from "./portfolios";
 import type { BlockMap } from "./blocks";
 import { blockHasContent } from "./blocks";
-import type { ProjectImageMap } from "../components/portfolio-templates/types";
+
 import type { TemplateData } from "./htmlTemplate";
 
 const FIELD_LABELS: Array<{ key: keyof PortfolioProjectRow; ko: string; en: string }> = [

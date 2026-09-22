@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { LoaderCircle } from "lucide-react";
 import {
@@ -10,13 +10,12 @@ import {
   PortfolioError,
   type PortfolioProjectRow,
   type PortfolioRow,
+  type ProjectImageMap,
 } from "../../lib/portfolios";
-import { templateName } from "../../lib/templates";
-import { FONT_STACKS, DEFAULT_FONT } from "../../lib/portfolioTheme";
-import { exportNodeToPdf } from "../../lib/exportPdf";
+import { htmlTemplateName } from "../../lib/htmlTemplates";
 import { translatePortfolioToEnglish, TranslateError } from "../../lib/translate";
-import PortfolioRenderer from "../../components/portfolio-templates/PortfolioRenderer";
-import type { ProjectImageMap } from "../../components/portfolio-templates/types";
+import TemplateFrame from "../../components/TemplateFrame";
+
 import { listBlocks, type BlockMap } from "../../lib/blocks";
 
 /**
@@ -35,7 +34,8 @@ import { listBlocks, type BlockMap } from "../../lib/blocks";
 export default function Export() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const previewRef = useRef<HTMLDivElement>(null);
+  /** TemplateFrame 이 완성해준 HTML. 파일로 내려주거나 인쇄 창에 씁니다. */
+  const [filledHtml, setFilledHtml] = useState<string>("");
 
   const [portfolio, setPortfolio] = useState<PortfolioRow | null>(null);
   const [projects, setProjects] = useState<PortfolioProjectRow[]>([]);
@@ -182,36 +182,80 @@ export default function Export() {
   const displayProjects = lang === "영어" && translated ? translated.projects : projects;
   const displayBlocks = lang === "영어" && translated ? translated.blocks : blocks;
 
-  const startExport = async () => {
-    if (!portfolio) return;
-    setConfirming(false);
-    setExportError(null);
+  const fileBase = () =>
+    (displayPortfolio?.title.trim() || portfolio?.title.trim() || "portfolio").replace(
+      /[\\/:*?"<>|]/g,
+      ""
+    );
 
-    if (format === "web") {
-      // 웹 형식은 아직 실제 구현이 없습니다 — 버튼이 disabled 라 이 분기는
-      // 정상 경로로는 도달하지 않지만, 방어적으로 남겨둡니다.
-      setExporting(true);
-      window.setTimeout(() => {
-        setExporting(false);
-        navigate("/library/portfolios");
-      }, 1200);
+  /**
+   * HTML 파일로 내려받기.
+   *
+   * 템플릿 CSS 가 파일 안에 들어 있고 외부 스크립트도 없어서, 받은 파일은
+   * 인터넷 없이 열어도 그대로 보입니다. 첨부로 보내거나 자기 사이트에
+   * 올릴 수 있습니다.
+   */
+  const downloadHtml = () => {
+    if (!filledHtml) {
+      setExportError("아직 미리보기가 준비되지 않았습니다. 잠시 후 다시 시도해 주세요.");
       return;
     }
+    const blob = new Blob([filledHtml], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = lang === "영어" ? `${fileBase()} (EN).html` : `${fileBase()}.html`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
 
-    setExporting(true);
-    try {
-      if (!previewRef.current) {
-        throw new Error("미리보기를 찾을 수 없습니다.");
-      }
-      const titleForFile = displayPortfolio?.title.trim() || portfolio.title.trim() || "portfolio";
-      const filename = lang === "영어" ? `${titleForFile} (EN).pdf` : `${titleForFile}.pdf`;
-      await exportNodeToPdf(previewRef.current, filename);
-      navigate("/library/portfolios");
-    } catch {
-      setExportError("PDF를 만드는 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.");
-    } finally {
-      setExporting(false);
+  /**
+   * PDF — 브라우저 인쇄 엔진으로.
+   *
+   * [왜 html2canvas 를 버렸나]
+   * 전에는 화면을 통째로 찍어 이미지로 만들었습니다. 그렇게 만든 PDF 는
+   * 글자가 아니라 그림이라, 채용 시스템(ATS)이 내용을 읽지 못합니다.
+   * 실제 채용에 쓸 포트폴리오라면 이게 치명적입니다.
+   *
+   * 인쇄 엔진으로 뽑으면 글자가 선택되고 검색되는 PDF 가 나옵니다.
+   * 템플릿의 @media print 규칙이 여기서 적용돼, 어두운 배경이 흰 바탕으로
+   * 바뀌고 고정 내비 같은 화면용 장치가 빠집니다.
+   *
+   * 대신 파일 이름과 여백은 브라우저 인쇄 창에서 사용자가 정합니다 —
+   * 우리가 정할 수 없는 부분이라 화면 안내로 대신합니다.
+   */
+  const printPdf = () => {
+    if (!filledHtml) {
+      setExportError("아직 미리보기가 준비되지 않았습니다. 잠시 후 다시 시도해 주세요.");
+      return;
     }
+    const frame = document.createElement("iframe");
+    frame.setAttribute(
+      "style",
+      "position:fixed;right:0;bottom:0;width:0;height:0;border:0;"
+    );
+    document.body.appendChild(frame);
+
+    const doc = frame.contentDocument;
+    if (!doc) {
+      frame.remove();
+      setExportError("인쇄 창을 열지 못했습니다.");
+      return;
+    }
+    doc.open();
+    doc.write(filledHtml);
+    doc.close();
+
+    // 폰트와 이미지가 도착하기 전에 인쇄하면 빈칸으로 찍힙니다.
+    const go = () => {
+      frame.contentWindow?.focus();
+      frame.contentWindow?.print();
+      // 인쇄 대화상자가 닫히는 시점은 알 수 없어 넉넉히 두고 치웁니다.
+      window.setTimeout(() => frame.remove(), 60000);
+    };
+    window.setTimeout(go, 800);
   };
 
   const isPublic = portfolio?.visibility === "public";
@@ -269,7 +313,13 @@ export default function Export() {
     }
   };
 
-  const bodyFontStack = portfolio ? FONT_STACKS[portfolio.font] ?? FONT_STACKS[DEFAULT_FONT] : FONT_STACKS[DEFAULT_FONT];
+  const startExport = () => {
+    setConfirming(false);
+    setExportError(null);
+    if (format === "web") downloadHtml();
+    else printPdf();
+  };
+
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -339,7 +389,8 @@ export default function Export() {
           <div className="entry">
             <h2 className="entry-title">내보내기 형식 선택</h2>
             <p className="text-xs text-neutral-400 mb-3">
-              PDF 파일 또는 웹 형식 자료 중 원하는 형식을 선택하세요.
+              둘 다 같은 내용입니다. 채용 사이트에 올릴 파일이 필요하면 PDF,
+              링크 대신 파일로 보내거나 직접 호스팅하려면 HTML 을 고르세요.
             </p>
             <div className="flex gap-2">
               <button
@@ -351,11 +402,12 @@ export default function Export() {
                 PDF 파일 (.pdf)
               </button>
               <button
-                disabled
-                title="웹 형식 내보내기는 아직 준비 중입니다."
-                className="rounded-sm border px-4 py-2 text-sm border-neutral-800 text-neutral-600 cursor-not-allowed opacity-60"
+                onClick={() => setFormat("web")}
+                className={`rounded-sm border px-4 py-2 text-sm ${
+                  format === "web" ? "border-brand bg-brand/10 text-brand" : "border-neutral-800 text-neutral-400"
+                }`}
               >
-                웹 형식 (HTML · Notion 호환) · 준비 중
+                HTML 파일 (.html)
               </button>
             </div>
           </div>
@@ -448,23 +500,24 @@ export default function Export() {
             <div className="flex items-center justify-between mb-3">
               <h2 className="entry-title mb-0">미리보기</h2>
               <span className="text-xs text-neutral-500">
-                {templateName(portfolio.template_id)} 템플릿
+                {htmlTemplateName(portfolio.template_id)} 템플릿
               </span>
             </div>
             <p className="text-xs text-neutral-600 mb-3">
-              PDF로 내보내면 아래 미리보기와 똑같은 내용이 파일로 저장됩니다.
+              {format === "pdf"
+                ? "브라우저 인쇄 창이 열립니다. '대상'을 'PDF로 저장'으로 두고 저장하세요 — 글자가 선택되는 PDF라 채용 시스템이 내용을 읽을 수 있습니다."
+                : "CSS가 파일 안에 들어 있어서, 받은 파일은 인터넷 없이 열어도 그대로 보입니다."}
             </p>
             <div className="rounded-xl border border-neutral-800 overflow-auto max-h-[520px]">
-              <PortfolioRenderer
-                ref={previewRef}
+              <TemplateFrame
                 portfolio={displayPortfolio ?? portfolio}
                 projects={displayProjects}
                 coverUrl={coverUrl}
                 images={images}
                 blocks={displayBlocks}
-                eagerImages
-                bodyFontStack={bodyFontStack}
                 lang={lang === "영어" ? "en" : "ko"}
+                mode="fit"
+                onHtml={setFilledHtml}
               />
             </div>
           </div>
@@ -495,12 +548,16 @@ export default function Export() {
       {confirming && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-10 p-4">
           <div className="surface w-full max-w-sm">
-            <h2 className="entry-title mb-2">PDF 내보내기 확인</h2>
+            <h2 className="entry-title mb-2">내보내기 확인</h2>
             <p className="text-xs text-neutral-400 mb-3">
-              위 미리보기 그대로 PDF 파일을 생성합니다.
+              {format === "pdf"
+                ? "브라우저 인쇄 창이 열립니다. 대상을 'PDF로 저장'으로 두고 저장하세요."
+                : "HTML 파일이 바로 내려받아집니다."}
             </p>
             <p className="text-sm text-neutral-200">언어: {lang}</p>
-            <p className="text-sm text-neutral-200">형식: PDF (.pdf)</p>
+            <p className="text-sm text-neutral-200">
+              형식: {format === "pdf" ? "PDF (.pdf)" : "HTML (.html)"}
+            </p>
             {lang === "영어" && !translated && (
               <p className="text-xs text-brand mt-2">
                 영어 번역이 아직 준비되지 않아 이번에는 원문(한국어)으로 내보내집니다.

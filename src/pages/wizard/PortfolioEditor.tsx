@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { Check, GripVertical, ImagePlus, Info, LoaderCircle, Maximize2, Plus, Trash2, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, GripVertical, ImagePlus, Info, LoaderCircle, Minus, Plus, Trash2, Type, X } from "lucide-react";
 import {
   getPortfolioWithProjects,
   updatePortfolioProject,
@@ -16,15 +16,15 @@ import {
   PortfolioError,
   type PortfolioProjectRow,
   type PortfolioRow,
+  type ProjectImageMap,
   type ProjectDepth,
   type ProjectImageRow,
 } from "../../lib/portfolios";
 import { formatRelativeTime } from "../../lib/formatRelativeTime";
 import EditorPreview from "../../components/EditorPreview";
 import StylePanel from "../../components/StylePanel";
-import PortfolioRenderer from "../../components/portfolio-templates/PortfolioRenderer";
-import type { ProjectImageMap } from "../../components/portfolio-templates/types";
-import { FONT_STACKS, DEFAULT_FONT } from "../../lib/portfolioTheme";
+import TemplateFrame from "../../components/TemplateFrame";
+
 import { shrinkImage } from "../../lib/images";
 import {
   listBlocks,
@@ -1122,30 +1122,126 @@ export default function PortfolioEditor() {
                 )}
               </div>
 
-              {/* [2026-09-23] 블록 편집이 전체화면 미리보기로 옮겨갔습니다.
-                  전에는 여기서 추가하고 오른쪽에서 결과를 봐야 했습니다 —
-                  한 가지를 고치는데 두 곳을 보는 구조라 불편했고, 두 군데
-                  모두에 편집 UI 를 두면 그 불편이 그대로 남습니다.
-                  여기는 개수만 알려주고 들어가는 문 역할만 합니다. */}
-              <div className="border-t border-neutral-800 pt-4 flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-xs font-medium text-neutral-200">
+              {/* [2026-09-23] 블록 편집이 다시 이 자리로 돌아왔습니다.
+                  템플릿이 HTML 로 바뀌면서 미리보기가 iframe 이 됐고,
+                  iframe 안에서 고치려면 postMessage 로 주고받아야 합니다.
+                  그건 다음 단계입니다 — 그때까지 편집할 방법이 아예 없는
+                  것보다 여기 두는 편이 낫습니다. */}
+              <div className="border-t border-neutral-800 pt-4">
+                <div className="flex items-center justify-between gap-3 mb-3">
+                  <span className="text-xs font-medium text-neutral-200">
                     직접 추가한 내용
-                    <span className="text-neutral-600 font-normal"> · {currentBlocks.length}개</span>
-                  </p>
-                  <p className="text-xs text-neutral-600 mt-1">
-                    다섯 칸에 안 맞는 내용은 미리보기에서 바로 쓰고 고칩니다.
-                  </p>
+                  </span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => void addBlockAt(currentProject.id, "text", currentBlocks.length)}
+                      disabled={blockBusy}
+                      className="inline-flex items-center gap-1 rounded-full border border-dashed border-neutral-700 px-2.5 py-1 text-xs text-neutral-400 hover:border-neutral-500 hover:text-neutral-200 disabled:opacity-40"
+                    >
+                      <Type size={12} strokeWidth={2} />글 추가
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void addBlockAt(currentProject.id, "divider", currentBlocks.length)}
+                      disabled={blockBusy}
+                      className="inline-flex items-center gap-1 rounded-full border border-dashed border-neutral-700 px-2.5 py-1 text-xs text-neutral-400 hover:border-neutral-500 hover:text-neutral-200 disabled:opacity-40"
+                    >
+                      <Minus size={12} strokeWidth={2} />구분선
+                    </button>
+                  </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setExpanded(true)}
-                  disabled={blockBusy}
-                  className="btn-secondary shrink-0 whitespace-nowrap inline-flex items-center gap-1.5 disabled:opacity-40"
-                >
-                  <Maximize2 size={13} aria-hidden="true" />
-                  미리보기에서 편집
-                </button>
+
+                {currentBlocks.length === 0 && (
+                  <p className="text-xs text-neutral-600">
+                    다섯 칸에 안 맞는 내용은 여기에 원하는 만큼 쌓으세요.
+                  </p>
+                )}
+
+                <div className="space-y-3">
+                  {currentBlocks.map((b, i) => (
+                    <div key={b.id} className="rounded-lg border border-neutral-800 p-2.5 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs text-neutral-600">
+                          {b.content.kind === "divider" ? "구분선" : "글"}
+                        </span>
+                        <div className="flex items-center gap-1 shrink-0">
+                          {b.content.kind === "text" && (
+                            <select
+                              value={b.content.style}
+                              onChange={(e) =>
+                                void saveBlockContent(currentProject.id, b.id, {
+                                  ...b.content,
+                                  style: e.target.value as "heading" | "body" | "small",
+                                } as BlockContent)
+                              }
+                              className="bg-transparent border border-neutral-800 rounded px-1.5 py-0.5 text-xs text-neutral-400"
+                              aria-label="글 크기"
+                            >
+                              <option value="heading" className="bg-neutral-900">제목</option>
+                              <option value="body" className="bg-neutral-900">본문</option>
+                              <option value="small" className="bg-neutral-900">작게</option>
+                            </select>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => void moveBlockIn(currentProject.id, i, -1)}
+                            disabled={i === 0}
+                            aria-label="위로"
+                            className="text-neutral-600 hover:text-neutral-300 disabled:opacity-25 p-0.5"
+                          >
+                            <ArrowUp size={13} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void moveBlockIn(currentProject.id, i, 1)}
+                            disabled={i === currentBlocks.length - 1}
+                            aria-label="아래로"
+                            className="text-neutral-600 hover:text-neutral-300 disabled:opacity-25 p-0.5"
+                          >
+                            <ArrowDown size={13} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void removeBlockFrom(currentProject.id, b.id)}
+                            aria-label="블록 삭제"
+                            className="text-neutral-600 hover:text-brand p-0.5"
+                          >
+                            <X size={13} />
+                          </button>
+                        </div>
+                      </div>
+
+                      {b.content.kind === "text" && (
+                        <>
+                          <input
+                            defaultValue={b.content.label}
+                            onBlur={(e) =>
+                              void saveBlockContent(currentProject.id, b.id, {
+                                ...b.content,
+                                label: e.target.value,
+                              } as BlockContent)
+                            }
+                            placeholder="제목 (선택)"
+                            className="field py-1.5 text-sm"
+                          />
+                          <textarea
+                            defaultValue={b.content.text}
+                            onBlur={(e) =>
+                              void saveBlockContent(currentProject.id, b.id, {
+                                ...b.content,
+                                text: e.target.value,
+                              } as BlockContent)
+                            }
+                            rows={3}
+                            placeholder="내용"
+                            className="field-area text-base leading-relaxed"
+                          />
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
 
               {blockError && (
@@ -1348,8 +1444,7 @@ export default function PortfolioEditor() {
         >
           <div className="sticky top-0 z-10 flex items-center justify-between gap-3 p-3">
             <p className="text-xs text-neutral-400 bg-neutral-900/90 border border-neutral-800 rounded-md px-3 py-1.5">
-              직접 추가한 내용은 여기서 바로 고칩니다. 글 사이에 커서를 올리면
-              추가 버튼이 나옵니다.
+              내보내면 이 모양 그대로 나옵니다.
             </p>
             <button
               type="button"
@@ -1361,18 +1456,17 @@ export default function PortfolioEditor() {
             </button>
           </div>
           <div
-            className="mx-auto max-w-[820px] pb-16 px-4"
+            className="mx-auto max-w-[1320px] pb-16 px-4"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="rounded-xl overflow-hidden">
-              <PortfolioRenderer
+            <div className="rounded-xl overflow-hidden bg-white">
+              <TemplateFrame
                 portfolio={portfolio}
                 projects={previewProjects}
                 coverUrl={coverUrl}
                 images={previewImages}
                 blocks={blocks}
-                blockEditor={blockEditor}
-                bodyFontStack={FONT_STACKS[portfolio.font] ?? FONT_STACKS[DEFAULT_FONT]}
+                mode="fit"
               />
             </div>
           </div>

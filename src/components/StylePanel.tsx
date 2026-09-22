@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { Check, ChevronDown, LoaderCircle } from "lucide-react";
-import { templates } from "../lib/templates";
+import { htmlTemplates } from "../lib/htmlTemplates";
 import { formatRelativeTime } from "../lib/formatRelativeTime";
 import { useAuth } from "../auth/AuthProvider";
 import { FONT_STACKS, DEFAULT_FONT } from "../lib/portfolioTheme";
@@ -251,14 +251,11 @@ export default function StylePanel({
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
       >
-        <span className="text-xs font-medium text-neutral-300">템플릿 · 스타일</span>
+        <span className="text-xs font-medium text-neutral-300">템플릿 · 표지</span>
         <span className="flex items-center gap-1.5 min-w-0">
           {!open && (
             <span className="truncate text-xs text-neutral-600">
-              {templates.find((t) => t.id === draft.template_id)?.name} ·{" "}
-              {draft.color_theme === "dark" ? "다크" : "라이트"} · {draft.font} ·{" "}
-              {draft.layout === "1col" ? "1개씩" : "2개씩"} ·{" "}
-              {draft.density === "roomy" ? "넓게" : draft.density === "tight" ? "좁게" : "보통"}
+              {htmlTemplates.find((t) => t.id === draft.template_id)?.name ?? "템플릿 선택"}
             </span>
           )}
           {dirty && <span className="size-1.5 rounded-full bg-brand shrink-0" aria-label="저장 안 됨" />}
@@ -278,9 +275,16 @@ export default function StylePanel({
         // 아래로 밀립니다.
         <div className="space-y-3">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2.5">
+            {/* [2026-09-23] 템플릿이 HTML 파일이 되면서 색·나열·여백·서체
+                설정을 뺐습니다. 그 넷은 React 템플릿이 "알아서 배치해주는"
+                장치였는데, 이제 디자인은 템플릿이 통째로 들고 있어서 할
+                일이 없습니다. 남겨두면 눌러도 아무 변화가 없는 칸이 됩니다.
+
+                대신 템플릿 자체가 늘어납니다 — 고르는 재미는 그쪽으로
+                옮겨갑니다(docs/editor-freedom.md). */}
             <Group label="템플릿">
               <div className="flex flex-wrap gap-1.5">
-                {templates.map((t) => (
+                {htmlTemplates.map((t) => (
                   <button
                     key={t.id}
                     type="button"
@@ -297,57 +301,6 @@ export default function StylePanel({
                   </button>
                 ))}
               </div>
-            </Group>
-
-            <Group label="색">
-              <Segmented
-                value={draft.color_theme}
-                options={[
-                  { value: "dark", label: "다크" },
-                  { value: "light", label: "라이트" },
-                ]}
-                onChange={(v) => update({ color_theme: v as ColorTheme })}
-              />
-            </Group>
-
-            {/* 전에는 "레이아웃 1단/2단" 하나였는데, 매거진형 템플릿만 그
-                값을 읽고 나머지 셋은 무시해서 눌러도 아무 일이 없었습니다.
-                두 축으로 나누고 템플릿 4종 전부에 구현했습니다. */}
-            <Group label="나열">
-              <Segmented
-                value={draft.layout}
-                options={[
-                  { value: "1col", label: "1개씩" },
-                  { value: "2col", label: "2개씩" },
-                ]}
-                onChange={(v) => update({ layout: v as LayoutDirection })}
-              />
-            </Group>
-
-            <Group label="여백">
-              <Segmented
-                value={draft.density}
-                options={[
-                  { value: "roomy", label: "넓게" },
-                  { value: "normal", label: "보통" },
-                  { value: "tight", label: "좁게" },
-                ]}
-                onChange={(v) => update({ density: v as Density })}
-              />
-            </Group>
-
-            <Group label="서체">
-              <select
-                className="field w-[150px] text-xs py-1"
-                value={draft.font}
-                onChange={(e) => update({ font: e.target.value })}
-              >
-                {fontOptions.map((f) => (
-                  <option key={f} value={f}>
-                    {f === "Spoqa Han Sans" ? `${f} (준비 중)` : f}
-                  </option>
-                ))}
-              </select>
             </Group>
 
             <Group label="표지">
@@ -378,20 +331,7 @@ export default function StylePanel({
               </div>
             </Group>
 
-            <Group label="프리셋">
-              <div className="flex flex-wrap gap-1.5">
-                {presets.map((pr) => (
-                  <button
-                    key={pr.id}
-                    type="button"
-                    onClick={() => update(pr.style)}
-                    className="rounded-full border border-neutral-800 px-2.5 py-1 text-xs text-neutral-400 hover:border-brand/50 hover:text-brand transition-colors"
-                  >
-                    {pr.name}
-                  </button>
-                ))}
-              </div>
-            </Group>
+            
           </div>
 
           {saveError && (

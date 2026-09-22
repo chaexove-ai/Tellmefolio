@@ -9,7 +9,18 @@ import type { Draft } from "./draft";
  * 썼습니다. 이 파일부터는 실제 테이블에 읽고 씁니다.
  */
 
-export type TemplateId = "research" | "live" | "minimal" | "magazine";
+/**
+ * [2026-09-23] 네 가지 고정 값에서 문자열로 넓혔습니다.
+ *
+ * 템플릿이 React 컴포넌트에서 HTML 파일(public/templates/<id>.html)로
+ * 바뀌면서, id 는 파일 이름이 됩니다. 새 템플릿을 넣을 때마다 타입을
+ * 고쳐야 한다면 템플릿이 늘지 않습니다 — 그게 정형화의 원인이었습니다.
+ *
+ * 대신 모르는 id 가 들어올 수 있습니다. 화면(TemplateFrame)이 목록에
+ * 없는 id 를 기본 템플릿으로 떨어뜨립니다 — 예전 값(research/live/
+ * minimal/magazine)이 남아 있는 행도 그래서 그냥 열립니다.
+ */
+export type TemplateId = string;
 export type ColorTheme = "dark" | "light";
 /** 프로젝트를 몇 개씩 나열할지. 문서 전체의 단 수가 아니라 "프로젝트
  *  카드가 한 줄에 몇 개 오는가" 입니다 — 전에는 매거진형 템플릿만 이
@@ -477,6 +488,20 @@ export interface ProjectImageRow {
   position: number;
   created_at: string;
 }
+
+/**
+ * 프로젝트 id → 그 프로젝트의 이미지들(공개 URL + 설명).
+ *
+ * 템플릿은 경로가 아니라 이미 URL 로 바뀐 값을 받습니다 — getPublicUrl
+ * 이 비동기라 렌더링 중에 부를 수 없기 때문입니다.
+ *
+ * [2026-09-23] portfolio-templates/types.ts 에 있던 것을 여기로 옮겼습니다.
+ * React 템플릿이 사라지면서 그 폴더가 통째로 없어졌습니다.
+ */
+export type ProjectImageMap = Record<
+  string,
+  Array<{ id: string; url: string; caption: string }>
+>;
 
 /** 프로젝트당 상한. 그 이상은 포트폴리오가 아니라 갤러리입니다. */
 export const MAX_PROJECT_IMAGES = 8;
