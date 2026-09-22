@@ -89,7 +89,14 @@ export default function StylePanel({
   onCoverSaved,
 }: Props) {
   const { session } = useAuth();
-  const [open, setOpen] = useState(true);
+  // [2026-09-22] 기본을 접힘으로 바꿨습니다.
+  //
+  // 템플릿·색·나열·여백·서체·표지·프리셋까지 컨트롤이 18개인데, 전부
+  // 펼쳐진 채 편집 화면 첫 인상을 차지하고 있었습니다. 이 값들은 한 번
+  // 정하면 거의 안 건드립니다 — 글을 쓰는 동안 계속 보일 이유가 없습니다.
+  // 접힌 줄이 현재 설정을 한 줄로 요약하므로 "지금 뭐가 걸려 있는지"는
+  // 그대로 보입니다.
+  const [open, setOpen] = useState(false);
 
   const [draft, setDraft] = useState<FullDraft>({
     template_id: initial.template_id,

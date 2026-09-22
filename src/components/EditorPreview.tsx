@@ -79,9 +79,6 @@ export default function EditorPreview({ portfolio, projects, coverUrl, images = 
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="text-xs font-medium text-neutral-400">미리보기</h2>
         <div className="flex items-baseline gap-3">
-          <span className="text-xs text-neutral-600">
-            내보내면 이 모양 그대로 저장됩니다
-          </span>
           {onExpand && (
             <button
               type="button"

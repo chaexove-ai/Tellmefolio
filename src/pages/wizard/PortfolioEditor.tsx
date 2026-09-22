@@ -412,7 +412,10 @@ export default function PortfolioEditor() {
    *  메타데이터입니다. 예전에는 placeholder 텍스트가 곧 라벨이라 필드를 다
    *  채우고 나면 지금 뭘 적고 있는 칸인지 알 수 없었습니다 — 이제 칸마다
    *  실제 <label>과 한 줄 안내, 그리고 순서(맥락→문제→실행→성과→회고)를
-   *  숫자로 보여줍니다. aiFilled 가 false 인 칸(담당 역할·문제 정의·배운
+   *  숫자로 보여줍니다. ([2026-09-22] 전에는 AI가 안 채워준 칸에 "직접
+   *  입력" 배지를 달았는데, 사용자에게는 쓸모없는 구분이었습니다 — 어차피
+   *  다 본인이 고쳐야 하는 칸입니다. 배지만 늘어서 화면이 시끄러웠습니다.)
+   *  (옛 주석: aiFilled 가 false 인 칸 — 담당 역할·문제 정의·배운
    *  점)은 AI 초안에 대응 필드가 없어 항상 직접 입력해야 하는 칸이라는 걸
    *  라벨 옆 배지로 표시합니다. */
   const storyFields: Array<{
@@ -423,7 +426,6 @@ export default function PortfolioEditor() {
     value: string;
     onChange: (v: string) => void;
     rows: number;
-    aiFilled: boolean;
   }> = [
     {
       key: "context",
@@ -433,7 +435,6 @@ export default function PortfolioEditor() {
       value: context,
       onChange: setContext,
       rows: 3,
-      aiFilled: true,
     },
     {
       key: "problem",
@@ -443,7 +444,6 @@ export default function PortfolioEditor() {
       value: problem,
       onChange: setProblem,
       rows: 2,
-      aiFilled: false,
     },
     {
       key: "execution",
@@ -453,7 +453,6 @@ export default function PortfolioEditor() {
       value: execution,
       onChange: setExecution,
       rows: 3,
-      aiFilled: true,
     },
     {
       key: "outcome",
@@ -463,7 +462,6 @@ export default function PortfolioEditor() {
       value: outcome,
       onChange: setOutcome,
       rows: 2,
-      aiFilled: true,
     },
     {
       key: "reflection",
@@ -473,7 +471,6 @@ export default function PortfolioEditor() {
       value: reflection,
       onChange: setReflection,
       rows: 2,
-      aiFilled: false,
     },
   ];
 
@@ -638,7 +635,6 @@ export default function PortfolioEditor() {
           <div className="flex items-center justify-between">
             <h2 className="entry-title mb-0">프로젝트 개요</h2>
             <div className="flex items-center gap-2">
-              {portfolio.summary && <span className="badge bg-brand/10 text-brand">AI 초안 반영됨</span>}
               {currentProject && !deleteConfirming && (
                 <button
                   type="button"
@@ -737,7 +733,7 @@ export default function PortfolioEditor() {
           )}
 
           {currentProject && (
-            <div className="rounded-lg border border-neutral-800 p-3 space-y-3">
+            <div>
               <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
                 <span className="text-xs font-medium text-neutral-200">이 프로젝트는</span>
                 <div className="inline-flex rounded-md border border-neutral-800 p-0.5">
@@ -766,11 +762,6 @@ export default function PortfolioEditor() {
                     : "다섯 단계를 모두 써서 깊게 보여줍니다"}
                 </span>
               </div>
-              <p className="text-xs text-neutral-600">
-                대표작 2~3개만 케이스 스터디로 쓰고 나머지는 간단히 두면, 읽는
-                사람이 어디를 봐야 할지 압니다. 바꿔도 써둔 글은 지워지지
-                않습니다 — 접혀 있다가 돌아옵니다.
-              </p>
             </div>
           )}
 
@@ -804,8 +795,7 @@ export default function PortfolioEditor() {
 
               {currentImages.length === 0 && (
                 <p className="text-xs text-neutral-600">
-                  화면 캡처, 결과물 사진, 다이어그램을 올리면 템플릿 안에 함께
-                  들어갑니다. 올릴 때 자동으로 줄여서 저장합니다.
+                  화면 캡처나 결과물 사진을 올리면 템플릿 안에 함께 들어갑니다.
                 </p>
               )}
 
@@ -933,9 +923,6 @@ export default function PortfolioEditor() {
                     className="text-xs font-medium text-neutral-300 inline-flex items-center gap-1.5"
                   >
                     담당 역할
-                    <span className="badge bg-neutral-800 text-neutral-500 px-1.5 py-0">
-                      직접 입력
-                    </span>
                   </label>
                   <input
                     id="proj-role"
@@ -975,11 +962,6 @@ export default function PortfolioEditor() {
                           className="text-xs font-medium text-neutral-200 inline-flex items-center gap-1.5"
                         >
                           {f.label}
-                          {!f.aiFilled && (
-                            <span className="badge bg-neutral-800 text-neutral-500 px-1.5 py-0">
-                              직접 입력
-                            </span>
-                          )}
                         </label>
                         {/* 안내는 칸이 비어 있을 때만 보여줍니다. 6칸에
                             라벨·안내·예시가 늘 함께 쌓이면 화면이 안내문으로
