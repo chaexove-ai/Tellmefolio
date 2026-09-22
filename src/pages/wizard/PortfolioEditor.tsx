@@ -619,8 +619,13 @@ export default function PortfolioEditor() {
         </div>
         <div>
           <h1 className="text-xl font-heading">{portfolio.title}</h1>
+          {/* [2026-09-22] 요약은 여러 줄짜리 한국어 문단이라 기본 줄
+              간격(14/22, 1.57)으로는 답답합니다. 한글은 같은 크기에서 라틴
+              문자보다 넓은 행간이 필요합니다 — tailwind.config.js 주석 참고. */}
           {portfolio.summary ? (
-            <p className="text-sm text-neutral-400 mt-1">{portfolio.summary}</p>
+            <p className="text-sm text-neutral-400 mt-1.5 leading-[1.8] max-w-[62ch]">
+              {portfolio.summary}
+            </p>
           ) : (
             <p className="text-xs text-neutral-600 mt-1 flex items-start gap-1.5">
               <Info size={13} strokeWidth={1.5} className="text-neutral-500 shrink-0 mt-0.5" />
@@ -1125,8 +1130,8 @@ export default function PortfolioEditor() {
           </div>
         </details>
 
-        <div className="entry flex items-center justify-between">
-          <div>
+        <div className="entry flex items-center justify-between gap-4">
+          <div className="min-w-0">
             <p className="text-sm text-neutral-200">
               마지막 저장: {formatRelativeTime(lastSavedAt)}
             </p>
@@ -1136,12 +1141,14 @@ export default function PortfolioEditor() {
               </p>
             )}
             <p className="text-xs text-neutral-600 mt-1">
-              현재 프로젝트 탭의 내용을 저장합니다. 다른 탭으로 옮기면 자동으로 먼저
-              저장됩니다.
+              탭을 옮기면 자동으로 먼저 저장됩니다.
             </p>
           </div>
+          {/* [2026-09-22] shrink-0 이 없어서 글자가 두 줄로 쪼개졌습니다.
+              justify-between 은 남는 폭을 나눠 가지므로, 줄어들면 안 되는
+              쪽에는 명시해줘야 합니다. */}
           <button
-            className="btn-secondary disabled:opacity-40 inline-flex items-center gap-1.5"
+            className="btn-secondary shrink-0 whitespace-nowrap disabled:opacity-40 inline-flex items-center gap-1.5"
             disabled={saving || projects.length === 0}
             onClick={() => void saveCurrentProject()}
           >
@@ -1150,7 +1157,7 @@ export default function PortfolioEditor() {
             ) : (
               <>
                 <Check size={13} strokeWidth={2.5} aria-hidden="true" />
-                수동 저장
+                저장
               </>
             )}
           </button>
