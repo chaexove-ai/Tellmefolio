@@ -174,6 +174,7 @@ export default function LiveEditorTemplate({ portfolio, projects, images = {}, b
                     borderColor={palette.border}
                     labelClassName="text-[14px]"
                     bodyClassName="text-[14px] leading-[1.8] whitespace-pre-wrap"
+                    dividerStyle="comment"
                     className={byDensity(d, { roomy: "space-y-5", normal: "space-y-3", tight: "space-y-2" })}
                   />
                 </div>
