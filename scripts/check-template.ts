@@ -25,7 +25,10 @@ const dom = new JSDOM("<!DOCTYPE html><html></html>");
 (globalThis as unknown as { DOMParser: unknown }).DOMParser = dom.window.DOMParser;
 (globalThis as unknown as { NodeFilter: unknown }).NodeFilter = dom.window.NodeFilter;
 
-const { fillTemplate } = await import("../src/lib/htmlTemplate.js");
+// Node 22.18+ 는 .ts 를 직접 읽습니다(타입만 걷어냄). tsx 같은 변환기를
+// 쓰면 그쪽이 들고 오는 esbuild 와 Vite 의 esbuild 가 버전 충돌을
+// 일으킵니다 — 실제로 한 번 겪었습니다. 도구를 줄이는 쪽이 안전합니다.
+const { fillTemplate } = await import("../src/lib/htmlTemplate.ts");
 
 /** 빠지면 사용자 내용이 사라지는 키들. */
 const REQUIRED = ["title", "summary", "projects"];

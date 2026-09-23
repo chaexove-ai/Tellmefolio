@@ -39,6 +39,13 @@ if (!/^[a-z0-9-]+$/.test(id)) {
 
 const root = process.cwd();
 const outPath = path.join(root, "public", "templates", `${id}.html`);
+
+if (!existsSync(input)) {
+  console.error(`\n  파일이 없습니다: ${input}`);
+  console.error("  경로를 확인하세요. 파인더에서 파일을 터미널로 끌어다 놓으면 경로가 들어갑니다.\n");
+  process.exit(1);
+}
+
 let s = readFileSync(input, "utf-8");
 const before = s.length;
 const report = [];
