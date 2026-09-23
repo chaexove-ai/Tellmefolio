@@ -121,6 +121,35 @@ if (n) {
   note(`로컬 저장 파일 참조 ${n}개 제거 (이미지는 data-tf 로 채우세요)`);
 }
 
+// 브라우저 확장이 끼워 넣은 조각.
+//
+// [2026-09-23] 데브코어 템플릿에 Glasp 확장의 떠 있는 버튼이 통째로
+// 딸려 왔습니다. `</body>` **뒤에** 있어서 눈에 안 띄었는데, 브라우저는
+// 그걸 본문 안으로 끌어올려 그립니다 — 내보낸 포트폴리오 오른쪽 아래에
+// 남의 서비스 버튼이 떠 있게 됩니다. 저장된 페이지에는 이런 게 딸려
+// 오는 게 정상이라고 보고 늘 털어냅니다.
+n = count(/glasp|grammarly|data-lastpass/gi);
+if (n) {
+  s = s.replace(/<div[^>]*(?:class|id)="[^"]*glasp[^"]*"[\s\S]*?<\/div>\s*<\/div>/gi, "");
+  s = s.replace(/<style[^>]*data-glasp[^>]*>[\s\S]*?<\/style>/gi, "");
+  s = s.replace(/\s*data-glasp-print="[^"]*"/g, "");
+  s = s.replace(/<[^>]*(?:grammarly|data-lastpass)[^>]*>/gi, "");
+  note(`브라우저 확장 흔적 ${n}군데 제거`);
+}
+
+// `</body>` 뒤에 남은 것도 같은 부류입니다. 여기까지 왔으면 본문은
+// 이미 끝났으니, 뒤에 붙은 건 전부 남의 것입니다.
+{
+  const at = s.indexOf("</body>");
+  if (at !== -1) {
+    const rest = s.slice(at + 7).replace(/<\/html>/gi, "").trim();
+    if (rest.length > 0) {
+      s = s.slice(0, at) + "</body>\n</html>\n";
+      note(`</body> 뒤 찌꺼기 ${rest.length}자 제거`);
+    }
+  }
+}
+
 // ── 2. iconify ───────────────────────────────────────────────
 n = count(/<iconify-icon\b/g);
 if (n) {

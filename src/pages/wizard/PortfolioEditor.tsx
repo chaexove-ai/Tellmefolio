@@ -1466,7 +1466,6 @@ export default function PortfolioEditor() {
                 coverUrl={coverUrl}
                 images={previewImages}
                 blocks={blocks}
-                mode="fit"
               />
             </div>
           </div>

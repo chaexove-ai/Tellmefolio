@@ -5,7 +5,6 @@ import { DEFAULT_HTML_TEMPLATE, htmlTemplates } from "../lib/htmlTemplates";
 import type { PortfolioProjectRow, PortfolioRow, ProjectImageMap } from "../lib/portfolios";
 import type { BlockMap } from "../lib/blocks";
 
-
 /**
  * 템플릿 HTML 을 채워 iframe 에 그립니다.
  *
@@ -17,18 +16,22 @@ import type { BlockMap } from "../lib/blocks";
  *
  * [스크립트를 막아둡니다]
  * sandbox 에 allow-scripts 를 주지 않습니다. 템플릿에는 스크립트가 없어야
- * 하고(없도록 정리해서 넣습니다), 없으면 막아두는 편이 맞습니다. 나중에
- * 스크립트가 필요한 템플릿이 생기면 그때 이 결정을 다시 합니다 —
- * 지금 열어두고 잊어버리는 것보다 낫습니다.
+ * 하고(tpl:check 가 막습니다), 없으면 막아두는 편이 맞습니다.
  *
- * [폭 맞추기]
- * 템플릿은 데스크탑 폭(1280px)을 기준으로 만들어집니다. 편집기 오른쪽
- * 패널은 그보다 좁으므로, iframe 을 1280px 로 두고 통째로 축소합니다.
- * 반응형으로 줄이면 안 됩니다 — 좁은 화면용 레이아웃이 나와서 "내보내면
- * 이렇게 나온다"가 거짓이 됩니다.
+ * [왜 높이를 재지 않고 고정 창인가 — 2026-09-23]
+ * 처음에는 내용 높이를 재서 iframe 을 그만큼 늘렸습니다. 미리보기 안에
+ * 또 스크롤바가 생기는 걸 피하려던 것인데, `min-h-screen`(100vh)을 쓰는
+ * 템플릿에서 되먹임이 생깁니다: 높이를 늘리면 100vh 가 같이 늘고, 그러면
+ * 내용이 더 길어지고, 다시 늘리고… 미니멀 세리프가 그 경우였고 화면이
+ * 거의 빈 검은 판으로 나왔습니다.
+ *
+ * 그래서 iframe 을 **고정 크기 창**으로 둡니다. 1280×800 은 흔한 노트북
+ * 화면이고, vh 단위가 실제 화면과 똑같이 풀립니다. 안에서 스크롤하는 건
+ * 실제 방문자가 하는 것과 같으니 오히려 정직한 미리보기입니다.
  */
 
 const BASE_WIDTH = 1280;
+const BASE_HEIGHT = 800;
 
 /** 같은 템플릿을 탭 옮길 때마다 다시 받지 않도록. */
 const cache = new Map<string, Promise<string>>();
@@ -51,12 +54,15 @@ export interface TemplateFrameProps {
   coverUrl?: string | null;
   contact?: { email?: string | null; github?: string | null; site?: string | null };
   lang?: "ko" | "en";
-  /**
-   * fit  — 패널 폭에 맞춰 통째로 축소 (편집기 오른쪽)
-   * full — 축소하지 않고 그대로 (전체화면·내보내기 미리보기)
-   */
-  mode?: "fit" | "full";
   className?: string;
+  /**
+   * 공개 링크(/p/:id)용. 축소하지 않고 실제 화면 폭으로 그립니다.
+   *
+   * 미리보기는 "노트북 화면을 줄여서 보여주는 창"이지만, 공개 링크는
+   * 방문자가 자기 기기로 직접 보는 것이라 축소하면 안 됩니다. 폰에서
+   * 열면 템플릿의 반응형 규칙이 그 폭에 맞춰 동작해야 합니다.
+   */
+  fullWidth?: boolean;
   /** 완성된 HTML 을 밖에서도 써야 할 때(내보내기·인쇄). */
   onHtml?: (html: string) => void;
 }
@@ -69,16 +75,14 @@ export default function TemplateFrame({
   coverUrl = null,
   contact,
   lang = "ko",
-  mode = "fit",
   className = "",
+  fullWidth = false,
   onHtml,
 }: TemplateFrameProps) {
   const [template, setTemplate] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const boxRef = useRef<HTMLDivElement>(null);
-  const frameRef = useRef<HTMLIFrameElement>(null);
   const [scale, setScale] = useState(1);
-  const [height, setHeight] = useState(600);
 
   useEffect(() => {
     let alive = true;
@@ -101,42 +105,26 @@ export default function TemplateFrame({
     if (html && onHtml) onHtml(html);
   }, [html, onHtml]);
 
-  // 패널 폭을 재서 축소 비율을 정합니다.
+  /**
+   * 바깥 폭을 재서 축소 비율을 정합니다.
+   *
+   * [2026-09-23] 이 효과가 처음 돌 때는 아직 템플릿을 받는 중이라
+   * 화면에 "불러오는 중…"만 있고 boxRef 가 비어 있었습니다. 그대로
+   * 끝나고 다시 붙지 않아서 축소가 영영 안 걸렸습니다 — 1280px 짜리
+   * 내용이 좁은 패널에 그대로 나와 오른쪽이 잘렸습니다.
+   * 이제 렌더링이 끝난 뒤에도 다시 붙도록 html 을 의존성에 넣습니다.
+   */
   useEffect(() => {
-    if (mode !== "fit") {
-      setScale(1);
-      return;
-    }
     const el = boxRef.current;
     if (!el) return;
-    const ro = new ResizeObserver((entries) => {
-      const w = entries[0]?.contentRect.width ?? 0;
+    const measure = () => {
+      const w = el.clientWidth;
       if (w > 0) setScale(Math.min(1, w / BASE_WIDTH));
-    });
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [mode]);
-
-  /**
-   * 내용 높이를 읽어 iframe 높이를 맞춥니다.
-   *
-   * iframe 은 내용에 맞춰 늘어나지 않습니다 — 기본 높이 안에서 자기
-   * 스크롤바를 만듭니다. 미리보기 안에 또 스크롤바가 생기면 바깥
-   * 스크롤과 섞여서 못 씁니다.
-   */
-  const fitHeight = () => {
-    const doc = frameRef.current?.contentDocument;
-    if (!doc?.body) return;
-    const h = Math.max(doc.body.scrollHeight, doc.documentElement.scrollHeight);
-    if (h > 0) setHeight(h);
-  };
-
-  useEffect(() => {
-    if (!html) return;
-    // 폰트와 이미지가 늦게 도착하면 높이가 달라집니다. 몇 번 더 봅니다 —
-    // load 이벤트 한 번으로는 웹폰트가 적용되기 전 높이를 잡습니다.
-    const timers = [80, 400, 1200].map((ms) => window.setTimeout(fitHeight, ms));
-    return () => timers.forEach(window.clearTimeout);
   }, [html]);
 
   if (loadError) {
@@ -146,27 +134,37 @@ export default function TemplateFrame({
     return <p className={`text-xs text-neutral-600 px-4 py-10 text-center ${className}`}>불러오는 중…</p>;
   }
 
+  if (fullWidth) {
+    return (
+      <iframe
+        title="포트폴리오"
+        srcDoc={html}
+        sandbox="allow-same-origin"
+        className={`block w-full border-0 ${className}`}
+        style={{ height: "100vh" }}
+      />
+    );
+  }
+
   return (
-    <div ref={boxRef} className={className}>
+    <div ref={boxRef} className={`w-full overflow-hidden ${className}`}>
       <div
         style={{
-          width: mode === "fit" ? BASE_WIDTH : "100%",
-          height,
-          transform: mode === "fit" ? `scale(${scale})` : undefined,
+          width: BASE_WIDTH,
+          height: BASE_HEIGHT,
+          transform: `scale(${scale})`,
           transformOrigin: "top left",
-          // transform 은 레이아웃 크기를 줄이지 않습니다. 줄인 만큼
-          // 아래에 빈 공간이 남으므로 바깥 높이를 직접 줄여줍니다.
-          marginBottom: mode === "fit" ? -(height * (1 - scale)) : 0,
+          // transform 은 레이아웃 크기를 줄이지 않습니다. 줄어든 만큼
+          // 아래에 빈 공간이 남으므로 바깥 높이를 직접 지정합니다.
+          marginBottom: -(BASE_HEIGHT * (1 - scale)),
         }}
       >
         <iframe
-          ref={frameRef}
           title="포트폴리오 미리보기"
           srcDoc={html}
-          onLoad={fitHeight}
           sandbox="allow-same-origin"
-          className="block w-full border-0"
-          style={{ height }}
+          className="block border-0"
+          style={{ width: BASE_WIDTH, height: BASE_HEIGHT }}
         />
       </div>
     </div>

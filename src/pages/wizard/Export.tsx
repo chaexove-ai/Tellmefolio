@@ -516,7 +516,6 @@ export default function Export() {
                 images={images}
                 blocks={displayBlocks}
                 lang={lang === "영어" ? "en" : "ko"}
-                mode="fit"
                 onHtml={setFilledHtml}
               />
             </div>

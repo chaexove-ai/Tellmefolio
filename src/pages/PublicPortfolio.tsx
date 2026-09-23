@@ -139,7 +139,7 @@ export default function PublicPortfolio() {
         images={images}
         blocks={blocks}
         coverUrl={coverUrl}
-        mode="full"
+        fullWidth
       />
 
       <footer className="py-10 text-center">

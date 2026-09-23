@@ -115,13 +115,48 @@ function check(id: string): Result {
   const fonts = /fonts\.googleapis\.com/.test(html);
   if (fonts) warns.push("Google Fonts 를 씁니다 — 오프라인에서는 대체 서체로 보입니다(치명적이지는 않음)");
 
-  // ── 3. 인쇄 ──
+  // ── 3. 구조 ──
+  //
+  // [2026-09-23] 두 템플릿 다 닫히지 않은 <div> 가 하나씩 있었습니다.
+  // 브라우저가 </body> 에서 알아서 닫아주기 때문에 화면은 그럭저럭
+  // 나오지만, 그 순간 의도한 그리드 밖으로 내용이 새어 나갑니다 —
+  // 미니멀 세리프의 프로젝트 목록이 2단 그리드를 벗어나 있었습니다.
+  // 눈으로는 "좀 이상한데" 정도로만 보여서 놓치기 쉬우니 여기서 셉니다.
+  {
+    const bodyAt = html.indexOf("<body");
+    const body = bodyAt === -1 ? html : html.slice(bodyAt);
+    let depth = 0;
+    const re = /<(\/?)div\b[^>]*?(\/?)>/gi;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(body))) {
+      if (m[2] === "/") continue;
+      depth += m[1] === "/" ? -1 : 1;
+      if (depth < 0) break;
+    }
+    if (depth > 0) errors.push(`닫히지 않은 <div> 가 ${depth}개 있습니다 — 레이아웃이 의도한 칸 밖으로 새어 나갑니다`);
+    if (depth < 0) errors.push("</div> 가 여는 태그보다 많습니다");
+  }
+
+  // </body> 뒤에 뭔가 남아 있으면 십중팔구 브라우저 확장이 끼워 넣은
+  // 조각입니다. 저장된 페이지에는 이런 게 딸려 옵니다.
+  {
+    const after = html.split("</body>")[1] ?? "";
+    const rest = after.replace(/<\/html>/gi, "").trim();
+    if (rest.length > 0) {
+      errors.push("</body> 뒤에 내용이 있습니다 — 브라우저 확장이 끼워 넣은 조각일 가능성이 큽니다");
+    }
+  }
+  if (/glasp|grammarly|data-lastpass|__REACT_DEVTOOLS/i.test(html)) {
+    errors.push("브라우저 확장 흔적이 남아 있습니다");
+  }
+
+  // ── 4. 인쇄 ──
   if (!/@media\s+print/.test(html)) errors.push("@media print 가 없습니다 — PDF 가 웹 화면 그대로 찍힙니다");
   else if (!/@media\s+print[\s\S]{0,600}background:\s*#fff/i.test(html)) {
     warns.push("인쇄 규칙에 흰 배경 지정이 안 보입니다 — 어두운 템플릿이면 종이가 검게 나옵니다");
   }
 
-  // ── 4. 지어낸 내용 ──
+  // ── 5. 지어낸 내용 ──
   const FABRICATED = [
     [/\d+\+\s*(Projects|Years|Clients)/i, "지어낸 실적 숫자"],
     [/\d{2,3}%\s*(Client|Success|만족)/i, "지어낸 비율"],
@@ -132,7 +167,7 @@ function check(id: string): Result {
     if (re.test(visible)) errors.push(`${label}이(가) 남아 있습니다`);
   }
 
-  // ── 5. 실제로 채워보기 ──
+  // ── 6. 실제로 채워보기 ──
   let filled = "";
   try {
     filled = fillTemplate(html, SAMPLE as never);

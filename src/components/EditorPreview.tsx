@@ -65,7 +65,10 @@ export default function EditorPreview({
         )}
       </div>
 
-      <div className="rounded-xl border border-neutral-800 overflow-y-auto overflow-x-hidden max-h-[calc(100vh-9rem)]">
+      {/* [2026-09-23] 바깥 스크롤을 없앴습니다. 미리보기가 고정 크기
+          창이라 스크롤은 그 안에서 합니다 — 바깥에도 두면 어느 쪽이
+          움직이는지 알 수 없어집니다. */}
+      <div className="rounded-xl border border-neutral-800 overflow-hidden">
         <TemplateFrame
           portfolio={shown.portfolio}
           projects={shown.projects}
@@ -73,7 +76,6 @@ export default function EditorPreview({
           blocks={shown.blocks}
           coverUrl={coverUrl}
           contact={contact}
-          mode="fit"
         />
       </div>
     </div>
