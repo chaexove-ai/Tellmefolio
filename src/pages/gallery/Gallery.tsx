@@ -12,6 +12,8 @@ import {
 import type { LibraryPortfolio } from "../../lib/portfolios";
 import Reveal from "../../components/Reveal";
 import GrainCover from "../../components/GrainCover";
+import { getProfiles, getMyProfile, FALLBACK_NICKNAME } from "../../lib/profile";
+import type { Profile } from "../../lib/profile";
 
 /**
  * [2026-09-22] 실제 공개 포트폴리오를 읽습니다.
@@ -29,16 +31,26 @@ import GrainCover from "../../components/GrainCover";
  * 합니다. 내보내기 쪽 체크박스는 그대로 둡니다 — 거기는 "만들기를 끝내고
  * 공유하는" 맥락이라 둘 다 자기 자리가 있습니다.
  *
+ * [작성자 — 2026-09-23]
+ * 이제 작성자를 표시합니다. profiles 테이블이 생겼고, 거기 닉네임은
+ * 본인이 설정에서 바꿀 수 있습니다. 그전에는 "컬럼이 없고, 본인이 실명을
+ * 넣겠다고 한 적 없는데 띄울 이유가 없다"고 적어뒀었는데, 앞쪽은
+ * 해결됐고 뒤쪽은 설정 화면의 안내 문구와 아래 올리기 창의 안내로
+ * 다룹니다 — 올리기 직전에 어떤 이름으로 뜨는지 보여줍니다.
+ *
+ * 프로필은 목록을 받은 뒤 한 번에 읽습니다. 60건을 한 건씩 조회하면
+ * 요청이 60번 갑니다.
+ *
  * [빠진 필터]
  * '구성 방식' 필터를 뺐습니다. 그런 컬럼이 없어서 골라도 아무것도 걸러지지
- * 않던 칸입니다. 작성자 이름도 표시하지 않습니다 — 컬럼이 없고, 본인이
- * 실명을 넣겠다고 한 적 없는데 띄울 이유가 없습니다.
+ * 않던 칸입니다.
  */
 export default function Gallery() {
   const { session, configured } = useAuth();
   const userId = session?.user?.id;
 
   const [items, setItems] = useState<LibraryPortfolio[] | null>(null);
+  const [authors, setAuthors] = useState<Map<string, Profile>>(new Map());
   const [loadError, setLoadError] = useState(false);
 
   const [job, setJob] = useState("전체 직무");
@@ -49,7 +61,12 @@ export default function Gallery() {
 
   const load = () => {
     listPublicPortfolios()
-      .then(setItems)
+      .then((rows) => {
+        setItems(rows);
+        // 작성자 이름은 목록이 뜬 뒤에 붙습니다. 여기서 기다리면
+        // 프로필 조회가 느릴 때 목록 전체가 같이 늦어집니다.
+        void getProfiles(rows.map((r) => r.userId)).then(setAuthors);
+      })
       .catch(() => setLoadError(true));
   };
 
@@ -141,6 +158,7 @@ export default function Gallery() {
                 <p className="text-xs text-neutral-500 mt-1">
                   {g.job} · {g.year}
                 </p>
+                <Author profile={authors.get(g.userId)} />
               </Link>
             </Reveal>
           ))}
@@ -168,6 +186,32 @@ export default function Gallery() {
 }
 
 /**
+ * 카드 맨 아래 작성자 줄.
+ *
+ * 프로필을 아직 못 읽었을 때(로딩 중이거나 조회 실패) 자리를 비워두지
+ * 않고 같은 높이의 빈 줄을 둡니다 — 이름이 뒤늦게 붙으면서 카드 높이가
+ * 변하면 그리드 전체가 한 번 출렁입니다.
+ */
+function Author({ profile }: { profile?: Profile }) {
+  const name = profile?.nickname?.trim() || (profile ? FALLBACK_NICKNAME : "");
+  return (
+    <div className="mt-3 pt-3 border-t border-neutral-800/70 flex items-center gap-2 h-[30px]">
+      {profile?.avatarUrl ? (
+        <img src={profile.avatarUrl} alt="" className="h-5 w-5 rounded-full object-cover shrink-0" />
+      ) : (
+        name && (
+          <span
+            aria-hidden="true"
+            className="h-5 w-5 rounded-full bg-neutral-800 shrink-0"
+          />
+        )
+      )}
+      <span className="text-xs text-neutral-400 truncate">{name}</span>
+    </div>
+  );
+}
+
+/**
  * 내 포트폴리오를 골라 커뮤니티에 올리고 내리는 창.
  *
  * 체크 상태는 "올릴 것"이고, 저장을 눌러야 반영됩니다 — 체크하자마자
@@ -188,6 +232,10 @@ function UploadPicker({
   onDone: (message: string) => void;
 }) {
   const [mine, setMine] = useState<LibraryPortfolio[] | null>(null);
+  // 올리기 직전에 "어떤 이름으로 뜨는지"를 보여주기 위해 읽습니다.
+  // 닉네임 기본값이 소셜 로그인의 실명이라, 재직 중인 사용자가 모르고
+  // 실명으로 올리는 것을 막는 마지막 자리입니다.
+  const [me, setMe] = useState<Profile | null>(null);
   const [checked, setChecked] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -201,6 +249,10 @@ function UploadPicker({
         setChecked(new Set(rows.filter((r) => r.listed).map((r) => r.id)));
       })
       .catch(() => alive && setError("목록을 불러오지 못했습니다."));
+    // 이름을 못 읽어도 올리기 자체는 막지 않습니다 — 아래 안내만 빠집니다.
+    void getMyProfile(userId)
+      .then((p) => alive && setMe(p))
+      .catch(() => {});
     return () => {
       alive = false;
     };
@@ -304,6 +356,19 @@ function UploadPicker({
               </li>
             ))}
           </ul>
+        )}
+
+        {rows.length > 0 && me && (
+          <p className="text-xs text-neutral-400 mt-3 border-l-2 border-l-neutral-700 pl-3">
+            커뮤니티에는{" "}
+            <span className="text-neutral-200">
+              {me.nickname.trim() || FALLBACK_NICKNAME}
+            </span>{" "}
+            으로 표시됩니다.{" "}
+            <Link to="/settings" className="text-brand hover:underline">
+              이름 바꾸기
+            </Link>
+          </p>
         )}
 
         {willGoPublic.length > 0 && (

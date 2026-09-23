@@ -28,6 +28,18 @@
 const MAX_EDGE = 1600;
 const QUALITY = 0.82;
 
+/**
+ * [2026-09-23] 호출부마다 기준이 달라서 옵션을 받게 했습니다.
+ * 표지는 1600px 가 맞지만 프로필 사진은 화면에서 40~80px 로 그려집니다 —
+ * 같은 기준을 쓰면 아바타 한 장이 표지만 한 용량으로 올라갑니다.
+ */
+export interface ShrinkOptions {
+  /** 긴 변의 최대 픽셀. */
+  maxEdge?: number;
+  /** 이 크기 아래면 건드리지 않습니다. */
+  skipUnderBytes?: number;
+}
+
 /** 이 크기 아래면 건드리지 않습니다. 이미 작은 파일을 다시 인코딩하면
  *  용량이 오히려 늘거나 화질만 깎입니다. */
 const SKIP_UNDER_BYTES = 300 * 1024;
@@ -60,7 +72,12 @@ function toBlob(canvas: HTMLCanvasElement, type: string, quality: number): Promi
   return new Promise((resolve) => canvas.toBlob(resolve, type, quality));
 }
 
-export async function shrinkImage(file: File): Promise<ShrinkResult> {
+export async function shrinkImage(
+  file: File,
+  options: ShrinkOptions = {}
+): Promise<ShrinkResult> {
+  const maxEdge = options.maxEdge ?? MAX_EDGE;
+  const skipUnder = options.skipUnderBytes ?? SKIP_UNDER_BYTES;
   const keepOriginal: ShrinkResult = {
     file,
     changed: false,
@@ -74,12 +91,12 @@ export async function shrinkImage(file: File): Promise<ShrinkResult> {
   if (!file.type.startsWith("image/") || file.type === "image/gif" || file.type === "image/svg+xml") {
     return keepOriginal;
   }
-  if (file.size < SKIP_UNDER_BYTES) return keepOriginal;
+  if (file.size < skipUnder) return keepOriginal;
 
   try {
     const img = await loadImage(file);
     const longest = Math.max(img.naturalWidth, img.naturalHeight);
-    const scale = longest > MAX_EDGE ? MAX_EDGE / longest : 1;
+    const scale = longest > maxEdge ? maxEdge / longest : 1;
 
     const canvas = document.createElement("canvas");
     canvas.width = Math.round(img.naturalWidth * scale);

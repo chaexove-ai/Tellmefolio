@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Link2, RefreshCw, ShieldCheck, Trash2, UserRound } from "lucide-react";
 import { useAuth } from "../../auth/AuthProvider";
+import ProfileEditor from "../../components/ProfileEditor";
 
 /**
  * [2026-09] 연결 상태를 실제 세션에서 읽습니다.
@@ -40,6 +41,11 @@ export default function AccountSettings() {
   return (
     <div className="max-w-3xl space-y-6">
       <h1 className="text-xl font-heading">계정 설정</h1>
+
+      {/* [2026-09-23] 프로필이 맨 위입니다. 아래 항목들은 문제가 생겼을 때
+          찾아오는 자리지만, 닉네임은 커뮤니티에 올리기 전에 한 번 보게
+          해야 하는 값입니다. */}
+      <ProfileEditor />
 
       <div className="entry space-y-4">
         <h2 className="entry-title mb-0 inline-flex items-center gap-2">

@@ -36,6 +36,9 @@ export interface ExportedData {
   };
   portfolios: Array<PortfolioRow & { projects: PortfolioProjectRow[] }>;
   draftGenerations: unknown[];
+  /** [2026-09-23] 닉네임·프로필 사진 경로. 내보내기는 "내 데이터 전부"라고
+   *  적혀 있으니, 새로 생긴 데이터도 같이 나가야 합니다. */
+  profile: unknown | null;
 }
 
 /**
@@ -52,11 +55,12 @@ export interface ExportedData {
 export async function exportMyData(userId: string): Promise<ExportedData> {
   const sb = await requireClient();
 
-  const [{ data: user }, portfolioRes, projectRes, draftRes] = await Promise.all([
+  const [{ data: user }, portfolioRes, projectRes, draftRes, profileRes] = await Promise.all([
     sb.auth.getUser(),
     sb.from("portfolios").select().eq("user_id", userId).order("created_at"),
     sb.from("portfolio_projects").select().order("position"),
     sb.from("draft_generations").select().eq("user_id", userId).order("created_at"),
+    sb.from("profiles").select().eq("id", userId).maybeSingle(),
   ]);
 
   if (portfolioRes.error || projectRes.error) {
@@ -83,6 +87,7 @@ export async function exportMyData(userId: string): Promise<ExportedData> {
     // draft_generations 는 실패해도 내보내기 전체를 막지 않습니다 —
     // 호출 기록은 부가 정보이고, 본문인 포트폴리오가 더 중요합니다.
     draftGenerations: draftRes.error ? [] : (draftRes.data ?? []),
+    profile: profileRes.error ? null : (profileRes.data ?? null),
   };
 }
 

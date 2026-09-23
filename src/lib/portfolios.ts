@@ -347,6 +347,8 @@ export async function getCoverImageUrl(path: string): Promise<string> {
  */
 export interface LibraryPortfolio {
   id: string;
+  /** 만든 사람. 커뮤니티에서 작성자 프로필을 붙일 때 씁니다. */
+  userId: string;
   title: string;
   job: string;
   year: string;
@@ -360,6 +362,7 @@ export interface LibraryPortfolio {
 function toLibraryPortfolio(p: PortfolioRow): LibraryPortfolio {
   return {
     id: p.id,
+    userId: p.user_id,
     title: p.title,
     job: p.job?.trim() || "직무 미지정",
     // year 컬럼은 아직 어디서도 채우지 않아 보통 null 입니다 — 만들어진
