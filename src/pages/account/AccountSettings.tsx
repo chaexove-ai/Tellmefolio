@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Link2, RefreshCw, ShieldCheck, Trash2, UserRound } from "lucide-react";
+import { Link2, ShieldCheck, Trash2, UserRound } from "lucide-react";
 import { useAuth } from "../../auth/AuthProvider";
 import ProfileEditor from "../../components/ProfileEditor";
 
@@ -87,17 +87,14 @@ export default function AccountSettings() {
         )}
       </div>
 
+      {/* [2026-09-23] 두 줄이었습니다 — "소셜 계정 연결 관리"와 "GitHub
+          다시 연결". 버튼이 둘 다 /settings/social 로 갔고, 정작 그 화면에는
+          다시 연결하는 방법이 없었습니다. 한 줄로 합치고, 다시 연결은
+          도착지 안에서 실제로 누를 수 있게 옮겼습니다. */}
       <Row
         icon={Link2}
         title="소셜 계정 연결 관리"
-        desc="Google, GitHub, Figma 계정의 연결 상태를 확인하고 해제할 수 있습니다."
-        to="/settings/social"
-      />
-
-      <Row
-        icon={RefreshCw}
-        title="GitHub 다시 연결"
-        desc="저장소 목록이 비어 보이면 여기서 연결을 새로 하세요. 로그인 상태와 별개로, 저장소를 읽는 권한은 새로고침하면 사라집니다."
+        desc="로그인에 쓰는 계정을 확인하고, 연결을 더하거나 해제할 수 있습니다. GitHub 저장소 권한을 다시 받는 것도 여기입니다."
         to="/settings/social"
       />
 

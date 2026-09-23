@@ -69,8 +69,7 @@ export const versionHistory: VersionEntry[] = [
   { id: "v1", label: "초기 저장", timestamp: "2025-01-09 13:00" },
 ];
 
-export const socialAccounts = [
-  { provider: "Google", identifier: "hong@gmail.com", isLoginMethod: true, isSourceAccess: false },
-  { provider: "GitHub", identifier: "hong-dev", isLoginMethod: false, isSourceAccess: false },
-  { provider: "Figma", identifier: "hong@figma.com", isLoginMethod: false, isSourceAccess: true },
-];
+// [2026-09-23] socialAccounts 를 지웠습니다. 소셜 계정 관리 화면이 이제
+// 세션의 실제 identities 를 읽으므로 쓰는 곳이 없습니다. 남겨두면 다음에
+// 누군가 "마침 있네" 하고 다시 갖다 쓰게 됩니다 — hong@gmail.com 이
+// 화면에 다시 뜨는 경로는 그렇게 생깁니다.
