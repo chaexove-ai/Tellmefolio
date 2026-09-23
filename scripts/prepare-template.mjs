@@ -58,6 +58,28 @@ if (!existsSync(input)) {
 }
 
 let s = readFileSync(input, "utf-8");
+
+/**
+ * [2026-09-23] 디자인 도구에서 "페이지 저장"을 하면 도구의 앱 껍데기가
+ * 저장되고, 정작 디자인은 그 안 iframe 에 들어 있습니다. 껍데기를 그냥
+ * 변환하면 디자인은 한 줄도 없는 빈 템플릿이 나오는데, 파일 크기는
+ * 멀쩡해서 알아채기 어렵습니다. 여기서 잡아 실제 파일 경로를 알려줍니다.
+ */
+const wrapper = s.match(/<iframe[^>]*\ssrc="(\.\/[^"]+\.html)"[^>]*>/i);
+if (wrapper && !/data-tf/.test(s)) {
+  const inner = path.resolve(path.dirname(input), decodeURIComponent(wrapper[1]));
+  console.error(`
+  이 파일은 디자인이 아니라 디자인 도구의 화면 껍데기입니다.
+  실제 디자인은 iframe 안에 따로 저장돼 있습니다.
+
+  이걸 쓰세요:
+    ${inner}
+
+  (파일이 안 보이면 저장한 폴더 옆의 _files 폴더를 확인하세요)
+`);
+  process.exit(1);
+}
+
 const before = s.length;
 const report = [];
 
