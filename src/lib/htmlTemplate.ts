@@ -68,9 +68,17 @@ function truthy(v: unknown): boolean {
 function applyBinding(el: Element, value: unknown) {
   const text = asText(value);
 
-  if (el instanceof HTMLImageElement) {
+  // [2026-09-23] instanceof 대신 tagName 을 봅니다.
+  //
+  // instanceof HTMLImageElement 는 그 요소가 "이 창의" HTMLImageElement
+  // 일 때만 참입니다. 다른 document 에서 만든 요소나, 브라우저가 아닌
+  // 곳(검증 스크립트)에서는 생성자가 달라 조용히 빗나갑니다 — 이미지가
+  // src 대신 글자로 채워지는 식으로요. tagName 은 어디서든 같습니다.
+  const tag = el.tagName.toUpperCase();
+
+  if (tag === "IMG") {
     if (text) {
-      el.src = text;
+      el.setAttribute("src", text);
       el.removeAttribute("srcset");
     } else {
       // 이미지가 없으면 그 자리를 비웁니다. 깨진 이미지 아이콘이 남는
@@ -80,8 +88,8 @@ function applyBinding(el: Element, value: unknown) {
     return;
   }
 
-  if (el instanceof HTMLAnchorElement) {
-    if (text) el.href = text;
+  if (tag === "A") {
+    if (text) el.setAttribute("href", text);
     else el.removeAttribute("href");
     return;
   }
