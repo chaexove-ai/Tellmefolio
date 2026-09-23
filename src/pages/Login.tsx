@@ -56,7 +56,12 @@ export default function Login() {
 
        lg 미만에서는 위아래로 쌓입니다. 로그인은 데스크탑 전용 게이트
        바깥이라 휴대폰에서도 열립니다. */
-    <div className="min-h-screen lg:grid lg:grid-cols-[1.1fr_1fr]">
+    /* [2026-09-23] 왼쪽을 1.1fr 에서 0.62fr 로 좁혔습니다.
+       글을 오른쪽으로 다 모은 뒤로는 왼쪽이 "바라보는 면"인데, 그 면이
+       화면의 절반을 넘게 차지하니 비어 보이는 게 아니라 실제로 비어
+       있었습니다. 좁히면 같은 역할(화면에 무게 주기)을 하면서 빈 느낌이
+       사라지고, 남는 폭은 로그인 칸이 가져갑니다. */
+    <div className="min-h-screen lg:grid lg:grid-cols-[0.62fr_1fr]">
       {/* [2026-09] 왼쪽에서 글을 걷어냈습니다.
           양쪽에 제목이 하나씩 있으니(왼 44px / 오른 34px) 읽을 곳이 두
           군데가 되어 시선이 갈렸습니다. 행동은 오른쪽에 있으므로 글도
@@ -66,10 +71,10 @@ export default function Login() {
 
           면을 없애지 않은 이유: 화면에 무게를 주는 역할은 그대로입니다.
           이게 빠지면 크림 바탕에 폼 하나가 떠 있던 예전으로 돌아갑니다. */}
-      <div className="surface-invert flex flex-col justify-between px-8 py-12 lg:px-16 lg:py-20">
+      <div className="surface-invert flex flex-col justify-between px-8 py-12 lg:px-10 xl:px-14 lg:py-20">
         <p className="text-xs tracking-[0.2em] text-brand uppercase">Tellmefolio</p>
 
-        <p className="hidden lg:block text-xs text-neutral-600 leading-relaxed max-w-[44ch]">
+        <p className="hidden lg:block text-xs text-neutral-600 leading-relaxed max-w-[32ch]">
           공개 저장소만 읽습니다. 비공개 코드에 접근하는 권한은 요청하지
           않습니다.
         </p>
@@ -78,7 +83,7 @@ export default function Login() {
       <div className="flex items-center justify-center px-6 py-14 lg:px-16">
         {/* 읽는 순서가 한 줄입니다 — 제목 → 설명 → 버튼. 시선이 위에서
             아래로 한 번만 흐르고 끝에서 행동에 닿습니다. */}
-        <div className="w-full max-w-sm lg:max-w-[520px]">
+        <div className="w-full max-w-sm lg:max-w-[560px]">
           <h1 className="font-heading text-2xl lg:text-[40px] lg:leading-[1.3]">
             이야기하면
             <br />
