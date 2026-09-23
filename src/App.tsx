@@ -32,7 +32,6 @@ const PortfolioEditor = lazy(() => import("./pages/wizard/PortfolioEditor"));
 const Export = lazy(() => import("./pages/wizard/Export"));
 
 const JobSwitchRequest = lazy(() => import("./pages/jobswitch/JobSwitchRequest"));
-const JobSwitchResult = lazy(() => import("./pages/jobswitch/JobSwitchResult"));
 
 const Gallery = lazy(() => import("./pages/gallery/Gallery"));
 const ShareSettings = lazy(() => import("./pages/gallery/ShareSettings"));
@@ -110,7 +109,11 @@ export default function App() {
 
         {/* 직무 전환 재구성 */}
         <Route path="/job-switch" element={<JobSwitchRequest />} />
-        <Route path="/job-switch/result" element={<JobSwitchResult />} />
+        {/* [2026-09-23] 결과 화면을 없앴습니다. 제안을 보면서 목표 직무를
+            고쳐 다시 돌리는 일이 잦은데, 화면이 갈리면 그때마다 뒤로
+            가야 했습니다. 이제 한 화면에서 입력하고 제안을 봅니다.
+            예전 주소는 그대로 되돌려 보냅니다. */}
+        <Route path="/job-switch/result" element={<Navigate to="/job-switch" replace />} />
 
         {/* 커뮤니티 및 공유.
             이름이 사이드바("커뮤니티")·랜딩("갤러리")·라우트(/gallery)로
