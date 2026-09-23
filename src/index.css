@@ -317,12 +317,28 @@ summary::marker { content: ""; }
    그냥 두면 긴 제목이 여러 칸으로 접혀 읽는 순서가 깨집니다. */
 .book-title {
   writing-mode: vertical-rl;
-  text-orientation: mixed;
+  /* [2026-09-23] mixed → upright.
+     mixed 는 영문·숫자를 90도 눕힙니다. 읽기 불편한 것도 문제지만
+     그보다 먼저, 누운 글자가 세로쓰기 칸 너비(line-height)를 지키지
+     않아 앞 글자와 겹쳐 찍혔습니다 — "올리브영"과 "UX/UI" 가 한
+     자리에 포개져 있었습니다. upright 는 모든 글자를 바로 세웁니다. */
+  text-orientation: upright;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   line-height: 64px; /* 세로쓰기에서 line-height 는 칸 너비입니다 = 책등 폭(.book width) */
   text-align: left;
+}
+
+/* 영문·숫자 2~4자 묶음은 한 칸에 가로로 눕혀 넣습니다.
+   upright 만 쓰면 "UX/UI" 가 U·X·/·U·I 다섯 줄로 쌓여 책등을 다
+   잡아먹습니다. 인쇄된 한국 책등이 약자를 처리하는 방식이 이것입니다 —
+   한글은 세우고, 짧은 영문 덩어리는 한 칸에 눕혀 넣습니다.
+   다섯 자가 넘는 영어 단어는 그냥 세워 쌓습니다. 한 칸에 우겨넣으면
+   글자가 뭉개져서 못 읽습니다. */
+.book-title-run {
+  -webkit-text-combine: horizontal; /* Safari 15.4 이전 */
+  text-combine-upright: all;
 }
 
 @media (prefers-reduced-motion: reduce) {

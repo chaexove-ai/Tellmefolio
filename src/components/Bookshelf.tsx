@@ -63,6 +63,31 @@ interface BookshelfProps {
  * - prefers-reduced-motion 에서는 폭이 늘어나지 않고 테두리 강조만 남깁니다
  *   (표지 면은 아예 감춥니다 — 넓어지지 않으면 책등과 겹쳐 보이므로).
  */
+/**
+ * 책등 제목을 세로쓰기용 조각으로 나눕니다.
+ *
+ * 세로로 쓸 때 영문·숫자를 어떻게 둘지가 문제입니다. 눕히면(mixed)
+ * 읽기도 불편하고 앞 글자와 겹쳐 찍힙니다. 전부 세우면(upright)
+ * "UX/UI" 가 다섯 줄로 쌓여 책등을 다 잡아먹습니다.
+ *
+ * 인쇄된 한국 책등이 쓰는 방식을 따릅니다 — 한글은 세우고, 짧은 영문
+ * 덩어리는 한 칸에 가로로 눕혀 넣습니다. 여기서 "짧은"은 2~4자입니다.
+ * 한 칸은 글자 한 칸 폭이라 다섯 자부터는 뭉개져서 못 읽습니다.
+ * 그런 긴 단어는 그냥 세워 쌓습니다(덜 예쁘지만 읽을 수는 있습니다).
+ */
+function spineParts(title: string): Array<{ text: string; combine: boolean }> {
+  const parts: Array<{ text: string; combine: boolean }> = [];
+  let at = 0;
+  for (const m of title.matchAll(/[A-Za-z0-9]+/g)) {
+    const start = m.index ?? 0;
+    if (start > at) parts.push({ text: title.slice(at, start), combine: false });
+    parts.push({ text: m[0], combine: m[0].length >= 2 && m[0].length <= 4 });
+    at = start + m[0].length;
+  }
+  if (at < title.length) parts.push({ text: title.slice(at), combine: false });
+  return parts;
+}
+
 export default function Bookshelf({ portfolios, onUpdated }: BookshelfProps) {
   const [active, setActive] = useState<LibraryPortfolio | null>(null);
 
@@ -279,7 +304,15 @@ export default function Bookshelf({ portfolios, onUpdated }: BookshelfProps) {
                 aria-hidden="true"
               />
               <span className="book-title flex-1 min-h-0 w-full py-3 text-[13px] text-neutral-300 group-hover:text-neutral-100 transition-colors">
-                {p.title}
+                {spineParts(p.title).map((part, i) =>
+                  part.combine ? (
+                    <span key={i} className="book-title-run">
+                      {part.text}
+                    </span>
+                  ) : (
+                    part.text
+                  )
+                )}
               </span>
               <span className="text-[12px] text-neutral-500 pb-2 shrink-0" aria-hidden="true">
                 {p.year}
