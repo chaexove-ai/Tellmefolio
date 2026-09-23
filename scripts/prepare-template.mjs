@@ -96,6 +96,24 @@ if (n) {
   note(`미리보기 절대 주소 ${n}개 → 문서 내 앵커`);
 }
 
+// 같은 폴더에 저장된 CSS 는 읽어서 인라인합니다. 디자인 도구가
+// "페이지 저장"을 하면 Google Fonts CSS 가 ./css2 같은 이름으로
+// 떨어지는데, 링크만 지우면 서체가 통째로 사라집니다.
+s = s.replace(/<link[^>]*rel="stylesheet"[^>]*href="\.\/([^"]+)"[^>]*>/g, (m, name) => {
+  const local = path.resolve(path.dirname(input), decodeURIComponent(name));
+  if (!existsSync(local)) return "";
+  const css = readFileSync(local, "utf-8");
+  note(`로컬 스타일시트 ${name} 인라인 (${Math.round(css.length / 1024)}KB)`);
+  return `<style>\n${css}\n</style>`;
+});
+s = s.replace(/<link[^>]*href="\.\/([^"]+)"[^>]*rel="stylesheet"[^>]*>/g, (m, name) => {
+  const local = path.resolve(path.dirname(input), decodeURIComponent(name));
+  if (!existsSync(local)) return "";
+  const css = readFileSync(local, "utf-8");
+  note(`로컬 스타일시트 ${name} 인라인 (${Math.round(css.length / 1024)}KB)`);
+  return `<style>\n${css}\n</style>`;
+});
+
 n = count(/(src|href)="\.\/[^"]*_files\/[^"]*"/g);
 if (n) {
   s = s.replace(/src="\.\/[^"]*_files\/[^"]*"/g, 'src=""');
@@ -117,7 +135,22 @@ if (n) {
 }
 
 // ── 3. Tailwind ──────────────────────────────────────────────
-const usedTailwindCdn = /cdn\.tailwindcss\.com/.test(s);
+/**
+ * Tailwind 를 썼는지.
+ *
+ * cdn.tailwindcss.com 문자열만 보면 놓칩니다 — "페이지 저장"을 하면
+ * 그 스크립트가 ./saved_resource 같은 로컬 이름으로 바뀌어 있습니다.
+ * 그러면 유틸리티 클래스는 그대로인데 그걸 정의하는 CSS 가 없는,
+ * 겉보기엔 멀쩡하고 열면 스타일이 다 죽은 파일이 나옵니다.
+ *
+ * 그래서 클래스 쪽을 봅니다: 전형적인 유틸리티가 여러 개 보이는데
+ * 그걸 정의하는 규칙이 문서 안에 없으면 Tailwind 가 필요한 상태입니다.
+ */
+const looksTailwind = /class="[^"]*\b(flex|grid|hidden|absolute|relative)\b[^"]*"/.test(s)
+  && /class="[^"]*\b(px-\d|py-\d|mb-\d|mt-\d|gap-\d|text-\[|text-(xs|sm|lg|xl|\d))\b/.test(s);
+const hasUtilityCss = /\.(flex|grid)\s*\{[^}]*display\s*:/.test(s);
+const usedTailwindCdn = /cdn\.tailwindcss\.com|window\.tailwind/.test(s) || (looksTailwind && !hasUtilityCss);
+
 if (usedTailwindCdn) {
   const tmp = path.join(root, ".tpl-tmp");
   mkdirSync(tmp, { recursive: true });
@@ -154,7 +187,18 @@ if (n) {
   note(`스크립트 ${n}개 제거 — 템플릿은 스크립트 없이 동작해야 합니다`);
 }
 
-// ── 5. 인쇄 규칙 ─────────────────────────────────────────────
+// ── 5. 스크립트에 기대던 규칙 ────────────────────────────────
+//
+// 디자인 도구는 로딩 중 깜빡임을 막으려고 "스크립트가 클래스를 붙이기
+// 전까지 숨김" 같은 규칙을 넣습니다. 그 스크립트를 우리가 지웠으므로,
+// 규칙만 남으면 페이지가 통째로 안 보일 수 있습니다.
+const HIDE_UNTIL_READY = /(html|body):not\(\.[a-z-]*ready\)\s*\{[^}]*opacity:\s*0[^}]*\}/gi;
+if (HIDE_UNTIL_READY.test(s)) {
+  s = s.replace(HIDE_UNTIL_READY, "");
+  note("'준비되기 전까지 숨김' 규칙 제거 — 그 클래스를 붙이던 스크립트가 없습니다");
+}
+
+// ── 6. 인쇄 규칙 ─────────────────────────────────────────────
 if (!/@media\s+print/.test(s)) {
   const PRINT = `
 /* ── 인쇄(PDF) — 자동 생성된 기본값 ─────────────────────────
