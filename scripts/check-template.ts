@@ -150,6 +150,25 @@ function check(id: string): Result {
     errors.push("브라우저 확장 흔적이 남아 있습니다");
   }
 
+  // 글자 자리에 쓸 키를 <a>·<img> 에 걸면 조용히 어긋납니다.
+  //
+  // [2026-09-23] 미니멀 세리프의 머리말 로고가 <a data-tf="title"> 이었습니다.
+  // 엔진은 <a> 에 오면 href 를 바꾸므로, 제목이 주소칸에 들어가고 화면
+  // 글자는 "포트폴리오" 로 영영 남았습니다. 눈으로는 "로고는 원래 저런가
+  // 보다" 로 지나갑니다. 아래 키들은 절대 주소가 아니니 여기서 막습니다.
+  {
+    const TEXT_ONLY = ["title", "summary", "job", "year", "name", "lead", "label", "value", "text"];
+    for (const key of TEXT_ONLY) {
+      const re = new RegExp(`<(a|img)\\b[^>]*data-tf="${key}"`, "i");
+      if (re.test(html)) {
+        errors.push(
+          `data-tf="${key}" 가 <a> 또는 <img> 에 걸려 있습니다 — 그 둘은 href/src 가 바뀝니다. ` +
+            `글자를 보여주려면 안쪽을 <span data-tf="${key}"> 로 감싸세요`
+        );
+      }
+    }
+  }
+
   // ── 4. 인쇄 ──
   if (!/@media\s+print/.test(html)) errors.push("@media print 가 없습니다 — PDF 가 웹 화면 그대로 찍힙니다");
   else if (!/@media\s+print[\s\S]{0,600}background:\s*#fff/i.test(html)) {

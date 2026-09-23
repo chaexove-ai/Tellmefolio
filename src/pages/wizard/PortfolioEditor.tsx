@@ -455,6 +455,23 @@ export default function PortfolioEditor() {
     getPortfolioWithProjects(id)
       .then(({ portfolio: p, projects: ps }) => {
         if (!alive) return;
+        // [2026-09-23] 남의 것이면 여기서 돌려보냅니다.
+        //
+        // RLS 는 공개 포트폴리오를 누구나 읽게 허용합니다 — 공개 링크가
+        // 열려야 하니 당연합니다. 그런데 이 화면은 로그인만 확인하고
+        // 소유자는 보지 않았습니다. 그래서 커뮤니티에서 본 남의 글의
+        // id 를 주소창에 넣으면 편집기 가 그대로 열렸습니다.
+        //
+        // 커뮤니티 화면에는 "열람만 가능하며, 내용을 복제하거나 자신의
+        // 포트폴리오로 가져올 수 없습니다" 라고 적혀 있습니다. 그 문장을
+        // 사실로 만드는 것이 이 검사입니다. 화면단 차단이라 서버가 막는
+        // 것과는 다르지만, 막아야 할 것은 "남의 것을 내 도구로 여는 것"
+        // 이지 내용을 읽는 것이 아닙니다 — 읽는 건 공개 링크의 목적입니다.
+        if (session?.user?.id && p.user_id !== session.user.id) {
+          navigate(`/p/${p.id}`, { replace: true });
+          return;
+        }
+
         setPortfolio(p);
         setProjects(ps);
         if (ps.length > 0) loadProject(0, ps);

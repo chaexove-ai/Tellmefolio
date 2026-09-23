@@ -380,11 +380,11 @@
         <!-- Navigation -->
         <nav class="fixed top-0 w-full z-50 py-10 px-8 md:px-20">
             <div class="max-w-7xl mx-auto flex justify-between items-end">
-                <a href="#" id="nav-logo" data-tf="title" class="text-2xl font-display italic tracking-tighter">포트폴리오</a>
+                <a href="#" id="nav-logo" class="text-2xl font-display italic tracking-tighter"><span data-tf="title">포트폴리오</span></a>
                 <div class="hidden md:flex items-center gap-16 text-[10px] font-semibold uppercase tracking-[0.3em] text-white/40">
-                    <a href="#work" id="nav-work-link" class="hover:text-white transition-colors">프로젝트</a>
-                    <a href="#about" id="nav-about-link" class="hover:text-white transition-colors">소개</a>
-                    <a href="#contact" id="nav-contact-link" class="hover:text-white transition-colors">연락처</a>
+                    <a href="#work" id="nav-work-link" class="hover:text-white transition-colors" data-tf-en="Work">프로젝트</a>
+                    <a href="#about" id="nav-about-link" class="hover:text-white transition-colors" data-tf-en="About">소개</a>
+                    <a href="#contact" id="nav-contact-link" class="hover:text-white transition-colors" data-tf-en="Contact">연락처</a>
                 </div>
             </div>
         </nav>
@@ -471,7 +471,7 @@
                              것이었고, 전문 분야는 누가 쓰든 같은 항목이 나왔습니다.
                              프로젝트에 적은 스택에서 모아 씁니다. -->
                         <div data-tf-if="stack" class="mt-16 pt-10 border-t border-white/5">
-                            <h5 class="text-[10px] font-bold uppercase tracking-[0.4em] text-white/20 mb-5">사용한 도구 · 기술</h5>
+                            <h5 class="text-[10px] font-bold uppercase tracking-[0.4em] text-white/20 mb-5" data-tf-en="Tools &amp; Technologies">사용한 도구 · 기술</h5>
                             <ul class="flex flex-wrap gap-x-6 gap-y-2 text-sm text-white/60">
                                 <li data-tf-repeat="stack" data-tf="."></li>
                             </ul>
@@ -484,7 +484,7 @@
         <section id="contact" class="py-40 px-8 md:px-20 border-t border-white/5">
             <div class="max-w-7xl mx-auto text-center">
                 <h2 class="text-5xl md:text-8xl font-display font-medium tracking-tight mb-16">
-                    함께 <span class="text-[#FF006E]">일해요.</span>
+                    <span data-tf-en="Let's work">함께</span> <span class="text-[#FF006E]" data-tf-en="together.">일해요.</span>
                 </h2>
                 <div class="flex flex-col items-center gap-10">
                     <a data-tf-if="email" data-tf="emailHref" href="#" class="text-2xl md:text-4xl font-display italic hover:text-[#00FFFF] transition-colors pb-4 border-b border-white/10">
@@ -495,7 +495,7 @@
                          없는 것만 못합니다. -->
                     <div class="flex gap-12 text-[10px] font-bold uppercase tracking-[0.4em] text-white/30">
                         <a data-tf-if="github" data-tf="github" href="#" target="_blank" rel="noreferrer" class="hover:text-white transition-colors">GitHub</a>
-                        <a data-tf-if="site" data-tf="site" href="#" target="_blank" rel="noreferrer" class="hover:text-white transition-colors">웹사이트</a>
+                        <a data-tf-if="site" data-tf="site" href="#" target="_blank" rel="noreferrer" class="hover:text-white transition-colors" data-tf-en="Website">웹사이트</a>
                     </div>
                 </div>
             </div>

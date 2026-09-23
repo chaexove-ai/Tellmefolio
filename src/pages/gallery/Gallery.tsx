@@ -196,6 +196,13 @@ export default function Gallery() {
  */
 function Author({ profile }: { profile?: Profile }) {
   const name = profile?.nickname?.trim() || (profile ? FALLBACK_NICKNAME : "");
+
+  // [2026-09-23] 사진을 안 올린 사람은 빈 동그라미였습니다. 밝은 테마에서
+  // 거의 안 보여서 그 사람만 줄이 비어 보였습니다. 이름 첫 글자를 넣으면
+  // 비어 보이지 않으면서 사람끼리 구분도 됩니다 — 사진 없는 것이 기본
+  // 상태인데 그게 결함처럼 보여서는 안 됩니다.
+  const initial = name ? [...name][0] : "";
+
   return (
     <div className="mt-3 pt-3 border-t border-neutral-800/70 flex items-center gap-2 h-[30px]">
       {profile?.avatarUrl ? (
@@ -204,8 +211,11 @@ function Author({ profile }: { profile?: Profile }) {
         name && (
           <span
             aria-hidden="true"
-            className="h-5 w-5 rounded-full bg-neutral-800 shrink-0"
-          />
+            className="h-5 w-5 rounded-full bg-neutral-800 text-neutral-400 shrink-0
+              flex items-center justify-center text-[10px] font-medium leading-none"
+          >
+            {initial}
+          </span>
         )
       )}
       <span className="text-xs text-neutral-400 truncate">{name}</span>

@@ -93,6 +93,10 @@ export function buildTemplateData(input: {
   const email = (contact.email ?? "").trim();
 
   return {
+    // 엔진이 읽는 예약 키입니다(htmlTemplate.ts). 템플릿의 고정 문구를
+    // 영어판으로 바꿀지 여기서 정해집니다 — 머리말·꼬리말처럼 사용자
+    // 내용이 아닌 글자는 번역 경로가 닿지 않기 때문입니다.
+    lang,
     title: portfolio.title.trim(),
     summary: (portfolio.summary ?? "").trim(),
     job: portfolio.job?.trim() || "",

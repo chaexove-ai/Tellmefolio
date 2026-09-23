@@ -20,6 +20,23 @@
  *   data-tf="."             반복 안에서 "항목 자체"를 뜻합니다
  *                           (문자열 배열용 — 예: 스택 태그).
  *
+ *   data-tf-en="영어 문구"    영어로 내보낼 때만 그 글자로 바꿉니다.
+ *                           (2026-09-23 추가 — 아래 설명)
+ *
+ * [왜 다섯 번째가 필요했나 — 2026-09-23]
+ * 영어로 번역해도 머리말과 꼬리말이 한국어로 남았습니다. "프로젝트 ·
+ * 소개 · 연락처", "함께 일해요.", "사용한 도구 · 기술" 같은 글자는
+ * 사용자 내용이 아니라 **템플릿에 박힌 문구**라, 사용자 내용을 번역하는
+ * 경로(translate-portfolio)가 닿지 않는 자리였습니다.
+ *
+ * 이걸 data-tf 키로 만들어 우리가 문구를 정해 내려보낼 수도 있었지만,
+ * 그러면 템플릿 만드는 사람이 자기 화면의 문구를 못 정합니다 — "Selected
+ * Works" 라고 쓸지 "Work" 라고 쓸지는 디자인의 일부입니다. 그래서 문구는
+ * 템플릿에 두되 영어판을 한 칸 더 적게 했습니다.
+ *
+ * 한국어가 기본이고 data-tf-en 은 덧붙이는 것이라, 안 적은 자리는 그냥
+ * 한국어로 남습니다 — 기존 템플릿이 조용히 깨지지 않습니다.
+ *
  * 템플릿 파일에 원래 적혀 있던 예시 글자는 그대로 둬도 됩니다. 채울 때
  * 덮어쓰고, 브라우저로 열면 그 글자가 보여서 템플릿 자체의 미리보기가
  * 됩니다.
@@ -40,6 +57,10 @@ export interface TemplateData {
 const REPEAT = "data-tf-repeat";
 const BIND = "data-tf";
 const IF = "data-tf-if";
+const EN = "data-tf-en";
+
+/** 언어를 담는 예약 키. 템플릿이 쓰는 이름이 아니라 엔진이 읽는 값입니다. */
+const LANG_KEY = "lang";
 
 function lookup(data: TemplateData | string, key: string): unknown {
   if (key === ".") return data;
@@ -174,6 +195,18 @@ function isDirectScope(el: Element, root: Element | DocumentFragment): boolean {
  */
 export function fillTemplate(templateHtml: string, data: TemplateData): string {
   const doc = new DOMParser().parseFromString(templateHtml, "text/html");
+
+  // 언어 교체를 먼저 합니다. 반복·조건보다 앞에 두는 이유는, 반복 안에
+  // 있는 고정 문구(예: 프로젝트 카드의 "자세히 보기")도 복제되기 전에
+  // 한 번만 바꾸면 되기 때문입니다. 복제 뒤에 하면 같은 일을 항목 수만큼
+  // 반복합니다.
+  if (data[LANG_KEY] === "en") {
+    for (const el of Array.from(doc.querySelectorAll(`[${EN}]`))) {
+      const en = el.getAttribute(EN);
+      if (en !== null) el.textContent = en;
+    }
+  }
+
   fillScope(doc.body, data);
 
   // 템플릿 파일의 주석은 템플릿 만드는 사람을 위한 것입니다. 사용자
@@ -184,10 +217,11 @@ export function fillTemplate(templateHtml: string, data: TemplateData): string {
   for (const c of comments) c.remove();
   // 남은 표시는 지웁니다 — 데이터에 없는 키가 템플릿에 있을 수 있고,
   // 그 흔적이 결과물 HTML 에 남을 이유가 없습니다.
-  for (const el of Array.from(doc.querySelectorAll(`[${BIND}],[${REPEAT}],[${IF}]`))) {
+  for (const el of Array.from(doc.querySelectorAll(`[${BIND}],[${REPEAT}],[${IF}],[${EN}]`))) {
     el.removeAttribute(BIND);
     el.removeAttribute(REPEAT);
     el.removeAttribute(IF);
+    el.removeAttribute(EN);
   }
   return `<!DOCTYPE html>\n${doc.documentElement.outerHTML}`;
 }
