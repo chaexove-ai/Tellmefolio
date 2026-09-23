@@ -123,13 +123,13 @@ Vite는 **빌드 시점에** 환경변수를 코드에 박습니다 — 변수�
 ### 새 템플릿 넣기
 
 ```bash
-npm run tpl:prepare -- ~/Downloads/받은디자인.html my-template
+npm run tpl:prepare ~/Downloads/받은디자인.html my-template
 # → 저장 찌꺼기 제거, iconify 풀기, Tailwind CSS 인라인, 스크립트 제거,
 #    인쇄 규칙 기본값 추가까지 자동
 
 # 파일을 열어 data-tf 를 답니다 (규칙은 src/lib/htmlTemplate.ts 주석)
 
-npm run tpl:check -- my-template
+npm run tpl:check my-template
 # → 필수 바인딩, 외부 의존, 인쇄 규칙, 지어낸 내용, 실제 채우기까지 검사
 
 # 통과하면 src/lib/htmlTemplates.ts 에 한 줄 추가

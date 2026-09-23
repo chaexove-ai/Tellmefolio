@@ -1,8 +1,8 @@
 /**
  * 템플릿이 쓸 만한 상태인지 기계가 봅니다.
  *
- *   npm run tpl:check -- <템플릿-id>        한 장
- *   npm run tpl:check                        전부
+ *   npm run tpl:check  doc-clean     한 장
+ *   npm run tpl:check                전부
  *
  * [왜 필요한가]
  * 템플릿을 사람이 눈으로 확인하면 확장되지 않습니다. 그리고 눈으로는

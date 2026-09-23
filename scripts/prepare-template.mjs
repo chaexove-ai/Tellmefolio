@@ -29,11 +29,22 @@ import path from "node:path";
 
 const [input, id] = process.argv.slice(2);
 if (!input || !id) {
-  console.error("사용법: npm run tpl:prepare -- <입력.html> <템플릿-id>");
+  console.error(`
+  사용법:  npm run tpl:prepare  파일경로  템플릿이름
+
+  예:      npm run tpl:prepare ~/Downloads/Portfolio.html doc-clean
+
+  파일 경로는 파인더에서 파일을 터미널 창으로 끌어다 놓으면 들어갑니다.
+  (경로 앞뒤에 꺾쇠나 따옴표를 직접 넣지 마세요)
+`);
   process.exit(1);
 }
 if (!/^[a-z0-9-]+$/.test(id)) {
-  console.error("템플릿 id 는 소문자·숫자·하이픈만 씁니다(파일 이름이 되고 URL 에 들어갑니다).");
+  console.error(`
+  템플릿 이름 "${id}" 은(는) 쓸 수 없습니다.
+  소문자·숫자·하이픈만 됩니다 — 파일 이름이 되고 주소에 들어갑니다.
+  예: doc-clean, minimal-serif, bold-dev
+`);
   process.exit(1);
 }
 
@@ -155,6 +166,6 @@ for (const r of report) console.log("  ·", r);
 console.log(`
   다음 할 일:
     1. 파일을 열어 data-tf 를 답니다 (규칙은 src/lib/htmlTemplate.ts 주석)
-    2. npm run tpl:check -- ${id}
+    2. npm run tpl:check ${id}
     3. 통과하면 src/lib/htmlTemplates.ts 에 한 줄 추가
 `);
