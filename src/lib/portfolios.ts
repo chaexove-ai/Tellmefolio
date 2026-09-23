@@ -357,6 +357,10 @@ export interface LibraryPortfolio {
   listed: boolean;
   updatedAt: string;
   jobColor: string;
+  /** 썸네일이 실제 첫 화면을 그리려면 어떤 템플릿인지 알아야 합니다. */
+  templateId: string;
+  /** 첫 화면의 소개 문장. 썸네일에 들어갑니다. */
+  summary: string;
 }
 
 function toLibraryPortfolio(p: PortfolioRow): LibraryPortfolio {
@@ -374,6 +378,8 @@ function toLibraryPortfolio(p: PortfolioRow): LibraryPortfolio {
     listed: p.listed ?? false,
     updatedAt: p.updated_at,
     jobColor: p.job_color,
+    templateId: p.template_id,
+    summary: (p.summary ?? "").trim(),
   };
 }
 

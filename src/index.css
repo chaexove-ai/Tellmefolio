@@ -267,50 +267,32 @@ summary::marker { content: ""; }
    스크림을 한 겹 얹어 톤을 낮추고(그레인의 따뜻한 색감은 은은하게
    남깁니다), 글자색도 그에 맞춰 밝게 바꿉니다. 라이트모드에서는
    스크림을 끄고 원래 크림/짙은 갈색 글자 조합을 그대로 씁니다. */
-.book-cover-scrim {
-  position: absolute;
-  inset: 0;
-  background: rgb(var(--n950) / 0.74);
-  pointer-events: none;
-}
+/* [2026-09-23] 평평한 막에서 아래쪽 그라디언트로 바꿨습니다.
+   전에는 표지가 크림색 그레인이라 다크 테마에서만 톤을 낮추면 됐습니다.
+   이제 표지가 그 포트폴리오의 실제 첫 화면이라, 평평하게 덮으면 화면이
+   통째로 흐려져 무엇을 보여주려던 건지 사라집니다. 위쪽은 그대로 두고
+   글자가 얹히는 아래쪽만 눌러, 그림도 보이고 제목도 읽히게 합니다.
+   라이트 테마에서도 필요합니다 — 밝은 템플릿 위의 흰 글자든 어두운
+   템플릿 위의 검은 글자든, 무엇이 깔릴지 우리가 모릅니다. */
+/* [2026-09-23] .book-cover-scrim / .book-cover-title / .book-cover-meta
+   를 지웠습니다. 표지가 실제 첫 화면이 되면서 그 위에 얹던 글자를 뺐고,
+   덮을 글자가 없으니 스크림도 필요 없습니다.
 
-:root.light .book-cover-scrim {
-  display: none;
-}
-
-.book-cover-title {
-  color: #3a2f24;
-}
-
-.book-cover-meta {
-  color: #6b5847;
-}
-
-/* 표지 위의 "이름·색상 수정" 글자. 표지가 크림색 그레인이라 흰 칩을
-   얹으면 이물질처럼 떠 보입니다. 배경 없이 글자만 두고, 본문(meta)보다
-   한 단계 진하게 해서 누를 것이라는 게 읽히게 합니다. */
+   "이름·색상 수정" 만 표지 위에 남습니다. 그 아래 무엇이 깔릴지(어두운
+   템플릿인지 밝은 템플릿인지) 우리가 모르므로, 테마 색 대신 어두운
+   알약을 깔고 흰 글자를 올립니다. 전에는 배경 없이 글자만 뒀는데,
+   그때는 아래가 항상 크림색 그레인이라 그래도 됐습니다. */
 .book-cover-edit {
-  color: #6b5847;
+  color: #ffffff;
+  background: rgb(0 0 0 / 0.55);
+  border-radius: 3px;
+  padding: 3px 7px;
+  text-decoration: none;
+  backdrop-filter: blur(4px);
 }
 
 .book-cover-edit:hover {
-  color: #3a2f24;
-}
-
-:root:not(.light) .book-cover-edit {
-  color: rgb(var(--n400));
-}
-
-:root:not(.light) .book-cover-edit:hover {
-  color: rgb(var(--n100));
-}
-
-:root:not(.light) .book-cover-title {
-  color: rgb(var(--n50));
-}
-
-:root:not(.light) .book-cover-meta {
-  color: rgb(var(--n400));
+  background: rgb(0 0 0 / 0.75);
 }
 
 /* 책등 제목: 세로쓰기. nowrap + ellipsis 로 한 칸만 씁니다.

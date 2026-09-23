@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { BookOpen, Globe, Lock, LoaderCircle, Plus } from "lucide-react";
-import GrainCover from "./GrainCover";
+import PortfolioThumb from "./PortfolioThumb";
 import {
   updatePortfolioTitle,
   updatePortfolioColor,
@@ -26,11 +26,10 @@ interface BookshelfProps {
  * 옆으로 밀립니다(index.css `.book`). 책등/표지는 같은 자리에 겹쳐 두고
  * opacity 로만 교차 전환합니다(.book-face-spine / .book-face-cover).
  *
- * 표지 그림은 실제 썸네일이 아직 없어 GrainCover(절차적 그라디언트 커버)로
- * 대체합니다 — 포트폴리오 id 가 seed 라 같은 책은 언제나 같은 표지를 갖고,
- * 실제 썸네일이 생기면 이 자리를 <img> 로 바꾸면 됩니다.
- * [2026-09-23] 색조는 그 책의 직무 색을 따릅니다(tint). 전에는 id 로만
- * 정해져서 표지 색에 아무 이유가 없었습니다.
+ * 표지 그림은 그 포트폴리오의 **실제 첫 화면**입니다(PortfolioThumb).
+ * 처음에는 절차적 그라디언트(GrainCover)였고, 다음에는 직무 색을 따르게
+ * 했고, 이제는 그냥 그 페이지를 작게 띄웁니다 — 그림 파일도 캐시도 없어서
+ * 내용을 고치면 바로 따라옵니다. 못 그리면 그라디언트로 물러납니다.
  *
  * ── 처음에 3D로 두 면을 맞대 돌렸다가 폭 확장 방식으로 바꾼 이유 ──────
  * 책등 면과 표지 면을 실제 3D로 맞대 돌리는(rotateY) 버전을 먼저 만들었는데,
@@ -331,25 +330,22 @@ export default function Bookshelf({ portfolios, onUpdated }: BookshelfProps) {
                 w-full 로 부모를 꽉 채우게만 하고, 대신 글자를 얹는 아래
                 오버레이 쪽을 absolute 로 띄워 그 위에 겹칩니다. */}
             <div className="book-face book-face-cover overflow-hidden rounded-t-[3px] rounded-b-sm border border-neutral-800">
-              <GrainCover seed={p.id} tint={p.jobColor} className="h-full w-full" />
-              {/* 다크 모드 전용 스크림 — GrainCover의 크림색 그레인이 다크 배경과
-                  어울리지 않아서, 다크 테마에서만 어둡게 한 겹 덮어 톤을 낮춥니다.
-                  라이트 테마에서는 index.css에서 display:none 처리됩니다. */}
-              <div className="book-cover-scrim" aria-hidden="true" />
-              <div className="absolute inset-0 z-10 flex flex-col justify-between p-3.5">
-                {/* [2026-09-23] 색 점을 뺐습니다. 표지 자체가 직무 색조를
-                    따르게 되면서, 같은 정보를 두 번 말하는 자리가 됐습니다.
-                    책등에는 그대로 둡니다 — 거기는 표지가 안 보입니다. */}
-                <span aria-hidden="true" />
-                <div>
-                  <p className="book-cover-title line-clamp-3 text-[13px] font-semibold leading-snug">
-                    {p.title}
-                  </p>
-                  <p className="book-cover-meta mt-1.5 text-[12px]">
-                    {p.job} · {p.year}
-                  </p>
-                </div>
-              </div>
+              {/* [2026-09-23] 그라디언트 대신 실제 첫 화면입니다.
+                  책이 펼쳐질 때 폭이 64→190 으로 움직이므로 크기를 직접
+                  넘깁니다 — 재게 두면 애니메이션 매 프레임마다 다시
+                  계산합니다. 좁을 때는 표지면의 overflow-hidden 이
+                  왼쪽부터 잘라내서, 책이 열리는 것처럼 보입니다. */}
+              <PortfolioThumb
+                portfolio={p}
+                size={{ width: 190, height: 280 }}
+                className="h-full w-full"
+              />
+              {/* [2026-09-23] 표지 위에 얹던 제목·직무 줄을 뺐습니다.
+                  표지가 그 포트폴리오의 실제 첫 화면이 되면서 거기에 이미
+                  제목이 큼직하게 있고, 책장 위 표시줄에도 "제목 · 직무 ·
+                  연도" 가 뜹니다. 같은 말이 한 화면에 세 번이었습니다.
+                  스크림도 같이 뺐습니다 — 덮을 글자가 없어졌고, 남겨두면
+                  보여주려던 화면만 흐려집니다. */}
             </div>
             </Link>
 
@@ -360,8 +356,8 @@ export default function Bookshelf({ portfolios, onUpdated }: BookshelfProps) {
             <button
               type="button"
               onClick={() => openEditor(p)}
-              className="book-cover-edit absolute right-3 top-3 z-30 text-[12px] underline
-                underline-offset-2 opacity-0 transition-opacity duration-150
+              className="book-cover-edit absolute right-3 top-3 z-30 text-[12px]
+                opacity-0 transition-opacity duration-150
                 group-hover:opacity-100 focus-visible:opacity-100"
             >
               이름·색상 수정

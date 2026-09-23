@@ -11,7 +11,7 @@ import {
 } from "../../lib/portfolios";
 import type { LibraryPortfolio } from "../../lib/portfolios";
 import Reveal from "../../components/Reveal";
-import GrainCover from "../../components/GrainCover";
+import PortfolioThumb from "../../components/PortfolioThumb";
 import { getProfiles, getMyProfile, FALLBACK_NICKNAME } from "../../lib/profile";
 import type { Profile } from "../../lib/profile";
 
@@ -152,10 +152,9 @@ export default function Gallery() {
                 to={`/p/${g.id}`}
                 className="entry p-4 block hover:border-brand/40 hover:-translate-y-0.5 transition-all"
               >
-                {/* seed 가 id 라 같은 포트폴리오는 항상 같은 그림이고,
-                    색조는 그 포트폴리오의 직무 색을 따릅니다 — 목록에서
-                    직무가 색으로 읽힙니다. */}
-                <GrainCover seed={g.id} tint={g.jobColor} className="aspect-[4/3] rounded-xl mb-3" />
+                {/* [2026-09-23] 그 포트폴리오의 실제 첫 화면입니다.
+                    못 그리면 그라디언트가 그대로 남습니다(PortfolioThumb). */}
+                <PortfolioThumb portfolio={g} className="aspect-[4/3] rounded-xl mb-3" />
                 <p className="font-medium text-neutral-100">{g.title}</p>
                 <p className="text-xs text-neutral-500 mt-1">
                   {g.job} · {g.year}

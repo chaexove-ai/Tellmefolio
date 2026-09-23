@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { fillTemplate, loadTemplate } from "../lib/htmlTemplate";
+import { fillTemplate } from "../lib/htmlTemplate";
+import { getTemplate } from "../lib/templateCache";
 import { buildTemplateData } from "../lib/buildTemplateData";
-import { DEFAULT_HTML_TEMPLATE, htmlTemplates } from "../lib/htmlTemplates";
 import type { PortfolioProjectRow, PortfolioRow, ProjectImageMap } from "../lib/portfolios";
 import type { BlockMap } from "../lib/blocks";
 
@@ -32,19 +32,6 @@ import type { BlockMap } from "../lib/blocks";
 
 const BASE_WIDTH = 1280;
 const BASE_HEIGHT = 800;
-
-/** 같은 템플릿을 탭 옮길 때마다 다시 받지 않도록. */
-const cache = new Map<string, Promise<string>>();
-function getTemplate(id: string): Promise<string> {
-  const known = htmlTemplates.some((t) => t.id === id);
-  const safeId = known ? id : DEFAULT_HTML_TEMPLATE;
-  let p = cache.get(safeId);
-  if (!p) {
-    p = loadTemplate(safeId);
-    cache.set(safeId, p);
-  }
-  return p;
-}
 
 export interface TemplateFrameProps {
   portfolio: PortfolioRow;

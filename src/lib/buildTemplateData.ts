@@ -115,3 +115,36 @@ export function buildTemplateData(input: {
     projects: projectData,
   };
 }
+
+/**
+ * 썸네일용 최소 데이터.
+ *
+ * 목록에는 포트폴리오가 최대 60건 뜹니다. 썸네일 하나를 그리려고
+ * 프로젝트·이미지·블록을 다 읽으면 요청이 수백 번 갑니다. 썸네일에
+ * 보이는 건 첫 화면뿐이고, 첫 화면에 필요한 건 제목·소개·직무·연도가
+ * 전부입니다. 나머지는 비워 보내면 템플릿이 data-tf-if 로 알아서
+ * 지웁니다 — 어차피 화면 밖입니다.
+ */
+export function buildThumbData(p: {
+  title: string;
+  summary: string;
+  job: string;
+  year: string;
+  lang?: "ko" | "en";
+}): TemplateData {
+  return {
+    lang: p.lang ?? "ko",
+    title: p.title.trim(),
+    summary: p.summary.trim(),
+    job: p.job.trim(),
+    year: p.year.trim(),
+    cover: "",
+    projectCount: "",
+    stack: [],
+    email: "",
+    emailHref: "",
+    github: "",
+    site: "",
+    projects: [],
+  };
+}
