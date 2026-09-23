@@ -152,8 +152,10 @@ export default function Gallery() {
                 to={`/p/${g.id}`}
                 className="entry p-4 block hover:border-brand/40 hover:-translate-y-0.5 transition-all"
               >
-                {/* seed 가 id 라 같은 포트폴리오는 항상 같은 그림입니다. */}
-                <GrainCover seed={g.id} className="aspect-[4/3] rounded-xl mb-3" />
+                {/* seed 가 id 라 같은 포트폴리오는 항상 같은 그림이고,
+                    색조는 그 포트폴리오의 직무 색을 따릅니다 — 목록에서
+                    직무가 색으로 읽힙니다. */}
+                <GrainCover seed={g.id} tint={g.jobColor} className="aspect-[4/3] rounded-xl mb-3" />
                 <p className="font-medium text-neutral-100">{g.title}</p>
                 <p className="text-xs text-neutral-500 mt-1">
                   {g.job} · {g.year}

@@ -29,6 +29,8 @@ interface BookshelfProps {
  * 표지 그림은 실제 썸네일이 아직 없어 GrainCover(절차적 그라디언트 커버)로
  * 대체합니다 — 포트폴리오 id 가 seed 라 같은 책은 언제나 같은 표지를 갖고,
  * 실제 썸네일이 생기면 이 자리를 <img> 로 바꾸면 됩니다.
+ * [2026-09-23] 색조는 그 책의 직무 색을 따릅니다(tint). 전에는 id 로만
+ * 정해져서 표지 색에 아무 이유가 없었습니다.
  *
  * ── 처음에 3D로 두 면을 맞대 돌렸다가 폭 확장 방식으로 바꾼 이유 ──────
  * 책등 면과 표지 면을 실제 3D로 맞대 돌리는(rotateY) 버전을 먼저 만들었는데,
@@ -329,17 +331,16 @@ export default function Bookshelf({ portfolios, onUpdated }: BookshelfProps) {
                 w-full 로 부모를 꽉 채우게만 하고, 대신 글자를 얹는 아래
                 오버레이 쪽을 absolute 로 띄워 그 위에 겹칩니다. */}
             <div className="book-face book-face-cover overflow-hidden rounded-t-[3px] rounded-b-sm border border-neutral-800">
-              <GrainCover seed={p.id} className="h-full w-full" />
+              <GrainCover seed={p.id} tint={p.jobColor} className="h-full w-full" />
               {/* 다크 모드 전용 스크림 — GrainCover의 크림색 그레인이 다크 배경과
                   어울리지 않아서, 다크 테마에서만 어둡게 한 겹 덮어 톤을 낮춥니다.
                   라이트 테마에서는 index.css에서 display:none 처리됩니다. */}
               <div className="book-cover-scrim" aria-hidden="true" />
               <div className="absolute inset-0 z-10 flex flex-col justify-between p-3.5">
-                <span
-                  className="h-2.5 w-2.5 shrink-0 rounded-full"
-                  style={{ backgroundColor: p.jobColor }}
-                  aria-hidden="true"
-                />
+                {/* [2026-09-23] 색 점을 뺐습니다. 표지 자체가 직무 색조를
+                    따르게 되면서, 같은 정보를 두 번 말하는 자리가 됐습니다.
+                    책등에는 그대로 둡니다 — 거기는 표지가 안 보입니다. */}
+                <span aria-hidden="true" />
                 <div>
                   <p className="book-cover-title line-clamp-3 text-[13px] font-semibold leading-snug">
                     {p.title}
