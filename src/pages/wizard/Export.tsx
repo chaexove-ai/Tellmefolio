@@ -19,17 +19,21 @@ import TemplateFrame from "../../components/TemplateFrame";
 import { listBlocks, type BlockMap } from "../../lib/blocks";
 
 /**
- * [2026-09] "적용 템플릿" 줄이 항상 "라이브에디터"로 고정돼 있던 걸 고친 게
- * 이 화면의 첫 개편이었습니다. 이번이 두 번째 개편입니다 — 그때는 텍스트로
- * "현재 편집 상태가 반영되는 것을 확인했습니다"라고 사용자가 믿어야 했는데,
- * 실제로 보여주는 건 없었습니다. 이제 아래 "미리보기"가 실제
- * PortfolioRenderer(4개 템플릿 중 실제 적용된 것)를 그대로 그리고, "PDF로
- * 내보내기"를 누르면 바로 그 DOM을 html2canvas로 캡처해 진짜 PDF 파일을
- * 만듭니다 — 미리보기와 실제 파일이 다르면 안 되니 같은 노드를 씁니다.
+ * 내보내기 화면.
  *
- * 웹 형식(HTML/Notion 호환) 내보내기는 이번 범위가 아니라 여전히 버튼만
- * 비활성 상태로 남겨뒀습니다 — 안 되는 걸 되는 것처럼 보여주지 않으려고
- * 일부러 눌러도 반응 없게 두지 않고 disabled 처리했습니다.
+ * 미리보기는 편집기와 같은 TemplateFrame(HTML 템플릿 + iframe)이 그립니다.
+ * 내보내기는 TemplateFrame 이 채워준 그 HTML(filledHtml) 하나를 씁니다 —
+ * 미리보기와 실제 파일이 다르면 안 되니 같은 결과물을 씁니다.
+ *
+ * · PDF  — 그 HTML 을 숨은 iframe 에 넣고 브라우저 인쇄(printPdf).
+ *          글자가 선택되는 PDF 가 나옵니다. 이유는 printPdf 주석.
+ * · HTML — 그 HTML 을 그대로 파일로 내려줍니다(downloadHtml).
+ *
+ * 영어를 고르면 그 시점에만 번역을 호출하고, 실패하면 원문을 보여줍니다.
+ *
+ * [지나온 길] 처음엔 "적용 템플릿"이 항상 "라이브에디터"로 고정돼 있었고,
+ * 그다음엔 React 템플릿 DOM 을 html2canvas 로 찍어 PDF 를 만들었습니다.
+ * 웹 형식 버튼은 한동안 disabled 였다가 HTML 내보내기로 구현됐습니다.
  */
 export default function Export() {
   const navigate = useNavigate();
