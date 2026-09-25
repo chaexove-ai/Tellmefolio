@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import SocialLoginButtons from "../components/SocialLoginButtons";
+import ShelfIllustration from "../components/ShelfIllustration";
 import { useAuth } from "../auth/AuthProvider";
 import type { SocialProviderId } from "../components/BrandIcons";
 
@@ -56,7 +57,7 @@ export default function Login() {
 
        lg 미만에서는 위아래로 쌓입니다. 로그인은 데스크탑 전용 게이트
        바깥이라 휴대폰에서도 열립니다. */
-    <div className="min-h-screen lg:grid lg:grid-cols-[1.1fr_1fr]">
+    <div className="min-h-screen lg:grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
       {/* [2026-09] 왼쪽에서 글을 걷어냈습니다.
           양쪽에 제목이 하나씩 있으니(왼 44px / 오른 34px) 읽을 곳이 두
           군데가 되어 시선이 갈렸습니다. 행동은 오른쪽에 있으므로 글도
@@ -69,6 +70,13 @@ export default function Login() {
       <div className="surface-invert flex flex-col justify-between px-8 py-12 lg:px-16 lg:py-20">
         <p className="text-xs tracking-[0.2em] text-brand uppercase">Tellmefolio</p>
 
+        {/* [2026-09-25] 비워둔 면이 너무 허전해서 책장 그림을 세웠습니다.
+            글이 아니라 그림이라 위 결정(읽을 곳은 오른쪽 한 곳)은 그대로입니다.
+            휴대폰에서는 로그인 버튼까지의 거리만 늘리므로 lg 이상에서만. */}
+        <div className="hidden lg:flex flex-1 items-end overflow-hidden pt-12 pb-14 pr-4">
+          <ShelfIllustration />
+        </div>
+
         <p className="hidden lg:block text-xs text-neutral-600 leading-relaxed max-w-[44ch]">
           공개 저장소만 읽습니다. 비공개 코드에 접근하는 권한은 요청하지
           않습니다.
@@ -79,12 +87,12 @@ export default function Login() {
         {/* 읽는 순서가 한 줄입니다 — 제목 → 설명 → 버튼. 시선이 위에서
             아래로 한 번만 흐르고 끝에서 행동에 닿습니다. */}
         <div className="w-full max-w-sm lg:max-w-[520px]">
-          <h1 className="font-heading text-2xl lg:text-[40px] lg:leading-[1.3]">
+          <h1 className="font-heading text-2xl lg:text-[40px] lg:leading-[1.3] break-keep">
             이야기하면
             <br />
             포트폴리오가 됩니다
           </h1>
-          <p className="mt-4 lg:mt-5 text-sm lg:text-base text-neutral-500 leading-relaxed">
+          <p className="mt-4 lg:mt-5 text-sm lg:text-base text-neutral-500 leading-relaxed break-keep">
             GitHub 저장소와 메모를 케이스 스터디로 바꿉니다.
             <br className="hidden lg:block" />
             <span className="lg:hidden"> </span>
