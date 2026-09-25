@@ -408,7 +408,8 @@ export default function AIDraftGeneration() {
           </h2>
           <p className="text-xs text-neutral-500 mb-3">
             아는 내용을 여기 적으면 그대로 반영해 다시 만듭니다. 모르는 항목은
-            비워두면 됩니다.
+            비워두면 됩니다. 편집기에서 열면 프로젝트마다 <b className="text-neutral-300">대화로 채우기</b>로
+            빈 칸을 질문에 답하며 채울 수도 있어요.
           </p>
           <ul className="space-y-2">
             {draft.gaps.map((g, i) => (

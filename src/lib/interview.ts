@@ -28,7 +28,8 @@ export const MIN_FILLED_FOR_DRAFT = 4;
 export const MAX_QUESTIONS = 12;
 
 export interface FieldState {
-  state: "filled" | "skipped";
+  /** existing: 대화 전부터 프로젝트에 적혀 있던 칸("대화로 채우기"에서만). 묻지도 고치지도 않습니다 */
+  state: "filled" | "skipped" | "existing";
   summary: string;
   answerIds: string[];
 }
@@ -103,6 +104,19 @@ export function startInterview(text: string, portfolioId?: string | null) {
   return invoke<InterviewState>({ mode: "start", text, portfolioId: portfolioId ?? null });
 }
 
+/**
+ * "대화로 채우기" — 이미 있는 프로젝트의 빈 칸만 묻는 대화를 엽니다.
+ * 첫 질문은 서버가 바로 만들어 줍니다(모델 호출 없음).
+ */
+export function startFillInterview(projectId: string) {
+  return invoke<InterviewState>({ mode: "start", projectId });
+}
+
+/** 기존 프로젝트의 빈 칸을 채우는 대화인가 */
+export function isFillSession(session: InterviewState["session"]) {
+  return Boolean(session.projectId) && session.status === "open";
+}
+
 export function sendAnswer(sessionId: string, text: string) {
   return invoke<InterviewState>({ mode: "answer", sessionId, text });
 }
@@ -135,7 +149,8 @@ export async function getInterview(sessionId: string): Promise<InterviewState> {
       portfolioId: s.portfolio_id,
       projectId: s.project_id,
       flags: (s.flags ?? []) as InterviewFlag[],
-      canDraft: filledCount(fields) >= MIN_FILLED_FOR_DRAFT,
+      canDraft:
+        s.status === "open" && filledCount(fields) >= (s.project_id ? 1 : MIN_FILLED_FOR_DRAFT),
     },
     messages: (messages ?? []) as InterviewMessage[],
   };

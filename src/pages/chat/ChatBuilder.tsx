@@ -10,6 +10,8 @@ import {
   sendAnswer,
   skipQuestion,
   startInterview,
+  startFillInterview,
+  isFillSession,
   INTERVIEW_FIELDS,
   INTERVIEW_FIELD_NAMES,
   InterviewError,
@@ -31,6 +33,7 @@ import {
  * 주소
  *   /chat/new              새 대화. 홈 입력창에서 온 첫 문장이 state 로 옵니다
  *   /chat/new?portfolio=…  "다른 프로젝트도 이야기하기" — 그 포트폴리오에 이어 붙임
+ *   /chat/new?project=…    "대화로 채우기" — 편집기에서 그 프로젝트의 빈 칸만 묻기
  *   /chat/:sessionId       이어서 하기
  */
 /**
@@ -53,6 +56,7 @@ function ChatBuilder() {
 
   const isNew = !sessionId || sessionId === "new";
   const presetPortfolio = params.get("portfolio");
+  const presetProject = params.get("project");
   const incoming = location.state as { text?: string; initial?: InterviewState } | null;
 
   const [state, setState] = useState<InterviewState | null>(incoming?.initial ?? null);
@@ -85,6 +89,21 @@ function ChatBuilder() {
     void begin(incoming.text);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isNew]);
+
+  // 편집기의 "대화로 채우기"에서 왔으면 첫 문장 없이 바로 엽니다.
+  useEffect(() => {
+    if (!isNew || !presetProject || startedRef.current) return;
+    startedRef.current = true;
+    setBusy(true);
+    startFillInterview(presetProject)
+      .then((next) => {
+        setState(next);
+        navigate(`/chat/${next.session.id}`, { replace: true, state: { initial: next } });
+      })
+      .catch((e) => setLoadError(e instanceof InterviewError ? e.message : "대화를 시작하지 못했습니다."))
+      .finally(() => setBusy(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isNew, presetProject]);
 
   useEffect(() => {
     const uid = auth?.user?.id;
@@ -166,6 +185,8 @@ function ChatBuilder() {
   const drafted = s?.status === "drafted";
   const waitingForDraft = Boolean(s && !drafted && !s.currentField);
   const filled = s ? filledCount(s.fields) : 0;
+  const fillMode = s ? isFillSession(s) || (drafted && Boolean(s.projectId) && INTERVIEW_FIELDS.some((f) => s.fields[f]?.state === "existing")) : false;
+  const needed = fillMode ? 1 : MIN_FILLED_FOR_DRAFT;
   const settled = s ? INTERVIEW_FIELDS.filter((f) => s.fields[f]).length : 0;
   const pct = Math.round((settled / INTERVIEW_FIELDS.length) * 100);
 
@@ -216,7 +237,7 @@ function ChatBuilder() {
         </header>
 
         <div ref={listRef} className="flex-1 overflow-y-auto px-5 py-5 space-y-4">
-          {!s && !pendingText && (
+          {!s && !pendingText && !presetProject && (
             <AiBubble text="어떤 프로젝트 이야기를 해볼까요? 편하게 말해 주세요. 질문하면서 포트폴리오를 같이 채워 갈게요." />
           )}
 
@@ -304,9 +325,20 @@ function ChatBuilder() {
                     {INTERVIEW_FIELD_NAMES[f]}
                   </span>
                   <span className="ml-auto text-[11px] text-neutral-500">
-                    {st?.state === "filled" ? "채움" : st?.state === "skipped" ? "건너뜀" : now ? "지금 묻는 중" : "비어 있음"}
+                    {st?.state === "filled"
+                      ? "채움"
+                      : st?.state === "skipped"
+                        ? "건너뜀"
+                        : st?.state === "existing"
+                          ? "원래 있음"
+                          : now
+                            ? "지금 묻는 중"
+                            : "비어 있음"}
                   </span>
                 </div>
+                {st?.state === "existing" && (
+                  <p className="ml-[26px] mt-1 text-xs text-neutral-500 line-clamp-2 break-keep">{st.summary}</p>
+                )}
                 {st?.state === "filled" && (
                   <div className="ml-[26px] mt-1.5">
                     <p className="text-sm text-neutral-300 break-keep">{st.summary}</p>
@@ -324,25 +356,28 @@ function ChatBuilder() {
             <p className="text-xs text-neutral-500">답하면 칸이 하나씩 채워져요.</p>
           ) : drafted ? (
             <DraftDone state={state!} />
-          ) : filled < MIN_FILLED_FOR_DRAFT ? (
+          ) : filled < needed ? (
             <p className="text-xs text-neutral-500">
-              {MIN_FILLED_FOR_DRAFT - filled}칸 더 채우면 초안을 만들 수 있어요.
+              {fillMode ? "한 칸이라도 답하면 채워 넣을 수 있어요." : `${needed - filled}칸 더 채우면 초안을 만들 수 있어요.`}
             </p>
           ) : (
             <>
-              <label className="flex items-center gap-2 text-xs text-neutral-500">
-                <span className="shrink-0">저장할 곳</span>
-                <select className="field py-1.5 text-sm" value={target} onChange={(e) => setTarget(e.target.value)} disabled={drafting}>
-                  <option value="" className="bg-neutral-900">
-                    {s.portfolioId ? "처음 고른 포트폴리오" : "새 포트폴리오"}
-                  </option>
-                  {portfolios.map((p) => (
-                    <option key={p.id} value={p.id} className="bg-neutral-900">
-                      {p.title}에 추가
+              {/* 기존 프로젝트를 채우는 대화는 저장할 곳이 이미 정해져 있습니다 */}
+              {!fillMode && (
+                <label className="flex items-center gap-2 text-xs text-neutral-500">
+                  <span className="shrink-0">저장할 곳</span>
+                  <select className="field py-1.5 text-sm" value={target} onChange={(e) => setTarget(e.target.value)} disabled={drafting}>
+                    <option value="" className="bg-neutral-900">
+                      {s.portfolioId ? "처음 고른 포트폴리오" : "새 포트폴리오"}
                     </option>
-                  ))}
-                </select>
-              </label>
+                    {portfolios.map((p) => (
+                      <option key={p.id} value={p.id} className="bg-neutral-900">
+                        {p.title}에 추가
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
               <button className="btn-primary w-full disabled:opacity-50" disabled={drafting || busy} onClick={() => void makeDraft()}>
                 {drafting ? (
                   <>
@@ -350,11 +385,13 @@ function ChatBuilder() {
                   </>
                 ) : (
                   <>
-                    초안 만들기 <ArrowRight size={16} strokeWidth={1.75} />
+                    {fillMode ? "빈 칸에 채워 넣기" : "초안 만들기"} <ArrowRight size={16} strokeWidth={1.75} />
                   </>
                 )}
               </button>
-              <p className="text-[11px] text-neutral-500 text-center">답한 내용만으로 씁니다. 지어서 채우지 않아요.</p>
+              <p className="text-[11px] text-neutral-500 text-center">
+                {fillMode ? "답한 칸만 씁니다. 원래 있던 칸은 건드리지 않아요." : "답한 내용만으로 씁니다. 지어서 채우지 않아요."}
+              </p>
             </>
           )}
         </div>
@@ -367,7 +404,7 @@ function AiBubble({ text, followUp }: { text: string; followUp?: boolean }) {
   return (
     <div className="max-w-[80%]">
       <p className="text-[11px] text-brand mb-1 ml-0.5">Tellmefolio{followUp && " · 한 번 더 여쭤볼게요"}</p>
-      <p className="rounded-2xl rounded-bl-md border border-neutral-800 bg-neutral-900/60 px-4 py-2.5 text-sm text-neutral-100 leading-relaxed break-keep">
+      <p className="rounded-2xl rounded-bl-md border border-neutral-800 bg-neutral-900/60 px-4 py-2.5 text-sm text-neutral-100 leading-relaxed break-keep whitespace-pre-line">
         {text}
       </p>
     </div>
@@ -393,7 +430,13 @@ function UserBubble({ message, saved }: { message: InterviewMessage; saved: Inte
   );
 }
 
-function FieldDot({ state }: { state: "filled" | "skipped" | "now" | "empty" }) {
+function FieldDot({ state }: { state: "filled" | "skipped" | "existing" | "now" | "empty" }) {
+  if (state === "existing")
+    return (
+      <span className="w-[18px] h-[18px] rounded-full bg-neutral-800 text-neutral-400 inline-flex items-center justify-center shrink-0">
+        <Check size={11} strokeWidth={2.5} />
+      </span>
+    );
   if (state === "filled")
     return (
       <span className="w-[18px] h-[18px] rounded-full bg-emerald-600 text-white inline-flex items-center justify-center shrink-0">
@@ -421,7 +464,8 @@ function DraftDone({ state }: { state: InterviewState }) {
   return (
     <>
       <div className="flex items-center gap-2 text-sm text-neutral-100">
-        <Check size={16} strokeWidth={2} className="text-emerald-600" /> 초안을 만들었어요
+        <Check size={16} strokeWidth={2} className="text-emerald-600" />{" "}
+        {INTERVIEW_FIELDS.some((f) => session.fields[f]?.state === "existing") ? "빈 칸을 채워 넣었어요" : "초안을 만들었어요"}
       </div>
       {flags.length > 0 && (
         <div className="rounded-xl bg-amber-500/10 px-3 py-2.5">
@@ -442,7 +486,10 @@ function DraftDone({ state }: { state: InterviewState }) {
         </div>
       )}
       {session.portfolioId && (
-        <Link to={`/wizard/editor/${session.portfolioId}`} className="btn-primary w-full">
+        <Link
+          to={`/wizard/editor/${session.portfolioId}${session.projectId ? `?project=${session.projectId}` : ""}`}
+          className="btn-primary w-full"
+        >
           편집기에서 열기 <ArrowRight size={16} strokeWidth={1.75} />
         </Link>
       )}

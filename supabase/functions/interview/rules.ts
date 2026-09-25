@@ -20,7 +20,8 @@ export const MAX_QUESTIONS = 12;
 export const MIN_FILLED_FOR_DRAFT = 4;
 
 export interface FieldState {
-  state: "filled" | "skipped";
+  /** existing: 대화 전부터 프로젝트에 적혀 있던 칸(묻지 않고, 초안에서도 고치지 않음) */
+  state: "filled" | "skipped" | "existing";
   summary: string;
   answerIds: string[];
 }
@@ -68,6 +69,24 @@ export function firstEmpty(fields: Fields): Field | null {
 
 export function filledCount(fields: Fields): number {
   return ORDER.filter((f) => fields[f]?.state === "filled").length;
+}
+
+/**
+ * 초안을 만들 수 있는가. 새 프로젝트는 4칸, 기존 프로젝트의 빈 칸을
+ * 채우는 대화("대화로 채우기")는 1칸이면 됩니다 — 나머지는 이미 있으니까요.
+ */
+export function canDraft(fields: Fields, forExistingProject: boolean): boolean {
+  return filledCount(fields) >= (forExistingProject ? 1 : MIN_FILLED_FOR_DRAFT);
+}
+
+/** 기존 프로젝트의 칸 상태. 글이 있는 칸은 existing, 빈 칸은 비워 둡니다. */
+export function fieldsFromProject(project: Partial<Record<Field, string | null>>): Fields {
+  const out: Fields = {};
+  for (const f of ORDER) {
+    const text = (project[f] ?? "").trim();
+    if (text) out[f] = { state: "existing", summary: text.slice(0, 200), answerIds: [] };
+  }
+  return out;
 }
 
 function str(v: unknown, max: number): string {

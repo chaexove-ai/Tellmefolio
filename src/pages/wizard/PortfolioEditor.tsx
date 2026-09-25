@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowDown, ArrowUp, Check, GripVertical, ImagePlus, Info, LoaderCircle, Minus, Plus, Trash2, Type, X } from "lucide-react";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { ArrowDown, ArrowUp, Check, GripVertical, ImagePlus, Info, LoaderCircle, MessagesSquare, Minus, Plus, Trash2, Type, X } from "lucide-react";
 import {
   getPortfolioWithProjects,
   updatePortfolioProject,
@@ -105,6 +105,10 @@ export default function PortfolioEditor() {
   const { session } = useAuth();
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  // [2026-09-25] ?project=… 이면 그 프로젝트 탭으로 엽니다. "대화로 채우기"를
+  // 끝내고 돌아왔을 때 방금 채운 프로젝트가 보여야 합니다.
+  const [searchParams] = useSearchParams();
+  const initialProjectId = searchParams.get("project");
 
   const [portfolio, setPortfolio] = useState<PortfolioRow | null>(null);
   const [projects, setProjects] = useState<PortfolioProjectRow[]>([]);
@@ -457,7 +461,10 @@ export default function PortfolioEditor() {
         if (!alive) return;
         setPortfolio(p);
         setProjects(ps);
-        if (ps.length > 0) loadProject(0, ps);
+        if (ps.length > 0) {
+          const at = initialProjectId ? ps.findIndex((x) => x.id === initialProjectId) : -1;
+          loadProject(at >= 0 ? at : 0, ps);
+        }
 
         // 이미지는 한 번에 다 읽습니다 — 탭을 옮길 때마다 부르면 그때마다
         // 기다려야 하고, 미리보기는 어차피 전체 프로젝트를 그립니다.
@@ -495,6 +502,8 @@ export default function PortfolioEditor() {
   }, [id]);
 
   const currentProject = projects[projectIndex];
+  /** 대화로 채울 수 있는 빈 칸 수(역할 포함 6칸). 입력 중인 값 기준입니다. */
+  const emptyStoryCount = [context, role, problem, execution, outcome, reflection].filter((v) => !v.trim()).length;
 
   /** 미리보기에 넘길 데이터입니다.
    *
@@ -601,9 +610,9 @@ export default function PortfolioEditor() {
   /** 지금 탭에 보이는 7칸을 현재 프로젝트 행에 저장합니다. 저장 버튼과
    *  프로젝트 탭 전환 둘 다 여기를 거칩니다 — 탭을 바꿀 때 저장하지 않으면
    *  방금 고친 내용이 조용히 사라지기 때문입니다. */
-  const saveCurrentProject = async () => {
+  const saveCurrentProject = async (): Promise<boolean> => {
     const current = projects[projectIndex];
-    if (!current) return;
+    if (!current) return false;
     setSaving(true);
     setSaveError(null);
     try {
@@ -621,11 +630,25 @@ export default function PortfolioEditor() {
       await updatePortfolioProject(current.id, patch);
       setProjects((prev) => prev.map((p, i) => (i === projectIndex ? { ...p, ...patch } : p)));
       setLastSavedAt(Date.now());
+      return true;
     } catch (e) {
       setSaveError(e instanceof PortfolioError ? e.message : "저장하지 못했습니다.");
+      return false;
     } finally {
       setSaving(false);
     }
+  };
+
+  /**
+   * [2026-09-25] "대화로 채우기" — 이 프로젝트의 빈 칸만 묻는 대화로 갑니다
+   * (docs/chat-builder-design.md). 떠나기 전에 저장합니다. 저장 없이 가면
+   * 방금 쓴 칸이 서버에는 비어 있어서, 대화가 그 칸을 또 묻습니다.
+   */
+  const goFillByChat = async () => {
+    const current = projects[projectIndex];
+    if (!current) return;
+    const ok = await saveCurrentProject();
+    if (ok) navigate(`/chat/new?project=${current.id}`);
   };
 
   const switchProject = async (index: number) => {
@@ -1062,6 +1085,26 @@ export default function PortfolioEditor() {
                   />
                 </div>
               </div>
+
+              {/* [2026-09-25] 빈 칸이 있으면 대화로 채우기. 저장소 README 로 만든
+                  초안은 코드 설명은 있어도 문제·성과·배운 점이 비기 쉽습니다.
+                  "간단히"는 한 줄 설명만 쓰므로 띄우지 않습니다. */}
+              {depth === "full" && emptyStoryCount > 0 && (
+                <div className="flex items-center gap-3 rounded-xl border border-brand/30 bg-brand/5 px-4 py-3">
+                  <MessagesSquare size={18} strokeWidth={1.75} className="text-brand shrink-0" />
+                  <p className="flex-1 text-sm text-neutral-300 break-keep">
+                    빈 칸 <b className="text-neutral-100">{emptyStoryCount}개</b> — 질문에 답하면 대신 정리해 드려요.
+                  </p>
+                  <button
+                    type="button"
+                    className="btn-secondary py-2 shrink-0 disabled:opacity-50"
+                    onClick={() => void goFillByChat()}
+                    disabled={saving}
+                  >
+                    대화로 채우기
+                  </button>
+                </div>
+              )}
 
               <div className="border-t border-neutral-800 pt-4">
                 {/* [2026-09-22] "간단히" 에서는 한 줄 설명만 남기고 나머지를

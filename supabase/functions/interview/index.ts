@@ -7,6 +7,10 @@
  *   mode "answer"  답 하나를 받아 칸을 채우고 다음 질문 (skip 이면 모델 없이 건너뜀)
  *   mode "draft"   답변만으로 케이스 스터디 6칸을 쓰고 포트폴리오에 저장
  *
+ * [2026-09-25] "대화로 채우기" — start 에 projectId 를 주면 이미 있는 프로젝트의
+ * **빈 칸만** 묻습니다. 글이 있는 칸은 existing 으로 두고 묻지도, 고치지도
+ * 않습니다. draft 는 새로 채운 칸만 그 프로젝트에 써 넣습니다.
+ *
  * [날조 방지] 사용자의 답이 유일한 재료입니다. 답을 문장 단위로 쪼개
  * a{답변 순번}:{문장 순번} id 를 붙이고, 칸 요약·초안 문장은 반드시 이 id 를
  * 대야 합니다. 초안은 직무 전환과 같은 기계 검증(_shared/evidence.ts)을
@@ -31,6 +35,8 @@ import {
 import {
   answerEvidence,
   applyTurn,
+  canDraft,
+  fieldsFromProject,
   filledCount,
   firstEmpty,
   skipField,
@@ -161,6 +167,11 @@ async function loadSession(sb: SupabaseClient, id: string, userId: string) {
   return { session: session as Session, messages: (messages ?? []) as Message[] };
 }
 
+/** 기존 프로젝트의 빈 칸을 채우는 대화인가 (start 에서 project_id 를 받은 경우) */
+function isFillMode(session: Session) {
+  return Boolean(session.project_id) && session.status === "open";
+}
+
 function answersOf(messages: Message[]): Answer[] {
   return messages
     .filter((m) => m.role === "user" && !m.skipped && m.answer_no)
@@ -181,7 +192,7 @@ async function snapshot(sb: SupabaseClient, id: string, userId: string) {
       portfolioId: session.portfolio_id,
       projectId: session.project_id,
       flags: session.flags,
-      canDraft: filledCount(session.fields) >= MIN_FILLED_FOR_DRAFT,
+      canDraft: session.status === "open" && canDraft(session.fields, isFillMode(session)),
     },
     messages,
   };
@@ -195,7 +206,13 @@ function fieldStateLines(fields: Fields) {
   return (Object.keys(FIELD_LABEL) as Field[])
     .map((f) => {
       const s = fields[f];
-      const state = !s ? "비어 있음" : s.state === "skipped" ? "건너뜀" : `채움 — ${s.summary}`;
+      const state = !s
+        ? "비어 있음"
+        : s.state === "skipped"
+          ? "건너뜀"
+          : s.state === "existing"
+            ? `이미 적혀 있음(묻지 말 것) — ${s.summary}`
+            : `채움 — ${s.summary}`;
       return `- ${f} (${FIELD_LABEL[f]}): ${state}`;
     })
     .join("\n");
@@ -247,9 +264,17 @@ function turnPrompt(opts: {
     .join("\n");
 }
 
-function draftPrompt(title: string, fields: Fields, evidence: Array<{ id: string; text: string }>) {
+function draftPrompt(
+  title: string,
+  fields: Fields,
+  evidence: Array<{ id: string; text: string }>,
+  /** 주면 이 칸들만 씁니다("대화로 채우기"). 나머지는 이미 적혀 있으니 고치지 않습니다. */
+  only?: Field[]
+) {
   return [
-    `사용자가 인터뷰에서 답한 내용만으로 "${title || "프로젝트"}" 케이스 스터디를 써 주세요.`,
+    only
+      ? `"${title || "프로젝트"}" 케이스 스터디에서 비어 있던 칸(${only.join(", ")})만, 사용자가 인터뷰에서 답한 내용으로 써 주세요. "이미 적혀 있음" 칸은 흐름을 맞추는 참고용이며 출력하지 마세요.`
+      : `사용자가 인터뷰에서 답한 내용만으로 "${title || "프로젝트"}" 케이스 스터디를 써 주세요.`,
     "",
     "## 사용자 답변 (문장 id: 문장)",
     evidence.map((e) => `${e.id}: ${e.text}`).join("\n"),
@@ -353,6 +378,9 @@ async function saveTurn(
 }
 
 async function modeStart(sb: SupabaseClient, userId: string, payload: Record<string, unknown>, usage: Usage) {
+  const projectId = typeof payload.projectId === "string" && payload.projectId ? payload.projectId : null;
+  if (projectId) return await startFill(sb, userId, projectId);
+
   const text = typeof payload.text === "string" ? payload.text.trim().slice(0, MAX_ANSWER) : "";
   if (!text) throw new UserFacingError("어떤 프로젝트인지 한 줄이라도 적어 주세요.");
   const portfolioId = typeof payload.portfolioId === "string" && payload.portfolioId ? payload.portfolioId : null;
@@ -384,6 +412,55 @@ async function modeStart(sb: SupabaseClient, userId: string, payload: Record<str
   const session = created as Session;
   const turn = await runTurn(sb, session, [first], { isStart: true, usage });
   await saveTurn(sb, session, 1, turn, text.slice(0, 20), usage);
+  return created.id as string;
+}
+
+/**
+ * "대화로 채우기" 시작. 모델을 부르지 않습니다 — 첫 질문은 비어 있는 첫 칸의
+ * 기본 질문이고, 어떤 칸이 비었는지 먼저 알려줍니다.
+ */
+async function startFill(sb: SupabaseClient, userId: string, projectId: string) {
+  const { data: project } = await sb
+    .from("portfolio_projects")
+    .select("id, portfolio_id, name, context, role, problem, execution, outcome, reflection")
+    .eq("id", projectId)
+    .maybeSingle();
+  if (!project) throw new UserFacingError("프로젝트를 찾을 수 없습니다.", 404);
+  // RLS 는 공개된 남의 포트폴리오 프로젝트도 읽게 해 줍니다. 본인 것인지 따로 봅니다.
+  const { data: owner } = await sb.from("portfolios").select("user_id").eq("id", project.portfolio_id).maybeSingle();
+  if (!owner || owner.user_id !== userId) throw new UserFacingError("프로젝트를 찾을 수 없습니다.", 404);
+
+  const fields = fieldsFromProject(project);
+  const first = firstEmpty(fields);
+  if (!first) throw new UserFacingError("이 프로젝트는 이미 모든 칸이 채워져 있어요.");
+
+  const empties = (Object.keys(FIELD_LABEL) as Field[]).filter((f) => !fields[f]).map((f) => FIELD_LABEL[f]);
+  const name = (project.name ?? "").trim();
+
+  const { data: created, error } = await sb
+    .from("interview_sessions")
+    .insert({
+      user_id: userId,
+      portfolio_id: project.portfolio_id,
+      project_id: project.id,
+      title: name || "제목 없는 프로젝트",
+      fields,
+      current_field: first,
+      question_count: 1,
+    })
+    .select("id")
+    .single();
+  if (error || !created) throw new UserFacingError("대화를 시작하지 못했습니다.", 500);
+
+  const intro = `${name ? `「${name}」에서 ` : ""}비어 있는 칸은 ${empties.join(", ")}이에요. 이미 적힌 칸은 그대로 두고, 빈 칸만 하나씩 여쭤볼게요.\n\n${FALLBACK_QUESTION[first]}`;
+  const { error: msgError } = await sb.from("interview_messages").insert({
+    session_id: created.id,
+    position: 0,
+    role: "ai",
+    text: intro,
+    target_field: first,
+  });
+  if (msgError) throw new UserFacingError("대화를 시작하지 못했습니다.", 500);
   return created.id as string;
 }
 
@@ -443,9 +520,13 @@ async function modeDraft(sb: SupabaseClient, userId: string, payload: Record<str
   if (session.status === "drafted" && session.portfolio_id) {
     return { portfolioId: session.portfolio_id, flags: session.flags };
   }
-  if (filledCount(session.fields) < MIN_FILLED_FOR_DRAFT) {
-    throw new UserFacingError(`칸을 ${MIN_FILLED_FOR_DRAFT}개 이상 채우면 초안을 만들 수 있어요.`);
+  const fillMode = isFillMode(session);
+  if (!canDraft(session.fields, fillMode)) {
+    throw new UserFacingError(
+      fillMode ? "한 칸 이상 답하면 채워 넣을 수 있어요." : `칸을 ${MIN_FILLED_FOR_DRAFT}개 이상 채우면 초안을 만들 수 있어요.`
+    );
   }
+  if (fillMode) return await draftFill(sb, userId, session, messages, usage);
 
   // 초안을 붙일 곳: 요청에 적힌 것 > 대화를 시작할 때 정한 것 > 새로 만들기
   const requested = typeof payload.portfolioId === "string" && payload.portfolioId ? payload.portfolioId : null;
@@ -547,6 +628,76 @@ async function modeDraft(sb: SupabaseClient, userId: string, payload: Record<str
     .then(({ error }) => error && console.error("사용량 기록 실패", error));
 
   return { portfolioId, flags };
+}
+
+/**
+ * "대화로 채우기"의 마무리. 새로 채운 칸만 그 프로젝트에 써 넣습니다.
+ * 이미 적혀 있던 칸은 모델에게 참고로만 주고 결과에서 버립니다.
+ */
+async function draftFill(sb: SupabaseClient, userId: string, session: Session, messages: Message[], usage: Usage) {
+  const answers = answersOf(messages);
+  const evidence = answerEvidence(answers);
+  const known = new Set(evidence.map((e) => e.id));
+  const textById = new Map(evidence.map((e) => [e.id, e.text]));
+  const filled = FIELDS.filter((f) => session.fields[f]?.state === "filled");
+
+  const { data, usage: u } = await callModel(
+    STRONG_MODEL,
+    draftPrompt(session.title, session.fields, evidence, filled),
+    2000
+  );
+  usage.input_tokens += u.input_tokens;
+  usage.output_tokens += u.output_tokens;
+
+  const written: FieldSentences = normalizeSentences(data, known);
+  for (const f of FIELDS) {
+    if (!filled.includes(f)) {
+      written[f] = [];
+      continue;
+    }
+    if (written[f].length === 0) {
+      written[f] = (session.fields[f]?.answerIds ?? [])
+        .map((id) => ({ text: textById.get(id) ?? "", evidence: [id], requirements: [] }))
+        .filter((s) => s.text);
+    }
+  }
+  // 숫자·이름은 답변과 이미 적혀 있던 글 어디든 있으면 통과. 칸 상태의
+  // summary 는 200자로 잘려 있어서, 원문은 프로젝트에서 다시 읽습니다.
+  const { data: project } = await sb
+    .from("portfolio_projects")
+    .select("name, stack, context, role, problem, execution, outcome, reflection")
+    .eq("id", session.project_id!)
+    .maybeSingle();
+  const existingText = project
+    ? [project.name ?? "", ...(project.stack ?? []), ...FIELDS.map((f) => project[f] ?? "")].join("\n")
+    : "";
+  const whole = [...answers.map((a) => a.text), existingText].join("\n");
+  const flags = verifySentences(written, textById, whole, (f) =>
+    (session.fields[f]?.answerIds ?? []).map((id) => textById.get(id) ?? "").filter(Boolean)
+  );
+
+  const patch = Object.fromEntries(filled.map((f) => [f, joinField(written[f])]).filter(([, v]) => v));
+  if (Object.keys(patch).length > 0) {
+    const { error } = await sb.from("portfolio_projects").update(patch).eq("id", session.project_id!);
+    if (error) throw new UserFacingError("프로젝트에 저장하지 못했습니다.", 500);
+  }
+
+  await sb
+    .from("interview_sessions")
+    .update({ status: "drafted", flags, updated_at: new Date().toISOString() })
+    .eq("id", session.id);
+
+  await sb
+    .from("draft_generations")
+    .insert({
+      user_id: userId,
+      portfolio_id: session.portfolio_id,
+      input_tokens: (session.input_tokens ?? 0) + usage.input_tokens,
+      output_tokens: (session.output_tokens ?? 0) + usage.output_tokens,
+    })
+    .then(({ error }) => error && console.error("사용량 기록 실패", error));
+
+  return { portfolioId: session.portfolio_id!, flags };
 }
 
 /* ------------------------------------------------------------------ */

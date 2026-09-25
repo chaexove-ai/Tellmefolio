@@ -10,6 +10,7 @@ import {
   type LibraryPortfolio,
 } from "../lib/portfolios";
 import Reveal from "../components/Reveal";
+import GrainCover from "../components/GrainCover";
 
 /**
  * [2026-09] mockData.portfolios(고정 4건, 직무·연도가 미리 정해져 있던
@@ -159,10 +160,17 @@ export default function PortfolioList() {
   if (sort === "최근 수정순")
     list = [...list].sort((a, b) => +new Date(b.updatedAt) - +new Date(a.updatedAt));
 
+  // [2026-09-25] 데스크탑 전용이 된 뒤에도 max-w-3xl 한 줄 목록이라 화면
+  // 오른쪽 절반이 비어 있었습니다. 표지가 있는 카드 격자로 바꿔 남는 폭을
+  // 씁니다. 홈의 책장이 "훑어보기"라면 이 화면은 "찾고 정리하기"입니다 —
+  // 필터·정렬·직무 이름/색 일괄 수정이 여기에만 있습니다.
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-heading">내 서재</h1>
+        <h1 className="text-xl font-heading">
+          내 서재{" "}
+          {portfolios.length > 0 && <span className="text-sm text-neutral-500 font-sans">{portfolios.length}권</span>}
+        </h1>
         <div className="flex gap-4 items-center">
           <button className="text-xs text-brand hover:underline" onClick={openColorModal}>
             직무 색상 설정
@@ -227,59 +235,80 @@ export default function PortfolioList() {
             </p>
           )}
 
-          <div className="space-y-4">
-            {list.map((p, i) => (
-              <Reveal key={p.id} delay={(i % 4) * 0.06}>
-                <div className="entry flex items-start justify-between">
-                  <div>
-                    {editingJobId === p.id ? (
-                      <input
-                        autoFocus
-                        type="text"
-                        defaultValue={p.job === "직무 미지정" ? "" : p.job}
-                        placeholder="직무 입력"
-                        onBlur={(e) => void handleSaveJob(p, e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-                          if (e.key === "Escape") setEditingJobId(null);
-                        }}
-                        className="badge mb-2 bg-transparent border outline-none w-40 max-w-full"
-                        style={{ borderColor: p.jobColor, color: p.jobColor }}
-                      />
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => setEditingJobId(p.id)}
-                        disabled={savingJobId === p.id}
-                        title="눌러서 직무 수정"
-                        className="badge mb-2 hover:opacity-75 transition-opacity disabled:opacity-50"
-                        style={{ backgroundColor: `${p.jobColor}22`, color: p.jobColor }}
+          {list.length === 0 ? (
+            <p className="text-sm text-neutral-500">조건에 맞는 포트폴리오가 없습니다.</p>
+          ) : (
+            <div className="grid gap-5 grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+              {list.map((p, i) => (
+                <Reveal key={p.id} delay={(i % 4) * 0.06} className="h-full">
+                  <article className="entry p-0 overflow-hidden h-full flex flex-col transition-colors hover:border-neutral-700">
+                    <Link to={`/wizard/editor/${p.id}`} className="relative block" aria-label={`${p.title} 편집하기`}>
+                      <GrainCover seed={p.id} tint={p.jobColor} className="aspect-[16/9] w-full" />
+                      <span
+                        className={`badge absolute top-3 right-3 shadow-sm ${
+                          p.visibility === "공개" ? "bg-white/85 text-emerald-700" : "bg-white/85 text-neutral-600"
+                        }`}
                       >
-                        {savingJobId === p.id ? "저장 중…" : p.job}
-                      </button>
-                    )}
-                    <p className="font-medium text-neutral-100">{p.title}</p>
-                    <p className="text-xs text-neutral-500 mt-1">마지막 수정 {p.updatedAt.slice(0, 10)}</p>
-                    <div className="flex gap-3 mt-2">
+                        {p.visibility}
+                        {p.listed && " · 커뮤니티"}
+                      </span>
+                    </Link>
+
+                    <div className="p-5 flex-1 flex flex-col">
+                      {editingJobId === p.id ? (
+                        <input
+                          autoFocus
+                          type="text"
+                          defaultValue={p.job === "직무 미지정" ? "" : p.job}
+                          placeholder="직무 입력"
+                          onBlur={(e) => void handleSaveJob(p, e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                            if (e.key === "Escape") setEditingJobId(null);
+                          }}
+                          className="badge self-start bg-transparent border outline-none w-40 max-w-full"
+                          style={{ borderColor: p.jobColor, color: p.jobColor }}
+                        />
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setEditingJobId(p.id)}
+                          disabled={savingJobId === p.id}
+                          title="눌러서 직무 수정"
+                          className="badge self-start hover:opacity-75 transition-opacity disabled:opacity-50"
+                          style={{ backgroundColor: `${p.jobColor}22`, color: p.jobColor }}
+                        >
+                          {savingJobId === p.id ? "저장 중…" : p.job}
+                        </button>
+                      )}
+
                       <Link
                         to={`/wizard/editor/${p.id}`}
-                        className="text-xs text-brand hover:underline inline-block"
+                        className="mt-2.5 font-medium text-neutral-100 leading-snug line-clamp-2 break-keep hover:text-brand"
                       >
-                        편집하기
+                        {p.title}
                       </Link>
-                      <Link
-                        to={`/library/portfolios/${p.id}/versions`}
-                        className="text-xs text-neutral-400 hover:underline inline-block"
-                      >
-                        버전 관리
-                      </Link>
+                      <p className="text-xs text-neutral-500 mt-1.5">
+                        {p.year} · 마지막 수정 {p.updatedAt.slice(0, 10)}
+                      </p>
+
+                      <div className="mt-auto pt-4 flex items-center gap-4 text-xs">
+                        <Link to={`/wizard/editor/${p.id}`} className="text-brand hover:underline">
+                          편집하기
+                        </Link>
+                        <Link to={`/wizard/export/${p.id}`} className="text-neutral-400 hover:underline">
+                          내보내기
+                        </Link>
+                        <Link to={`/library/portfolios/${p.id}/versions`} className="text-neutral-400 hover:underline">
+                          버전 관리
+                        </Link>
+                      </div>
                     </div>
-                  </div>
-                  <span className="badge bg-neutral-800 text-neutral-300 shrink-0">{p.visibility}</span>
-                </div>
-              </Reveal>
-            ))}
-          </div>
+                  </article>
+                </Reveal>
+              ))}
+            </div>
+          )}
         </>
       )}
 
