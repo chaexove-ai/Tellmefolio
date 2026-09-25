@@ -341,7 +341,9 @@ supabase/
 docs/
 ├── checklist.md                  전체 점검 체크리스트 (단계별 할 일의 원본)
 ├── editor-redesign.md  editor-freedom.md   편집 화면·자유 블록 설계
-└── job-switch-design.md          직무 전환 재구성 설계 (2026-09-25 구현)
+├── job-switch-design.md          직무 전환 재구성 설계 (2026-09-25 구현)
+├── chat-builder-design.md        대화로 만들기(겉은 챗봇, 속은 인터뷰) 설계 (미구현)
+└── mockups/chat-builder.html     위 설계의 눌러볼 수 있는 예시 화면
 ```
 
 `docs/archive/` 의 `적용방법-v*.md`, `랜딩재구성.md` 는 **이미 반영이 끝난 옛
@@ -412,6 +414,7 @@ FAQ           밝은 면   아코디언
 | 항목 | 메모 |
 |---|---|
 | 배포판 동작 확인 | 실제 URL에서 초안 생성 1회, 여백 변경 1회 (checklist 0단계의 마지막 칸) |
+| **대화로 만들기** | 홈 입력창에서 대화하며 칸을 채우는 인터뷰형 생성. 설계 `docs/chat-builder-design.md`, 12절 순서대로 |
 | 직무 전환 검증 | 설계 문서 7절대로 실제 공고 3개로 돌려 ChatGPT 결과와 비교. 요약 문단은 아직 재작성 대상이 아닙니다 |
 | 자유 블록 2~6단계 | `docs/editor-freedom.md` 7절. 1단계(글·구분선)까지 끝남 |
 | 템플릿 추가 | 현재 2종. 이 제품의 품질은 템플릿 품질입니다 |
