@@ -347,6 +347,7 @@ docs/
 ├── checklist.md                  전체 점검 체크리스트 (단계별 할 일의 원본)
 ├── editor-redesign.md  editor-freedom.md   편집 화면·자유 블록 설계
 ├── job-switch-design.md          직무 전환 재구성 설계 (2026-09-25 구현)
+├── submission-history-design.md  제출 기록(버전 관리 대체) 설계 (미구현)
 ├── chat-builder-design.md        대화로 만들기(겉은 챗봇, 속은 인터뷰) 설계 (2026-09-25 구현)
 └── mockups/chat-builder.html     위 설계의 눌러볼 수 있는 예시 화면
 ```
@@ -427,7 +428,7 @@ FAQ           밝은 면   아코디언
 | 자유 블록 2~6단계 | `docs/editor-freedom.md` 7절. 1단계(글·구분선)까지 끝남 |
 | 템플릿 추가 | 현재 2종. 이 제품의 품질은 템플릿 품질입니다 |
 | 목업 섹션 복구 | 에디터의 "AI 문장 다듬기"·"근거 확인"·"이력서 대조" — 접힌 채 예시 데이터 |
-| `VersionHistory` | 버전 저장이 없어 화면만 있음. 안 만들 거면 라우트·링크를 뺍니다 |
+| **제출 기록** | 목업 `VersionHistory` 를 "내보낼 때 어디에 냈는지 남기는 기록"으로 교체. 설계 `docs/submission-history-design.md` |
 | `mockData.ts` 정리 | 남은 사용처는 `VersionHistory` 와 `AIRequestStatus` 타입뿐 |
 | 랜딩 카피 | 개발자 관점으로 다시 쓰기 — 생성 파이프라인이 실제로 돈 뒤에 하기로 했고, 이제 돕니다 |
 | 프리렌더 | CSR 전용이라 네이버·다음 색인이 안 됩니다. 전체 프리렌더보다 `index.html` 메타태그 + 랜딩 정적화 정도가 비용 대비 낫다고 판단 |
