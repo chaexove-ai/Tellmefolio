@@ -6,11 +6,14 @@ import {
   listMyPortfolios,
   updateJobColor,
   updatePortfolioJob,
+  updatePortfolioListed,
+  updatePortfolioVisibility,
   PortfolioError,
   type LibraryPortfolio,
 } from "../lib/portfolios";
 import Reveal from "../components/Reveal";
 import GrainCover from "../components/GrainCover";
+import { getMyProfile, FALLBACK_NICKNAME } from "../lib/profile";
 
 /**
  * [2026-09] mockData.portfolios(고정 4건, 직무·연도가 미리 정해져 있던
@@ -48,6 +51,47 @@ export default function PortfolioList() {
   const [editingJobId, setEditingJobId] = useState<string | null>(null);
   const [savingJobId, setSavingJobId] = useState<string | null>(null);
   const [jobEditError, setJobEditError] = useState<string | null>(null);
+
+  // [2026-09-25] 카드에서 바로 커뮤니티에 올리고 내리기.
+  // 비공개인 것을 올리면 공개 링크도 같이 열리므로 그때만 확인창을 띄웁니다.
+  const [listingId, setListingId] = useState<string | null>(null);
+  const [confirmFor, setConfirmFor] = useState<LibraryPortfolio | null>(null);
+  const [listError, setListError] = useState<string | null>(null);
+  const [nickname, setNickname] = useState<string>("");
+
+  useEffect(() => {
+    const uid = session?.user?.id;
+    if (!configured || !uid) return;
+    getMyProfile(uid)
+      .then((p) => setNickname(p.nickname.trim()))
+      .catch(() => setNickname(""));
+  }, [configured, session?.user?.id]);
+
+  const setListed = async (p: LibraryPortfolio, listed: boolean, alsoPublic = false) => {
+    setListingId(p.id);
+    setListError(null);
+    try {
+      if (alsoPublic) await updatePortfolioVisibility(p.id, "public");
+      await updatePortfolioListed(p.id, listed);
+      setPortfolios((prev) =>
+        prev.map((row) =>
+          row.id === p.id ? { ...row, listed, visibility: alsoPublic ? "공개" : row.visibility } : row
+        )
+      );
+      setConfirmFor(null);
+    } catch (e) {
+      setListError(e instanceof PortfolioError ? e.message : "커뮤니티 설정을 바꾸지 못했습니다.");
+    } finally {
+      setListingId(null);
+    }
+  };
+
+  const toggleListed = (p: LibraryPortfolio) => {
+    if (p.listed) return void setListed(p, false); // 내리기는 확인 없이. 공개 링크는 그대로 둡니다
+    if (p.visibility === "공개") return void setListed(p, true);
+    setListError(null);
+    setConfirmFor(p);
+  };
 
   useEffect(() => {
     if (!configured) {
@@ -229,6 +273,12 @@ export default function PortfolioList() {
             </select>
           </div>
 
+          {listError && !confirmFor && (
+            <p role="alert" className="text-xs text-brand">
+              {listError}
+            </p>
+          )}
+
           {jobEditError && (
             <p role="alert" className="text-xs text-brand">
               {jobEditError}
@@ -250,7 +300,6 @@ export default function PortfolioList() {
                         }`}
                       >
                         {p.visibility}
-                        {p.listed && " · 커뮤니티"}
                       </span>
                     </Link>
 
@@ -302,6 +351,27 @@ export default function PortfolioList() {
                         <Link to={`/library/portfolios/${p.id}/versions`} className="text-neutral-400 hover:underline">
                           버전 관리
                         </Link>
+
+                        <label className="ml-auto inline-flex items-center gap-2 cursor-pointer select-none text-neutral-500">
+                          커뮤니티
+                          <button
+                            type="button"
+                            role="switch"
+                            aria-checked={p.listed}
+                            aria-label={`${p.title} 커뮤니티에 ${p.listed ? "내리기" : "올리기"}`}
+                            disabled={listingId === p.id}
+                            onClick={() => toggleListed(p)}
+                            className={`relative h-5 w-9 rounded-full transition-colors disabled:opacity-50 ${
+                              p.listed ? "bg-brand-solid" : "bg-neutral-700"
+                            }`}
+                          >
+                            <span
+                              className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${
+                                p.listed ? "translate-x-4" : ""
+                              }`}
+                            />
+                          </button>
+                        </label>
                       </div>
                     </div>
                   </article>
@@ -310,6 +380,55 @@ export default function PortfolioList() {
             </div>
           )}
         </>
+      )}
+
+      {confirmFor && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-10 p-4">
+          <div className="surface w-full max-w-md" role="dialog" aria-modal="true" aria-labelledby="list-confirm-title">
+            <h2 id="list-confirm-title" className="entry-title mb-1">
+              커뮤니티에 올릴까요?
+            </h2>
+            <p className="text-sm text-neutral-400 mb-4 break-keep">“{confirmFor.title}”</p>
+            <ul className="space-y-2 text-sm">
+              <li className="flex gap-2">
+                <span className="text-brand">•</span>
+                <span className="text-neutral-300 break-keep">
+                  지금 <b className="text-neutral-100">비공개</b>라서 공개 링크도 함께 열립니다.
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-brand">•</span>
+                <span className="text-neutral-300 break-keep">재직 중이라면 회사 사람도 볼 수 있습니다.</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-brand">•</span>
+                <span className="text-neutral-300 break-keep">
+                  커뮤니티에는 <b className="text-neutral-100">{nickname || FALLBACK_NICKNAME}</b>{euro(nickname || FALLBACK_NICKNAME)} 표시됩니다.{" "}
+                  <Link to="/settings" className="text-brand hover:underline">
+                    이름 바꾸기
+                  </Link>
+                </span>
+              </li>
+            </ul>
+            {listError && (
+              <p role="alert" className="text-xs text-brand mt-3">
+                {listError}
+              </p>
+            )}
+            <div className="flex justify-end gap-2 mt-6">
+              <button className="btn-secondary" onClick={() => setConfirmFor(null)} disabled={listingId !== null}>
+                취소
+              </button>
+              <button
+                className="btn-primary disabled:opacity-40"
+                onClick={() => void setListed(confirmFor, true, true)}
+                disabled={listingId !== null}
+              >
+                {listingId ? "올리는 중" : "공개하고 올리기"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {showColorModal && (
@@ -369,4 +488,12 @@ export default function PortfolioList() {
       )}
     </div>
   );
+}
+
+/** 받침에 따라 "로"/"으로". 한글이 아니면(영문 닉네임 등) "(으)로" */
+function euro(word: string) {
+  const code = word.charCodeAt(word.length - 1) - 0xac00;
+  if (code < 0 || code > 11171) return "(으)로";
+  const jong = code % 28;
+  return jong === 0 || jong === 8 ? "로" : "으로"; // 받침 없음 또는 ㄹ → "로"
 }
