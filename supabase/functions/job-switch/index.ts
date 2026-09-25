@@ -44,7 +44,7 @@ import {
   type FieldSentences,
   type Match,
   type SourceProject,
-} from "./logic.ts";
+} from "../_shared/evidence.ts";
 
 const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
 const LIGHT_MODEL =

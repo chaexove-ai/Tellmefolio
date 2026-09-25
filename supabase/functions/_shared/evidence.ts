@@ -1,10 +1,12 @@
 /**
- * 직무 전환의 "LLM 없는" 부분 — 근거 쪼개기(0단계), 모델 응답 정리,
- * 기계 검증(4단계).
+ * 날조 방지 장치 — "LLM 없는" 부분. 근거 쪼개기, 모델 응답 정리, 기계 검증.
  *
- * index.ts 와 나눈 이유: 이 파일은 네트워크도 Deno API 도 쓰지 않아서
- * 함수 배포 없이 로컬에서 바로 시험할 수 있습니다. 날조를 막는 장치가
- * 전부 여기 있으니, 여기가 틀리면 이 기능의 존재 이유가 무너집니다.
+ * [2026-09-25] job-switch/logic.ts 에서 여기로 옮겼습니다. 직무 전환과
+ * 대화로 만들기(interview)가 같은 규칙을 씁니다. 두 벌로 두면 한쪽만
+ * 고쳐지는 사고가 납니다. 이 파일을 고치면 두 함수를 모두 다시 배포하세요.
+ *
+ * 이 파일은 네트워크도 Deno API 도 쓰지 않아서 배포 없이 로컬에서 바로
+ * 시험할 수 있습니다. 여기가 틀리면 두 기능의 존재 이유가 무너집니다.
  */
 
 /** 재작성 대상 필드. 원본 portfolio_projects 컬럼과 같은 이름입니다. */
@@ -225,7 +227,14 @@ export function normalizeRewrite(
   requirementIds: string[]
 ): FieldSentences {
   const known = new Set(evidence.filter((e) => e.projectIndex === projectIndex).map((e) => e.id));
-  const reqs = new Set(requirementIds);
+  return normalizeSentences(raw, known, new Set(requirementIds));
+}
+
+/**
+ * { fields: { outcome: [{ text, evidence, requirements }] } } 모양의 모델 응답을
+ * 정리합니다. known 에 없는 근거 id, reqs 에 없는 요구사항 id 는 버립니다.
+ */
+export function normalizeSentences(raw: unknown, known: Set<string>, reqs: Set<string> = new Set()): FieldSentences {
   const fields =
     raw && typeof raw === "object" ? ((raw as Record<string, unknown>).fields as Record<string, unknown>) : null;
 
@@ -300,19 +309,35 @@ export function verifyProject(
   rewritten: FieldSentences,
   evidence: Evidence[]
 ): Flag[] {
-  const byId = new Map(evidence.map((e) => [e.id, e]));
   const whole = [source.name, ...source.stack, ...FIELDS.map((f) => source[f])].join("\n");
+  return verifySentences(
+    rewritten,
+    new Map(evidence.map((e) => [e.id, e.text])),
+    whole,
+    (field) => evidence.filter((e) => e.projectIndex === projectIndex && e.field === field).map((e) => e.text),
+    projectIndex
+  );
+}
+
+/**
+ * 검증의 본체. 원문(whole)은 직무 전환에서는 원본 프로젝트, 대화로 만들기
+ * 에서는 사용자가 한 답 전체입니다.
+ */
+export function verifySentences(
+  rewritten: FieldSentences,
+  textById: Map<string, string>,
+  whole: string,
+  fallbackSources: (field: Field) => string[],
+  projectIndex = 0
+): Flag[] {
   const wholeNumbers = new Set(numbersIn(whole));
   const wholeLower = whole.toLowerCase();
 
   const flags: Flag[] = [];
   for (const field of FIELDS) {
     rewritten[field].forEach((s, si) => {
-      const cited = s.evidence.map((id) => byId.get(id)?.text ?? "").filter(Boolean);
-      const sources =
-        cited.length > 0
-          ? cited
-          : evidence.filter((e) => e.projectIndex === projectIndex && e.field === field).map((e) => e.text);
+      const cited = s.evidence.map((id) => textById.get(id) ?? "").filter(Boolean);
+      const sources = cited.length > 0 ? cited : fallbackSources(field);
       const base = { projectIndex, field, sentenceIndex: si, sentence: s.text, sources };
 
       if (s.evidence.length === 0) flags.push({ ...base, kind: "no_evidence", detail: "" });

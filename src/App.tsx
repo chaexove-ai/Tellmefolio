@@ -33,6 +33,7 @@ const Export = lazy(() => import("./pages/wizard/Export"));
 
 const JobSwitchRequest = lazy(() => import("./pages/jobswitch/JobSwitchRequest"));
 const JobSwitchResult = lazy(() => import("./pages/jobswitch/JobSwitchResult"));
+const ChatBuilder = lazy(() => import("./pages/chat/ChatBuilder"));
 
 const Gallery = lazy(() => import("./pages/gallery/Gallery"));
 const ShareSettings = lazy(() => import("./pages/gallery/ShareSettings"));
@@ -107,6 +108,9 @@ export default function App() {
         <Route path="/wizard/style/:id" element={<StyleRedirect />} />
           <Route path="/wizard/export/:id" element={<Export />} />
         </Route>
+
+        {/* 대화로 만들기 — /chat/new 는 새 대화, 나머지는 세션 id */}
+        <Route path="/chat/:sessionId" element={<ChatBuilder />} />
 
         {/* 직무 전환 재구성 */}
         <Route path="/job-switch" element={<JobSwitchRequest />} />

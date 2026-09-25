@@ -273,6 +273,20 @@ export async function listJobSwitchRuns(limit = 10): Promise<JobSwitchRunSummary
   });
 }
 
+/** 이번 달에 돌린 재구성 수 — 홈 현황 띠의 "직무 전환 생성" 칸 */
+export async function countJobSwitchRunsThisMonth(): Promise<number> {
+  const sb = await getSupabase();
+  if (!sb) return 0;
+  const start = new Date();
+  start.setDate(1);
+  start.setHours(0, 0, 0, 0);
+  const { count } = await sb
+    .from("job_switch_runs")
+    .select("id", { count: "exact", head: true })
+    .gte("created_at", start.toISOString());
+  return count ?? 0;
+}
+
 /* ------------------------------------------------------------------ */
 /* 쓰기                                                                 */
 /* ------------------------------------------------------------------ */

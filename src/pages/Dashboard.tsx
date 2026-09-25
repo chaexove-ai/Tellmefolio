@@ -19,6 +19,8 @@ import {
 } from "../lib/portfolios";
 import Reveal from "../components/Reveal";
 import Bookshelf from "../components/Bookshelf";
+import ChatStart from "../components/ChatStart";
+import { countJobSwitchRunsThisMonth } from "../lib/jobSwitch";
 
 /**
  * [2026-09] mockData.portfolios(고정 4건) 대신 로그인한 사용자의 실제
@@ -70,10 +72,12 @@ const ACCENTS: Record<string, Accent> = {
 const nextSteps = [
   {
     icon: Sparkles,
-    title: "새 포트폴리오 만들기",
-    desc: "원본 자료를 바탕으로 AI가 포트폴리오 초안을 구성합니다.",
+    // [2026-09-25] 새로 만드는 주 입구는 맨 위 입력창(대화로 만들기)이 됐습니다.
+    // 이 카드는 저장소·링크·메모를 한꺼번에 넣는 기존 위저드 입구로 남깁니다.
+    title: "자료로 만들기",
+    desc: "GitHub 저장소·웹 링크·메모를 넣어 초안을 만듭니다.",
     to: "/wizard",
-    cta: "포트폴리오 생성 시작",
+    cta: "자료로 시작",
     accent: null as string | null,
   },
   {
@@ -99,6 +103,13 @@ export default function Dashboard() {
   const [portfolios, setPortfolios] = useState<LibraryPortfolio[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  // [2026-09-25] 전에는 2 로 박혀 있었습니다. 직무 전환이 실제로 돌면서 셀 수 있게 됐습니다.
+  const [switchCount, setSwitchCount] = useState(0);
+
+  useEffect(() => {
+    if (!configured) return;
+    countJobSwitchRunsThisMonth().then(setSwitchCount).catch(() => setSwitchCount(0));
+  }, [configured]);
 
   useEffect(() => {
     if (!configured) {
@@ -142,7 +153,7 @@ export default function Dashboard() {
     portfolios.length,
     portfolios.filter((p) => p.visibility === "공개").length,
     portfolios.filter((p) => p.visibility === "비공개").length,
-    2,
+    switchCount,
   ];
 
   return (
@@ -155,6 +166,10 @@ export default function Dashboard() {
           포트폴리오 목록 보기
         </Link>
       </div>
+
+      {/* [2026-09-25] 대화로 만들기의 입구. 이 앱에 들어온 사람이 하러 온 일이
+          "만들기"라서 맨 위, 가장 큰 자리에 둡니다. */}
+      {configured && <ChatStart />}
 
       {/* [2026-09] 통계를 띠 하나로 합쳤습니다.
           카드 넷이 같은 간격으로 떠 있으면, 색을 넣어도 "같은 모양의
