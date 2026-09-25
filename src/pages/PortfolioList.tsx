@@ -14,6 +14,7 @@ import {
 import Reveal from "../components/Reveal";
 import GrainCover from "../components/GrainCover";
 import { getMyProfile, FALLBACK_NICKNAME } from "../lib/profile";
+import { countSubmissionsByPortfolio } from "../lib/submissions";
 
 /**
  * [2026-09] mockData.portfolios(고정 4건, 직무·연도가 미리 정해져 있던
@@ -58,6 +59,13 @@ export default function PortfolioList() {
   const [confirmFor, setConfirmFor] = useState<LibraryPortfolio | null>(null);
   const [listError, setListError] = useState<string | null>(null);
   const [nickname, setNickname] = useState<string>("");
+  /** 포트폴리오 id → 제출 기록 수 (카드의 "제출 기록 N") */
+  const [submissionCounts, setSubmissionCounts] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (!configured) return;
+    countSubmissionsByPortfolio().then(setSubmissionCounts).catch(() => setSubmissionCounts({}));
+  }, [configured]);
 
   useEffect(() => {
     const uid = session?.user?.id;
@@ -349,7 +357,7 @@ export default function PortfolioList() {
                           내보내기
                         </Link>
                         <Link to={`/library/portfolios/${p.id}/versions`} className="text-neutral-400 hover:underline">
-                          버전 관리
+                          제출 기록{submissionCounts[p.id] ? ` ${submissionCounts[p.id]}` : ""}
                         </Link>
 
                         <label className="ml-auto inline-flex items-center gap-2 cursor-pointer select-none text-neutral-500">

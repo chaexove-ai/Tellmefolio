@@ -1,7 +1,11 @@
 # 제출 기록 — 설계
 
-> 2026-09-25 작성. 아직 구현 전입니다.
-> 지금의 "버전 관리"(`/library/portfolios/:id/versions`, 100% 목업)를 대체합니다.
+> 2026-09-25 작성, **같은 날 구현**. 목업 "버전 관리"(`VersionHistory.tsx`)는 지웠습니다.
+> 코드: `src/lib/submissions.ts`, `src/pages/SubmissionHistory.tsx`(`/library/portfolios/:id/versions`,
+> `/submissions`), 내보내기 화면의 입력칸(`Export.tsx`), `src/components/RecentSubmissions.tsx`(홈),
+> 마이그레이션 `20260925140000_submissions.sql`.
+>
+> 11절 질문은 기본값대로 갔습니다(지원 상태 없음, 입력칸은 늘 보임).
 
 ## 1. 한 줄
 

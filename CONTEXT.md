@@ -186,6 +186,7 @@ npm run tpl:check my-template
 | `portfolio_project_images` | 프로젝트별 이미지 (순서·삭제) |
 | `portfolio_blocks` | 자유 블록(글·구분선). 설계는 `docs/editor-freedom.md` |
 | `profiles` | 커뮤니티에 보이는 닉네임·사진. 읽기 전체 공개, 쓰기 본인만. 가입 트리거가 만들고 기본 닉네임은 소셜 실명 |
+| `portfolio_submissions` + Storage `submissions`(비공개) | 제출 기록. 어디에(회사·포지션) 무엇을(그때 결과물 HTML, 이미지 포함) 냈는지. 포트폴리오를 지워도 남음. 본인만 읽음 |
 | `interview_sessions` · `interview_messages` | 대화로 만들기. 세션은 칸 상태(`fields`)·지금 묻는 칸·질문 수·되묻기 수·토큰 합계, 메시지는 대화 한 줄씩(사용자 답은 `answer_no` 로 근거 id `a{n}:{i}` 의 앞부분) |
 | `job_switch_runs` · `job_switch_projects` | 직무 전환 재구성 결과. 공고 해부·근거 매칭·검증 경고·맨 앞 필드(`lead`)와 프로젝트별 재작성 문장. 원본은 안 바꾸고, "저장"을 눌러야 새 `portfolios` 행이 됩니다 |
 | `draft_generations` | AI 호출 기록 (`input_tokens`/`output_tokens`). 가짜 사용량 배지는 제거했고(09-21), 유료 전환 시 이걸 세서 한도를 붙입니다 |
@@ -310,7 +311,7 @@ scripts/                          prepare-template.mjs, check-template.ts (npm r
 src/
 ├── index.css                     테마 변수 + @layer components (.btn-*, .sec-*, .step-*, .book*)
 ├── landingContent.ts             랜딩 문구를 한곳에. 카피만 고칠 땐 이 파일만 열면 됨
-├── mockData.ts                   남은 목업. VersionHistory 와 AIRequestStatus 타입만 씀
+├── mockData.ts                   남은 목업. AIRequestStatus 타입만 씀
 ├── lib/
 │   ├── supabase.ts               동적 import로 별도 청크 (메인 청크 유지)
 │   ├── portfolios.ts             포트폴리오·프로젝트 CRUD, 공개·게시, 직무·직무색·제목·연도
@@ -330,7 +331,7 @@ src/
 │   ├── account/      AccountSettings · SocialAccountManage · DataManage
 │   ├── jobswitch/                직무 전환 요청·결과 (lib/jobSwitch.ts)
 │   ├── chat/ChatBuilder.tsx      대화로 만들기 /chat/:id (lib/interview.ts, 홈 입력창은 components/ChatStart.tsx)
-│   └── VersionHistory.tsx        ← 아직 목업
+│   └── SubmissionHistory.tsx     제출 기록 /library/portfolios/:id/versions · /submissions (lib/submissions.ts)
 └── components/
     ├── TemplateFrame.tsx         템플릿 iframe (1280x800 고정 창 + 축소, 공개 링크는 실제 폭)
     ├── EditorPreview.tsx  StylePanel.tsx  WizardLayout.tsx  DesktopOnly.tsx(1200px 게이트)
@@ -347,7 +348,7 @@ docs/
 ├── checklist.md                  전체 점검 체크리스트 (단계별 할 일의 원본)
 ├── editor-redesign.md  editor-freedom.md   편집 화면·자유 블록 설계
 ├── job-switch-design.md          직무 전환 재구성 설계 (2026-09-25 구현)
-├── submission-history-design.md  제출 기록(버전 관리 대체) 설계 (미구현)
+├── submission-history-design.md  제출 기록(버전 관리 대체) 설계 (2026-09-25 구현)
 ├── chat-builder-design.md        대화로 만들기(겉은 챗봇, 속은 인터뷰) 설계 (2026-09-25 구현)
 └── mockups/chat-builder.html     위 설계의 눌러볼 수 있는 예시 화면
 ```
@@ -410,6 +411,7 @@ FAQ           밝은 면   아코디언
 **2026-09-25** — 집 맥을 `~/Documents/GitHub/Tellmefolio` 로 옮김,
 `package-lock.json` 에 남아 있던 `tsx` 항목 정리. 로그인 왼쪽 책장 그림, 임시 아바타.
 **직무 전환 재구성을 실제로 구현**(목업 → Edge Function `job-switch` + 테이블 2개).
+**제출 기록** — 목업 "버전 관리"를 대체. 내보낼 때 회사·포지션을 적으면 그 결과물을 남기고, `/library/portfolios/:id/versions`·`/submissions` 에서 다시 보기·다시 받기·이 버전으로 새로 만들기. 홈의 가짜 "최근 AI 요청 상태"는 "최근 제출"로.
 **대화로 채우기** — 편집기에서 프로젝트의 빈 칸만 묻는 대화(설계 문서 7-1절). 내 서재를 표지 카드 격자로, 카드에서 커뮤니티 올리기/내리기 토글.
 **대화로 만들기 구현** — 홈 맨 위 입력창 → `/chat/:id`(채팅 + 채워지는 칸 6개) → 초안. 홈의 "새 포트폴리오 만들기" 카드는 "자료로 만들기"(기존 위저드)로, 현황 띠의 직무 전환 수는 실제 값으로.
 
@@ -423,13 +425,11 @@ FAQ           밝은 면   아코디언
 |---|---|
 | 배포판 동작 확인 | 실제 URL에서 초안 생성 1회, 여백 변경 1회 (checklist 0단계의 마지막 칸) |
 | 대화로 만들기 2차 | 깃허브 링크 감지, 같은 입력창에서 "PM 공고에 맞게"·"영어로" 같은 명령 — `docs/chat-builder-design.md` 9절 |
-| 홈 "최근 AI 요청 상태" | 아직 가짜 목록(날짜까지 박혀 있음). `draft_generations`·`job_switch_runs`·`interview_sessions` 로 바꾸거나 빼야 합니다 |
 | 직무 전환 검증 | 설계 문서 7절대로 실제 공고 3개로 돌려 ChatGPT 결과와 비교. 요약 문단은 아직 재작성 대상이 아닙니다 |
 | 자유 블록 2~6단계 | `docs/editor-freedom.md` 7절. 1단계(글·구분선)까지 끝남 |
 | 템플릿 추가 | 현재 2종. 이 제품의 품질은 템플릿 품질입니다 |
 | 목업 섹션 복구 | 에디터의 "AI 문장 다듬기"·"근거 확인"·"이력서 대조" — 접힌 채 예시 데이터 |
-| **제출 기록** | 목업 `VersionHistory` 를 "내보낼 때 어디에 냈는지 남기는 기록"으로 교체. 설계 `docs/submission-history-design.md` |
-| `mockData.ts` 정리 | 남은 사용처는 `VersionHistory` 와 `AIRequestStatus` 타입뿐 |
+| `mockData.ts` 정리 | 남은 사용처는 `AIRequestStatus` 타입뿐 — 타입을 옮기면 파일을 지울 수 있습니다 |
 | 랜딩 카피 | 개발자 관점으로 다시 쓰기 — 생성 파이프라인이 실제로 돈 뒤에 하기로 했고, 이제 돕니다 |
 | 프리렌더 | CSR 전용이라 네이버·다음 색인이 안 됩니다. 전체 프리렌더보다 `index.html` 메타태그 + 랜딩 정적화 정도가 비용 대비 낫다고 판단 |
 | 스크롤 초기화 | `ScrollToTop` 을 넣었지만 완전히 해결되지 않았습니다. GSAP ScrollTrigger 충돌 의심 |

@@ -28,6 +28,8 @@ const COVER_BUCKET = "portfolio-covers";
 // Storage 는 테이블의 cascade 가 닿지 않는 별도 저장소라, profiles 행이
 // 따라 지워져도 파일은 그대로 남고 공개 URL 이 계속 살아 있습니다.
 const AVATAR_BUCKET = "avatars";
+/** [2026-09-25] 제출 기록 결과물(비공개). 경로는 `${userId}/${submissionId}.html` */
+const SUBMISSIONS_BUCKET = "submissions";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -123,6 +125,7 @@ Deno.serve(async (req) => {
 
   await purgeBucket(COVER_BUCKET);
   await purgeBucket(AVATAR_BUCKET);
+  await purgeBucket(SUBMISSIONS_BUCKET);
 
   // 3) 계정. 나머지 테이블은 on delete cascade 로 따라갑니다.
   const { error: deleteError } = await admin.auth.admin.deleteUser(userId);

@@ -51,23 +51,6 @@ export const portfolios: Portfolio[] = [
   },
 ];
 
-export interface VersionEntry {
-  id: string;
-  label: string;
-  timestamp: string;
-  current?: boolean;
-}
-
-export const versionHistory: VersionEntry[] = [
-  { id: "v8", label: "AI 초안 생성", timestamp: "2025-01-14 15:22", current: true },
-  { id: "v7", label: "직접 편집 저장", timestamp: "2025-01-14 11:05" },
-  { id: "v6", label: "AI 문장 다듬기 적용", timestamp: "2025-01-13 18:48" },
-  { id: "v5", label: "직접 편집 저장", timestamp: "2025-01-13 10:17" },
-  { id: "v4", label: "템플릿 전환", timestamp: "2025-01-12 16:33" },
-  { id: "v3", label: "AI 초안 생성", timestamp: "2025-01-11 14:10" },
-  { id: "v2", label: "직접 편집 저장", timestamp: "2025-01-10 09:44" },
-  { id: "v1", label: "초기 저장", timestamp: "2025-01-09 13:00" },
-];
 
 // [2026-09-23] socialAccounts 를 지웠습니다. 소셜 계정 관리 화면이 이제
 // 세션의 실제 identities 를 읽으므로 쓰는 곳이 없습니다. 남겨두면 다음에

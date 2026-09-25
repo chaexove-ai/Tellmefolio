@@ -7,8 +7,6 @@ import {
   Repeat,
   Sparkles,
   Users,
-  CheckCircle2,
-  AlertCircle,
   LoaderCircle,
 } from "lucide-react";
 import { useAuth } from "../auth/AuthProvider";
@@ -20,6 +18,7 @@ import {
 import Reveal from "../components/Reveal";
 import Bookshelf from "../components/Bookshelf";
 import ChatStart from "../components/ChatStart";
+import RecentSubmissions from "../components/RecentSubmissions";
 import { countJobSwitchRunsThisMonth } from "../lib/jobSwitch";
 
 /**
@@ -330,32 +329,10 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="entry p-6">
-        <h2 className="text-lg font-heading text-neutral-200 mb-2">최근 AI 요청 상태</h2>
-        <ul>
-          <li className="row flex items-center justify-between text-sm">
-            <span className="flex items-center gap-2 text-neutral-300">
-              <CheckCircle2 size={15} className="text-emerald-400 shrink-0" />
-              프론트엔드 포트폴리오 초안 생성 · 완료
-            </span>
-            <span className="text-xs text-neutral-500">2025-06-12</span>
-          </li>
-          <li className="row flex items-center justify-between text-sm">
-            <span className="flex items-center gap-2 text-neutral-300">
-              <CheckCircle2 size={15} className="text-emerald-400 shrink-0" />
-              UX 전환 문장 다듬기 · 완료
-            </span>
-            <span className="text-xs text-neutral-500">2025-06-09</span>
-          </li>
-          <li className="row flex items-center justify-between text-sm text-red-400">
-            <span className="flex items-center gap-2">
-              <AlertCircle size={15} className="shrink-0" />
-              백엔드 직무 관점 재구성 · 실패 — 요청 시간 초과
-            </span>
-            <button className="btn-secondary text-neutral-200">재시도</button>
-          </li>
-        </ul>
-      </div>
+      {/* [2026-09-25] 가짜 "최근 AI 요청 상태"(날짜까지 박혀 있던 목록)를
+          실제 제출 기록으로 바꿨습니다. 이 앱의 끝은 "어딘가에 내는 것"이라,
+          홈에서 다시 볼 것도 그것입니다. */}
+      <RecentSubmissions />
     </div>
   );
 }

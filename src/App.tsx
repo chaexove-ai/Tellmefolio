@@ -23,7 +23,7 @@ const PublicPortfolio = lazy(() => import("./pages/PublicPortfolio"));
 
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const PortfolioList = lazy(() => import("./pages/PortfolioList"));
-const VersionHistory = lazy(() => import("./pages/VersionHistory"));
+const SubmissionHistory = lazy(() => import("./pages/SubmissionHistory"));
 
 const WizardLayout = lazy(() => import("./components/WizardLayout"));
 const SourceInput = lazy(() => import("./pages/wizard/SourceInput"));
@@ -85,7 +85,9 @@ export default function App() {
         {/* 내 서재 */}
         <Route path="/library" element={<Dashboard />} />
         <Route path="/library/portfolios" element={<PortfolioList />} />
-        <Route path="/library/portfolios/:id/versions" element={<VersionHistory />} />
+        {/* [2026-09-25] "버전 관리" 목업 → 제출 기록. 이미 걸린 링크가 있어 주소는 그대로 둡니다. */}
+        <Route path="/library/portfolios/:id/versions" element={<SubmissionHistory />} />
+        <Route path="/submissions" element={<SubmissionHistory />} />
 
         {/* 포트폴리오 생성 위저드.
             editor/style/export 는 :id 가 필요합니다 — [2026-09] 마법사가
