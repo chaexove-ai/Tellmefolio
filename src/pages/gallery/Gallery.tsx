@@ -12,6 +12,7 @@ import {
 import type { LibraryPortfolio } from "../../lib/portfolios";
 import Reveal from "../../components/Reveal";
 import GrainCover from "../../components/GrainCover";
+import DefaultAvatar from "../../components/DefaultAvatar";
 import { getProfiles, getMyProfile, FALLBACK_NICKNAME } from "../../lib/profile";
 import type { Profile } from "../../lib/profile";
 
@@ -201,11 +202,9 @@ function Author({ profile }: { profile?: Profile }) {
       {profile?.avatarUrl ? (
         <img src={profile.avatarUrl} alt="" className="h-5 w-5 rounded-full object-cover shrink-0" />
       ) : (
-        name && (
-          <span
-            aria-hidden="true"
-            className="h-5 w-5 rounded-full bg-neutral-800 shrink-0"
-          />
+        // [2026-09-25] 사진이 없으면 빈 회색 원 대신 임시 아바타(DefaultAvatar).
+        profile && (
+          <DefaultAvatar seed={profile.id} name={profile.nickname} className="h-5 w-5 text-[10px]" />
         )
       )}
       <span className="text-xs text-neutral-400 truncate">{name}</span>

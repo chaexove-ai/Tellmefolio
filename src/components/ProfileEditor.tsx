@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { LoaderCircle, UserRound } from "lucide-react";
+import DefaultAvatar from "./DefaultAvatar";
 import { useAuth } from "../auth/AuthProvider";
 import {
   avatarUrlWithStamp,
@@ -140,13 +141,14 @@ export default function ProfileEditor() {
                   className="h-16 w-16 rounded-full object-cover border border-neutral-800"
                 />
               ) : (
-                <div
-                  className="h-16 w-16 rounded-full border border-neutral-800 bg-neutral-900
-                    flex items-center justify-center text-neutral-600"
-                  aria-hidden="true"
-                >
-                  <UserRound size={24} strokeWidth={1.5} />
-                </div>
+                // 사진이 없을 때 커뮤니티에 실제로 보이는 모습과 같은 임시 아바타.
+                // 여기서 다른 그림을 보여주면 "내가 어떻게 보이는지"를 잘못 알려줍니다.
+                <DefaultAvatar
+                  seed={userId ?? ""}
+                  name={nickname}
+                  className="h-16 w-16 text-2xl"
+                  iconSize={24}
+                />
               )}
               <div className="mt-2 flex flex-col items-center gap-1">
                 <button
