@@ -110,7 +110,9 @@ export default function App() {
 
         {/* 직무 전환 재구성 */}
         <Route path="/job-switch" element={<JobSwitchRequest />} />
-        <Route path="/job-switch/result" element={<JobSwitchResult />} />
+        <Route path="/job-switch/result/:runId" element={<JobSwitchResult />} />
+        {/* 목업 시절 주소. 결과가 run 마다 따로 생기면서 id 가 필요해졌습니다. */}
+        <Route path="/job-switch/result" element={<Navigate to="/job-switch" replace />} />
 
         {/* 커뮤니티 및 공유.
             이름이 사이드바("커뮤니티")·랜딩("갤러리")·라우트(/gallery)로

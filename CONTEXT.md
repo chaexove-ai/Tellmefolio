@@ -70,8 +70,9 @@ npx supabase link --project-ref tswxxqqnzqexwxkgpajg  # 노트북마다 1회
 npx supabase functions deploy generate-draft
 npx supabase functions deploy translate-portfolio
 npx supabase functions deploy delete-account
+npx supabase functions deploy job-switch
 
-# 시크릿도 별도입니다 (AI 함수 두 개는 ANTHROPIC_API_KEY 하나만 필수)
+# 시크릿도 별도입니다 (AI 함수는 ANTHROPIC_API_KEY 하나만 필수)
 npx supabase secrets list
 npx supabase secrets set ANTHROPIC_API_KEY=...
 supabase secrets set MODEL=claude-haiku-...           # 없으면 haiku 기본값
@@ -179,11 +180,12 @@ npm run tpl:check my-template
 
 | 테이블 | 용도 |
 |---|---|
-| `portfolios` | 포트폴리오 1건. 제목·직무(`job`)·직무색(`job_color`)·공개범위·`listed`(커뮤니티 게시, 공개와 별개)·템플릿·색테마·폰트·레이아웃·`density`·커버이미지 경로·요약·`gaps[]` |
+| `portfolios` | 포트폴리오 1건. 제목·직무(`job`)·직무색(`job_color`)·공개범위·`listed`(커뮤니티 게시, 공개와 별개)·템플릿·색테마·폰트·레이아웃·`density`·커버이미지 경로·요약·`gaps[]`·`lead_field`(맨 앞에 둘 본문 필드, 직무 전환본만) |
 | `portfolio_projects` | 그 안의 프로젝트들. `position` 순서, 케이스 스터디 6필드 + `stack[]` + `depth`(보여줄 깊이) |
 | `portfolio_project_images` | 프로젝트별 이미지 (순서·삭제) |
 | `portfolio_blocks` | 자유 블록(글·구분선). 설계는 `docs/editor-freedom.md` |
 | `profiles` | 커뮤니티에 보이는 닉네임·사진. 읽기 전체 공개, 쓰기 본인만. 가입 트리거가 만들고 기본 닉네임은 소셜 실명 |
+| `job_switch_runs` · `job_switch_projects` | 직무 전환 재구성 결과. 공고 해부·근거 매칭·검증 경고·맨 앞 필드(`lead`)와 프로젝트별 재작성 문장. 원본은 안 바꾸고, "저장"을 눌러야 새 `portfolios` 행이 됩니다 |
 | `draft_generations` | AI 호출 기록 (`input_tokens`/`output_tokens`). 가짜 사용량 배지는 제거했고(09-21), 유료 전환 시 이걸 세서 한도를 붙입니다 |
 | Storage `portfolio-covers` | 커버·프로젝트 이미지 (`{userId}/{portfolioId}/...`) |
 | Storage `avatars` | 프로필 사진 (`{userId}/avatar.<ext>` 하나를 덮어씀). 위 버킷과 경로 구조가 달라 분리 |
@@ -194,6 +196,7 @@ npm run tpl:check my-template
 |---|---|
 | `generate-draft` | 저장소 README·언어 구성 + 메모 + **웹 링크 본문**을 받아 초안 JSON 생성. 링크는 서버가 직접 fetch(브라우저는 CORS에 막힘), `isSafeUrl`로 루프백·사설망·메타데이터 엔드포인트 차단(SSRF 방지), 최대 3개·4000자·타임아웃 8초 |
 | `translate-portfolio` | 포트폴리오를 영어로. title/summary/job + 프로젝트 서술형 6필드 + role/stack |
+| `job-switch` | 직무 전환 재구성 4단계(공고 해부 → 근거 매칭 → 재작성 → 기계 검증). 원본은 포트폴리오 id 로 서버가 직접 읽고 **본인 것인지 확인**합니다. 모델은 1단계 `JOB_SWITCH_LIGHT_MODEL`(기본 Haiku), 2·3단계 `JOB_SWITCH_STRONG_MODEL`(기본 `claude-sonnet-5`). 날조 방지 로직은 `logic.ts` 에 따로 있습니다 |
 | `delete-account` | 계정 삭제. 대상은 JWT 의 본인뿐(id 를 받지 않음), 두 버킷의 파일까지 지웁니다. service_role 키는 이 함수 안에만 |
 
 제약: **첫 응답까지 150초.** AI 생성이 더 길어지면 큐로 빼거나 그 호출만 분리해야
@@ -304,7 +307,7 @@ scripts/                          prepare-template.mjs, check-template.ts (npm r
 src/
 ├── index.css                     테마 변수 + @layer components (.btn-*, .sec-*, .step-*, .book*)
 ├── landingContent.ts             랜딩 문구를 한곳에. 카피만 고칠 땐 이 파일만 열면 됨
-├── mockData.ts                   남은 목업. VersionHistory·JobSwitchRequest 와 AIRequestStatus 타입만 씀
+├── mockData.ts                   남은 목업. VersionHistory 와 AIRequestStatus 타입만 씀
 ├── lib/
 │   ├── supabase.ts               동적 import로 별도 청크 (메인 청크 유지)
 │   ├── portfolios.ts             포트폴리오·프로젝트 CRUD, 공개·게시, 직무·직무색·제목·연도
@@ -322,7 +325,8 @@ src/
 │   ├── wizard/       SourceInput → AIDraftGeneration → PortfolioEditor(스타일·미리보기 포함) → Export
 │   ├── gallery/      커뮤니티 (라우트는 /community, 폴더명은 gallery 유지)
 │   ├── account/      AccountSettings · SocialAccountManage · DataManage
-│   └── jobswitch/  VersionHistory.tsx      ← 둘 다 아직 목업
+│   ├── jobswitch/                직무 전환 요청·결과 (lib/jobSwitch.ts)
+│   └── VersionHistory.tsx        ← 아직 목업
 └── components/
     ├── TemplateFrame.tsx         템플릿 iframe (1280x800 고정 창 + 축소, 공개 링크는 실제 폭)
     ├── EditorPreview.tsx  StylePanel.tsx  WizardLayout.tsx  DesktopOnly.tsx(1200px 게이트)
@@ -337,7 +341,7 @@ supabase/
 docs/
 ├── checklist.md                  전체 점검 체크리스트 (단계별 할 일의 원본)
 ├── editor-redesign.md  editor-freedom.md   편집 화면·자유 블록 설계
-└── job-switch-design.md          직무 전환 재구성 설계 (미구현)
+└── job-switch-design.md          직무 전환 재구성 설계 (2026-09-25 구현)
 ```
 
 `docs/archive/` 의 `적용방법-v*.md`, `랜딩재구성.md` 는 **이미 반영이 끝난 옛
@@ -396,7 +400,8 @@ FAQ           밝은 면   아코디언
 - 랜딩: 반전 구역, 결과물 무한 가로 띠, 어두운 전체 폭 CTA, 푸터 확장
 
 **2026-09-25** — 집 맥을 `~/Documents/GitHub/Tellmefolio` 로 옮김,
-`package-lock.json` 에 남아 있던 `tsx` 항목 정리.
+`package-lock.json` 에 남아 있던 `tsx` 항목 정리. 로그인 왼쪽 책장 그림, 임시 아바타.
+**직무 전환 재구성을 실제로 구현**(목업 → Edge Function `job-switch` + 테이블 2개).
 
 ---
 
@@ -407,12 +412,12 @@ FAQ           밝은 면   아코디언
 | 항목 | 메모 |
 |---|---|
 | 배포판 동작 확인 | 실제 URL에서 초안 생성 1회, 여백 변경 1회 (checklist 0단계의 마지막 칸) |
-| **직무 전환 재구성** | `/job-switch` 는 100% 목업(`mockData` + `setTimeout`). 설계는 `docs/job-switch-design.md` |
+| 직무 전환 검증 | 설계 문서 7절대로 실제 공고 3개로 돌려 ChatGPT 결과와 비교. 요약 문단은 아직 재작성 대상이 아닙니다 |
 | 자유 블록 2~6단계 | `docs/editor-freedom.md` 7절. 1단계(글·구분선)까지 끝남 |
 | 템플릿 추가 | 현재 2종. 이 제품의 품질은 템플릿 품질입니다 |
 | 목업 섹션 복구 | 에디터의 "AI 문장 다듬기"·"근거 확인"·"이력서 대조" — 접힌 채 예시 데이터 |
 | `VersionHistory` | 버전 저장이 없어 화면만 있음. 안 만들 거면 라우트·링크를 뺍니다 |
-| `mockData.ts` 정리 | 남은 사용처는 위 두 화면과 `AIRequestStatus` 타입뿐 |
+| `mockData.ts` 정리 | 남은 사용처는 `VersionHistory` 와 `AIRequestStatus` 타입뿐 |
 | 랜딩 카피 | 개발자 관점으로 다시 쓰기 — 생성 파이프라인이 실제로 돈 뒤에 하기로 했고, 이제 돕니다 |
 | 프리렌더 | CSR 전용이라 네이버·다음 색인이 안 됩니다. 전체 프리렌더보다 `index.html` 메타태그 + 랜딩 정적화 정도가 비용 대비 낫다고 판단 |
 | 스크롤 초기화 | `ScrollToTop` 을 넣었지만 완전히 해결되지 않았습니다. GSAP ScrollTrigger 충돌 의심 |
