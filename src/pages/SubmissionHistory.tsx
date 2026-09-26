@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import LibraryTabs from "../components/LibraryTabs";
 import { Copy, Download, FileText, Globe2, LoaderCircle, Printer, Send, Trash2 } from "lucide-react";
 import { useAuth } from "../auth/AuthProvider";
 import {
@@ -142,32 +143,31 @@ export default function SubmissionHistory() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-end justify-between gap-4">
-        <div>
-          <Link to="/library/portfolios" className="text-xs text-brand hover:underline">
-            ← 내 서재
-          </Link>
-          <h1 className="text-xl font-heading mt-2">
-            제출 기록{" "}
-            {items && items.length > 0 && <span className="text-sm text-neutral-500 font-sans">{items.length}건</span>}
-          </h1>
-          <p className="text-xs text-neutral-500 mt-1">
-            {portfolioId ? `${heading ?? "이 포트폴리오"}로 낸 곳` : "모든 포트폴리오"}
-          </p>
-        </div>
-        <div className="flex items-center gap-4">
-          {portfolioId ? (
+      {portfolioId ? (
+        <div className="flex items-end justify-between gap-4">
+          <div>
+            <Link to="/library/portfolios" className="text-xs text-brand hover:underline">
+              ← 내 포트폴리오
+            </Link>
+            <h1 className="text-xl font-heading mt-2">
+              제출 기록{" "}
+              {items && items.length > 0 && <span className="text-sm text-neutral-500 font-sans">{items.length}건</span>}
+            </h1>
+            <p className="text-xs text-neutral-500 mt-1">{heading ?? "이 포트폴리오"}로 낸 곳</p>
+          </div>
+          <div className="flex items-center gap-4">
             <Link to="/submissions" className="text-xs text-brand hover:underline">
               전체 제출 기록
             </Link>
-          ) : null}
-          {portfolioId && (
             <Link to={`/wizard/export/${portfolioId}`} className="btn-secondary py-2">
               <Send size={15} strokeWidth={1.75} /> 내보내며 기록하기
             </Link>
-          )}
+          </div>
         </div>
-      </div>
+      ) : (
+        // [09-26] 전체 제출 기록은 "내 포트폴리오"의 두 번째 탭입니다.
+        <LibraryTabs submissionCount={items?.length} />
+      )}
 
       {items === null ? (
         <p className="text-sm text-neutral-500 inline-flex items-center gap-2">

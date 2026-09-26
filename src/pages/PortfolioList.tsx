@@ -13,6 +13,8 @@ import {
 } from "../lib/portfolios";
 import Reveal from "../components/Reveal";
 import GrainCover from "../components/GrainCover";
+import LibraryTabs from "../components/LibraryTabs";
+import { NewPortfolioButton } from "../components/NewPortfolio";
 import { getMyProfile, FALLBACK_NICKNAME } from "../lib/profile";
 import { countSubmissionsByPortfolio } from "../lib/submissions";
 
@@ -218,20 +220,14 @@ export default function PortfolioList() {
   // 필터·정렬·직무 이름/색 일괄 수정이 여기에만 있습니다.
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-heading">
-          내 서재{" "}
-          {portfolios.length > 0 && <span className="text-sm text-neutral-500 font-sans">{portfolios.length}권</span>}
-        </h1>
-        <div className="flex gap-4 items-center">
+      <LibraryTabs
+        portfolioCount={portfolios.length}
+        actions={
           <button className="text-xs text-brand hover:underline" onClick={openColorModal}>
             직무 색상 설정
           </button>
-          <Link to="/wizard" className="btn-primary">
-            새 포트폴리오 만들기
-          </Link>
-        </div>
-      </div>
+        }
+      />
 
       {!configured ? (
         <p className="text-sm text-neutral-500">
@@ -250,9 +246,9 @@ export default function PortfolioList() {
         <div className="entry">
           <p className="text-sm text-neutral-400">
             아직 만든 포트폴리오가 없습니다.{" "}
-            <Link to="/wizard" className="text-brand hover:underline">
+            <NewPortfolioButton className="text-brand hover:underline">
               지금 첫 포트폴리오를 만들어보세요
-            </Link>
+            </NewPortfolioButton>
             .
           </p>
         </div>

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { NewPortfolioButton } from "../../components/NewPortfolio";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { AlertCircle, ArrowRight, Link2, LoaderCircle, Lock, Quote, Repeat, ShieldAlert } from "lucide-react";
 import { useAuth } from "../../auth/AuthProvider";
@@ -105,9 +106,9 @@ export default function JobSwitchRequest() {
           <p className="text-sm text-neutral-400">
             재구성할 포트폴리오가 아직 없습니다. 먼저 포트폴리오를 하나 만들어 주세요.
           </p>
-          <Link to="/wizard/source" className="btn-primary mt-4 inline-flex">
-            포트폴리오 만들기
-          </Link>
+          <NewPortfolioButton className="btn-primary mt-4 inline-flex">
+            새 포트폴리오
+          </NewPortfolioButton>
         </div>
       </div>
     );

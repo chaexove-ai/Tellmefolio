@@ -1,4 +1,5 @@
-import { useState, type KeyboardEvent } from "react";
+import { useEffect, useState, type KeyboardEvent } from "react";
+import { clearSession, readSession, writeSession, WIZARD_PREFIX } from "../../lib/sessionState";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Briefcase,
@@ -75,12 +76,27 @@ export default function AIDraftGeneration() {
   const { session } = useAuth();
   const { materials = [], note = "", links = [], failed = [] } =
     (location.state as WizardState | null) ?? {};
-  const [status, setStatus] = useState<Status>("idle");
-  const [title, setTitle] = useState("");
-  const [job, setJob] = useState(jobOptions[0]);
-  const [customJob, setCustomJob] = useState("");
-  const [structure, setStructure] = useState<"결과 중심형" | "문제-실행-결과형">("결과 중심형");
-  const [extra, setExtra] = useState("");
+  // [09-26] 만든 초안과 입력을 탭 안에 임시 저장합니다. 전에는 초안을 받은 뒤
+  // 새로고침하거나 "원본 자료 수정"에 다녀오면 초안이 사라져 다시 만들어야
+  // 했습니다(AI 호출 한 번 더). 이 화면에 들어온 기록(location.key)마다 따로 둡니다.
+  const draftKey = `${WIZARD_PREFIX}draft:${location.key}`;
+  const [restored] = useState(() =>
+    readSession<{
+      title: string;
+      job: string;
+      customJob: string;
+      structure: "결과 중심형" | "문제-실행-결과형";
+      extra: string;
+      gapAnswers: Record<number, string>;
+      draft: Draft | null;
+    }>(draftKey)
+  );
+  const [status, setStatus] = useState<Status>(restored?.draft ? "completed" : "idle");
+  const [title, setTitle] = useState(restored?.title ?? "");
+  const [job, setJob] = useState(restored?.job ?? jobOptions[0]);
+  const [customJob, setCustomJob] = useState(restored?.customJob ?? "");
+  const [structure, setStructure] = useState<"결과 중심형" | "문제-실행-결과형">(restored?.structure ?? "결과 중심형");
+  const [extra, setExtra] = useState(restored?.extra ?? "");
   /**
    * [2026-09-23] 부족했던 항목에 대한 답.
    *
@@ -89,9 +105,13 @@ export default function AIDraftGeneration() {
    * 뒤에 뒤로 가라고 하는 셈이라, 알려준 의미가 없었습니다. 여기서 바로
    * 채우고 다시 만듭니다.
    */
-  const [gapAnswers, setGapAnswers] = useState<Record<number, string>>({});
+  const [gapAnswers, setGapAnswers] = useState<Record<number, string>>(restored?.gapAnswers ?? {});
 
-  const [draft, setDraft] = useState<Draft | null>(null);
+  const [draft, setDraft] = useState<Draft | null>(restored?.draft ?? null);
+
+  useEffect(() => {
+    writeSession(draftKey, { title, job, customJob, structure, extra, gapAnswers, draft });
+  }, [draftKey, title, job, customJob, structure, extra, gapAnswers, draft]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const [creating, setCreating] = useState(false);
@@ -185,6 +205,8 @@ export default function AIDraftGeneration() {
         job,
         draft,
       });
+      // 만들었으니 위저드 임시 저장(자료함·초안)을 비웁니다 — 다음 "자료로 만들기"는 새로 시작.
+      clearSession(WIZARD_PREFIX);
       navigate(`/wizard/editor/${portfolio.id}`);
     } catch (e) {
       setCreateError(e instanceof PortfolioError ? e.message : "포트폴리오를 만들지 못했습니다.");

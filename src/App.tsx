@@ -36,8 +36,6 @@ const JobSwitchResult = lazy(() => import("./pages/jobswitch/JobSwitchResult"));
 const ChatBuilder = lazy(() => import("./pages/chat/ChatBuilder"));
 
 const Gallery = lazy(() => import("./pages/gallery/Gallery"));
-const ShareSettings = lazy(() => import("./pages/gallery/ShareSettings"));
-const VisitStats = lazy(() => import("./pages/gallery/VisitStats"));
 
 const AccountSettings = lazy(() => import("./pages/account/AccountSettings"));
 const SocialAccountManage = lazy(() => import("./pages/account/SocialAccountManage"));
@@ -82,7 +80,7 @@ export default function App() {
           페이지를 옮길 때마다 사이드바까지 같이 사라졌다 돌아옵니다. */}
       <Route element={<RequireAuth />}>
         <Route element={<AppLayout />}>
-        {/* 내 서재 */}
+        {/* 홈 · 내 포트폴리오(포트폴리오 / 제출 기록 탭) */}
         <Route path="/library" element={<Dashboard />} />
         <Route path="/library/portfolios" element={<PortfolioList />} />
         {/* [2026-09-25] "버전 관리" 목업 → 제출 기록. 이미 걸린 링크가 있어 주소는 그대로 둡니다. */}
@@ -129,8 +127,7 @@ export default function App() {
             보여주던 자리입니다. 둘을 유지하면 한쪽만 고치는 일이 생기므로
             /p/:id 하나로 합쳤습니다. 기존 링크는 그리로 넘깁니다. */}
         <Route path="/community/:id" element={<CommunityDetailRedirect />} />
-        <Route path="/community/share" element={<ShareSettings />} />
-        <Route path="/community/stats" element={<VisitStats />} />
+        {/* [09-26] /community/share·/community/stats 는 어디서도 들어갈 수 없는 목업(가짜 숫자)이라 지웠습니다. */}
 
         <Route path="/gallery" element={<Navigate to="/community" replace />} />
         <Route path="/gallery/*" element={<Navigate to="/community" replace />} />

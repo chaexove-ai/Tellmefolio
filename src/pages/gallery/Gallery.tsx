@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { NewPortfolioButton } from "../../components/NewPortfolio";
 import { Link } from "react-router-dom";
 import { Globe, Lock, SlidersHorizontal, Upload } from "lucide-react";
 import { useAuth } from "../../auth/AuthProvider";
@@ -316,9 +317,9 @@ function UploadPicker({
         {mine !== null && rows.length === 0 && (
           <div className="text-center py-6">
             <p className="text-sm text-neutral-400">아직 만든 포트폴리오가 없습니다.</p>
-            <Link to="/wizard" className="btn-secondary inline-flex mt-4">
-              포트폴리오 만들기
-            </Link>
+            <NewPortfolioButton className="btn-secondary inline-flex mt-4">
+              새 포트폴리오
+            </NewPortfolioButton>
           </div>
         )}
 

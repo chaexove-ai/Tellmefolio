@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Tellmefolio 화면 구조 정리 — 예시</title>
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #faf7f1; --panel: #ffffff; --line: #e8e0d6; --line2: #f0e9e0;
+    --ink: #2a211b; --ink2: #5e5249; --ink3: #968a80;
+    --brand: #a05829; --brand-solid: #a85c30; --brand-tint: #f6ebe2;
+    --ok: #2f7d57; --ok-tint: #e8f2ec;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: "Noto Sans KR", system-ui, sans-serif; font-size: 14px; }
+  h1, h2, .serif { font-family: "Gowun Batang", serif; font-weight: 400; }
+  button { font: inherit; cursor: pointer; }
+
+  .switch { position: sticky; top: 0; z-index: 30; display: flex; gap: 8px; align-items: center; padding: 12px 20px; background: rgb(250 247 241 / .95); border-bottom: 1px solid var(--line); }
+  .switch .tab { border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 7px 14px; font-size: 13px; color: var(--ink2); }
+  .switch .tab.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .switch .note { margin-left: auto; font-size: 12px; color: var(--ink3); }
+
+  .app { display: grid; grid-template-columns: 232px minmax(0, 1fr); min-height: calc(100vh - 57px); }
+  .side { border-right: 1px solid var(--line); padding: 28px 16px; display: flex; flex-direction: column; gap: 4px; }
+  .logo { font-family: "Gowun Batang", serif; font-size: 20px; padding: 0 12px 24px; }
+  .nav { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; color: var(--ink2); }
+  .nav.on { background: var(--brand-tint); color: var(--brand); font-weight: 500; }
+  .nav i { width: 18px; text-align: center; font-style: normal; }
+  .nav .new { margin-left: auto; font-size: 11px; color: var(--brand); background: #fff; border: 1px solid var(--brand-tint); border-radius: 999px; padding: 1px 7px; }
+  .side .make { margin: 8px 4px 16px; border: 0; background: var(--brand-solid); color: #fff; border-radius: 12px; padding: 11px; font-weight: 500; }
+  main { padding: 40px 48px; }
+  .screen { display: none; } .screen.on { display: block; }
+
+  /* 홈 */
+  .hero { max-width: 760px; margin: 24px auto 0; text-align: center; }
+  .hero h1 { font-size: 34px; margin: 0 0 10px; }
+  .hero p { color: var(--ink2); margin: 0 0 28px; }
+  .ask { display: flex; align-items: center; gap: 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 10px 10px 10px 20px; box-shadow: 0 10px 30px rgb(90 60 30 / .08); }
+  .ask input { flex: 1; border: 0; outline: 0; font: inherit; font-size: 16px; background: transparent; padding: 10px 0; }
+  .ask button { border: 0; background: var(--brand-solid); color: #fff; border-radius: 14px; width: 44px; height: 44px; font-size: 18px; }
+  .alt { margin-top: 14px; font-size: 13px; color: var(--ink3); }
+  .alt a { color: var(--brand); text-decoration: none; border-bottom: 1px solid var(--brand-tint); }
+  .sec { max-width: 980px; margin: 56px auto 0; }
+  .sec-h { display: flex; align-items: baseline; gap: 10px; margin-bottom: 14px; }
+  .sec-h h2 { font-size: 20px; margin: 0; }
+  .sec-h a { margin-left: auto; font-size: 13px; color: var(--brand); text-decoration: none; }
+  .row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+  .cover { height: 110px; background: linear-gradient(135deg, #e9d6c4, #f6ebe2 60%, #efe1d3); }
+  .cover.b { background: linear-gradient(135deg, #cfd9d3, #eef3ef 60%, #dfe7e2); }
+  .cover.c { background: linear-gradient(135deg, #d9d1e6, #f1edf6 60%, #e4dcee); }
+  .card .body { padding: 12px 14px 14px; }
+  .card .t { font-weight: 500; }
+  .card .m { font-size: 12px; color: var(--ink3); margin-top: 4px; }
+  .strip { display: flex; gap: 12px; }
+  .todo { flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; display: flex; gap: 12px; align-items: center; }
+  .todo b { font-weight: 500; } .todo span { font-size: 12px; color: var(--ink3); display: block; margin-top: 2px; }
+  .todo .go { margin-left: auto; color: var(--brand); font-size: 13px; }
+
+  /* 선택 창 */
+  .dim { position: fixed; inset: 57px 0 0 0; background: rgb(42 33 27 / .35); display: none; align-items: center; justify-content: center; z-index: 20; }
+  .dim.on { display: flex; }
+  .modal { width: 640px; background: var(--panel); border-radius: 22px; padding: 28px; box-shadow: 0 30px 80px rgb(0 0 0 / .18); }
+  .modal h2 { margin: 0 0 6px; font-size: 22px; }
+  .modal p.s { margin: 0 0 20px; color: var(--ink2); }
+  .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .choice { text-align: left; border: 1px solid var(--line); background: var(--bg); border-radius: 16px; padding: 18px; }
+  .choice:hover { border-color: var(--brand); }
+  .choice .ic { width: 40px; height: 40px; border-radius: 12px; background: var(--brand-tint); color: var(--brand); display: grid; place-items: center; font-size: 18px; margin-bottom: 12px; }
+  .choice b { display: block; font-size: 16px; font-weight: 600; }
+  .choice span { display: block; color: var(--ink2); font-size: 13px; margin-top: 6px; line-height: 1.6; }
+  .choice em { display: inline-block; margin-top: 12px; font-style: normal; font-size: 12px; color: var(--ink3); }
+  .rec { font-size: 11px; color: var(--brand); background: #fff; border: 1px solid var(--brand-tint); border-radius: 999px; padding: 2px 8px; margin-left: 6px; vertical-align: middle; font-weight: 500; }
+  .choice .rec { display: inline-block; margin-top: 0; vertical-align: 2px; }
+  .choice { align-self: stretch; }
+  .modal .foot { margin-top: 18px; font-size: 12px; color: var(--ink3); display: flex; justify-content: space-between; }
+
+  /* 내 포트폴리오 */
+  .ph { display: flex; align-items: center; gap: 12px; }
+  .ph h1 { font-size: 28px; margin: 0; }
+  .ph .btn { margin-left: auto; border: 0; background: var(--brand-solid); color: #fff; border-radius: 12px; padding: 10px 16px; }
+  .ptabs { display: flex; gap: 22px; border-bottom: 1px solid var(--line); margin: 22px 0 22px; }
+  .ptab { padding: 10px 0; color: var(--ink3); border-bottom: 2px solid transparent; margin-bottom: -1px; background: none; border-left: 0; border-right: 0; border-top: 0; }
+  .ptab.on { color: var(--ink); border-bottom-color: var(--ink); font-weight: 500; }
+  .ptab small { color: var(--ink3); margin-left: 4px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+  .card .foot { display: flex; gap: 14px; padding: 10px 14px; border-top: 1px solid var(--line2); font-size: 12px; color: var(--ink2); }
+  .card .foot a { color: inherit; text-decoration: none; } .card .foot a:hover { color: var(--brand); }
+  .pill { font-size: 11px; border-radius: 999px; padding: 2px 8px; background: var(--ok-tint); color: var(--ok); margin-left: 6px; }
+  .pill.off { background: #f1ede8; color: var(--ink3); }
+  .list { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; }
+  .li { display: grid; grid-template-columns: 1.4fr 1fr 120px 100px; gap: 12px; padding: 14px 18px; border-top: 1px solid var(--line2); align-items: center; }
+  .li:first-child { border-top: 0; color: var(--ink3); font-size: 12px; }
+  .li .co { font-weight: 500; } .li .co span { color: var(--ink3); font-weight: 400; }
+  .li a { color: var(--brand); text-decoration: none; font-size: 13px; }
+  .hide { display: none; }
+
+  .callout { max-width: 980px; margin: 0 auto 26px; background: #fff8ef; border: 1px dashed #e4c9aa; border-radius: 12px; padding: 10px 14px; font-size: 12.5px; color: var(--ink2); line-height: 1.7; }
+  .callout b { color: var(--brand); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="switch">
+  <button class="tab on" data-s="home">① 홈</button>
+  <button class="tab" data-s="pick">② 새 포트폴리오 (선택 창)</button>
+  <button class="tab" data-s="mine">③ 내 포트폴리오</button>
+  <button class="tab" data-s="subs">④ 제출 기록 탭</button>
+  <span class="note">예시 화면 — 눌러서 넘겨 보세요</span>
+</div>
+
+<div class="app">
+  <aside class="side">
+    <div class="logo">Tellmefolio</div>
+    <button class="make" data-s="pick">＋ 새 포트폴리오</button>
+    <div class="nav on" id="nav-home"><i>⌂</i>홈</div>
+    <div class="nav" id="nav-mine"><i>▤</i>내 포트폴리오</div>
+    <div class="nav"><i>⇄</i>직무 전환</div>
+    <div class="nav"><i>◎</i>커뮤니티</div>
+    <div class="nav"><i>⚙</i>설정</div>
+  </aside>
+
+  <main>
+    <!-- ① 홈 -->
+    <section class="screen on" id="s-home">
+      <div class="callout"><b>바뀌는 점</b> — 사이드바의 "생성"이 사라지고 맨 위 <b>＋ 새 포트폴리오</b> 버튼 하나로. 홈은 대화 입력창이 주인공, "자료로 만들기"는 그 아래 한 줄. 책장과 "최근 작업"으로 두 번 나오던 목록은 <b>최근 포트폴리오 4개</b> 하나로 합칩니다.</div>
+      <div class="hero">
+        <h1>어떤 프로젝트 이야기를 해볼까요?</h1>
+        <p>한 줄만 적어도 돼요. 질문에 답하면 포트폴리오로 정리해 드려요.</p>
+        <div class="ask"><input placeholder="예: 제주 숙소 15곳을 소개하는 예약 사이트를 만들었어요" /><button>↑</button></div>
+        <div class="alt">깃허브 저장소나 링크·메모가 있다면 → <a href="#" data-s="pick">자료로 만들기</a></div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-h"><h2>최근 포트폴리오</h2><a href="#" data-s="mine">전체 보기 →</a></div>
+        <div class="row">
+          <div class="card"><div class="cover"></div><div class="body"><div class="t">AI 활용 · UX/UI 디자이너</div><div class="m">2시간 전 수정 · 프로젝트 3</div></div></div>
+          <div class="card"><div class="cover b"></div><div class="body"><div class="t">프론트엔드 개발자</div><div class="m">어제 · 프로젝트 2</div></div></div>
+          <div class="card"><div class="cover c"></div><div class="body"><div class="t">데이터 분석가</div><div class="m">3일 전 · 프로젝트 2</div></div></div>
+          <div class="card"><div class="cover"></div><div class="body"><div class="t">서비스 기획자</div><div class="m">9월 20일 · 프로젝트 1</div></div></div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-h"><h2>이어서 할 일</h2></div>
+        <div class="strip">
+          <div class="todo"><div><b>대화 이어가기</b><span>Jeju Stay Collection · 4칸 채움</span></div><span class="go">열기 →</span></div>
+          <div class="todo"><div><b>최근 제출</b><span>올리브영 · UX/UI 디자이너 · 9/26</span></div><span class="go">보기 →</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ③ 내 포트폴리오 -->
+    <section class="screen" id="s-mine">
+      <div class="callout"><b>바뀌는 점</b> — 사이드바에 <b>내 포트폴리오</b>가 생기고, 편집기·내보내기에 있을 때도 여기에 불이 들어옵니다. 편집기의 뒤로가기도 여기로. <b>제출 기록</b>은 따로 찾아갈 필요 없이 같은 화면의 탭.</div>
+      <div class="ph"><h1>내 포트폴리오</h1><button class="btn" data-s="pick">＋ 새 포트폴리오</button></div>
+      <div class="ptabs"><button class="ptab on" data-s="mine">포트폴리오 <small>4</small></button><button class="ptab" data-s="subs">제출 기록 <small>3</small></button></div>
+      <div class="grid3">
+        <div class="card"><div class="cover"></div><div class="body"><div class="t">AI 활용 · UX/UI 디자이너 <span class="pill">커뮤니티 공개</span></div><div class="m">2시간 전 수정 · 제출 2번</div></div><div class="foot"><a href="#">편집</a><a href="#">내보내기</a><a href="#" data-s="subs">제출 기록 2</a></div></div>
+        <div class="card"><div class="cover b"></div><div class="body"><div class="t">프론트엔드 개발자 <span class="pill off">비공개</span></div><div class="m">어제 · 제출 1번</div></div><div class="foot"><a href="#">편집</a><a href="#">내보내기</a><a href="#" data-s="subs">제출 기록 1</a></div></div>
+        <div class="card"><div class="cover c"></div><div class="body"><div class="t">데이터 분석가 <span class="pill off">비공개</span></div><div class="m">3일 전 · 아직 제출 안 함</div></div><div class="foot"><a href="#">편집</a><a href="#">내보내기</a></div></div>
+      </div>
+    </section>
+
+    <!-- ④ 제출 기록 -->
+    <section class="screen" id="s-subs">
+      <div class="callout"><b>바뀌는 점</b> — 지금은 홈의 작은 링크나 카드 속 링크로만 들어갈 수 있는 제출 기록을 <b>내 포트폴리오의 두 번째 탭</b>으로. 한 줄을 누르면 지금처럼 그때 낸 파일을 다시 봅니다.</div>
+      <div class="ph"><h1>내 포트폴리오</h1><button class="btn" data-s="pick">＋ 새 포트폴리오</button></div>
+      <div class="ptabs"><button class="ptab" data-s="mine">포트폴리오 <small>4</small></button><button class="ptab on" data-s="subs">제출 기록 <small>3</small></button></div>
+      <div class="list">
+        <div class="li"><span>회사 · 포지션</span><span>낸 포트폴리오</span><span>날짜</span><span></span></div>
+        <div class="li"><span class="co">올리브영 <span>· UX/UI 디자이너</span></span><span>AI 활용 · UX/UI 디자이너</span><span>9월 26일 · PDF</span><a href="#">다시 보기</a></div>
+        <div class="li"><span class="co">카카오 <span>· 프로덕트 디자이너</span></span><span>AI 활용 · UX/UI 디자이너</span><span>9월 22일 · 링크</span><a href="#">다시 보기</a></div>
+        <div class="li"><span class="co">토스 <span>· 프론트엔드</span></span><span>프론트엔드 개발자</span><span>9월 18일 · HTML</span><a href="#">다시 보기</a></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- ② 선택 창 -->
+<div class="dim" id="s-pick">
+  <div class="modal">
+    <h2>새 포트폴리오</h2>
+    <p class="s">어떻게 시작할까요? 어느 쪽이든 나중에 편집기에서 똑같이 고칠 수 있어요.</p>
+    <div class="choices">
+      <button class="choice"><div class="ic">💬</div><b>대화로 만들기 <span class="rec">자료가 없어도 OK</span></b><span>질문에 답하면 맥락·문제·실행·성과를 대신 정리해요. 답한 내용만 씁니다.</span><em>약 5분 · 질문 최대 12개</em></button>
+      <button class="choice"><div class="ic">📎</div><b>자료로 만들기</b><span>깃허브 저장소, 웹 링크, 메모를 넣으면 AI가 초안을 한 번에 써요.</span><em>약 1분 · 자료가 있을 때</em></button>
+    </div>
+    <div class="foot"><span>이미 만든 포트폴리오를 공고에 맞추려면 → 직무 전환</span><a href="#" data-s="home" style="color:var(--ink2)">닫기</a></div>
+  </div>
+</div>
+
+<script>
+  const screens = { home: "s-home", mine: "s-mine", subs: "s-subs" };
+  let base = "home";
+  function show(s) {
+    document.querySelectorAll(".switch .tab").forEach(t => t.classList.toggle("on", t.dataset.s === s));
+    const pick = document.getElementById("s-pick");
+    if (s === "pick") { pick.classList.add("on"); return; }
+    pick.classList.remove("on");
+    base = s;
+    Object.entries(screens).forEach(([k, id]) => document.getElementById(id).classList.toggle("on", k === s));
+    document.getElementById("nav-home").classList.toggle("on", s === "home");
+    document.getElementById("nav-mine").classList.toggle("on", s === "mine" || s === "subs");
+  }
+  document.querySelectorAll("[data-s]").forEach(el => el.addEventListener("click", e => { e.preventDefault(); e.stopPropagation(); show(el.dataset.s); }));
+  document.getElementById("s-pick").addEventListener("click", e => { if (e.target.id === "s-pick") show(base); });
+</script>
+</body>
+</html>

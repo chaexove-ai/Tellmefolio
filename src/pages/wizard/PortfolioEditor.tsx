@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { ArrowDown, ArrowUp, Check, ChevronDown, Clock, GripVertical, ImagePlus, Info, LoaderCircle, MessagesSquare, Minus, Pencil, Plus, Trash2, Type, X } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowUp, Check, ChevronDown, CloudOff, Clock, GripVertical, ImagePlus, Info, LoaderCircle, MessagesSquare, Minus, Pencil, Plus, Trash2, Type, X } from "lucide-react";
 import {
   getPortfolioWithProjects,
   updatePortfolioProject,
@@ -102,6 +102,21 @@ function useIsWide(): boolean {
   return wide;
 }
 
+/** 자동 저장의 "바뀌었나" 비교 열쇠. 편집기의 fieldsPatch 와 같은 순서·기본값이어야 합니다. */
+function fieldsKeyOf(p: PortfolioProjectRow): string {
+  return JSON.stringify({
+    name: p.name ?? "",
+    context: p.context ?? "",
+    role: p.role ?? "",
+    problem: p.problem ?? "",
+    execution: p.execution ?? "",
+    outcome: p.outcome ?? "",
+    reflection: p.reflection ?? "",
+    stack: p.stack ?? [],
+    depth: p.depth ?? "full",
+  });
+}
+
 export default function PortfolioEditor() {
   const { session } = useAuth();
   const navigate = useNavigate();
@@ -143,9 +158,29 @@ export default function PortfolioEditor() {
    *  화면에서 접힐 뿐이라 되돌리면 쓰던 글이 그대로 돌아옵니다. */
   const [depth, setDepth] = useState<ProjectDepth>("full");
 
-  const [saving, setSaving] = useState(false);
+  /* ── 자동 저장 (09-26) ────────────────────────────────────────────
+   * 전에는 본문은 맨 아래 "저장" 버튼, 스타일은 오른쪽 패널의 또 다른
+   * "저장" 버튼이었고, 저장하지 않은 채 "내보내기"나 사이드바를 누르면
+   * 경고 없이 날아갔습니다. 이제 입력을 멈추고 1초 뒤 저장하고, 탭 전환·
+   * 내보내기·대화로 채우기·화면을 떠날 때도 먼저 저장합니다.
+   *
+   *   savedKeyRef  지금 프로젝트에서 서버에 있는 값(JSON)
+   *   latestRef    지금 입력칸의 값 — 타이머·언마운트에서 최신 값을 읽으려고
+   *   chainRef     저장을 한 줄로 세웁니다(겹쳐 보내면 늦게 끝난 옛 값이 이김)
+   */
+  const [inflight, setInflight] = useState(0);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
+  const saving = inflight > 0;
+  const savedKeyRef = useRef("");
+  const currentIdRef = useRef<string | null>(null);
+  const latestRef = useRef<{ id: string | null; key: string; patch: Record<string, unknown> }>({
+    id: null,
+    key: "",
+    patch: {},
+  });
+  const chainRef = useRef<Promise<unknown>>(Promise.resolve());
+  const [, forceTick] = useState(0);
 
   const [addingProject, setAddingProject] = useState(false);
   const [addProjectError, setAddProjectError] = useState<string | null>(null);
@@ -186,6 +221,8 @@ export default function PortfolioEditor() {
 
   const loadProject = (index: number, list: PortfolioProjectRow[]) => {
     const p = list[index];
+    currentIdRef.current = p?.id ?? null;
+    savedKeyRef.current = p ? fieldsKeyOf(p) : "";
     setProjectIndex(index);
     setTitleField(p?.name ?? "");
     setContext(p?.context ?? "");
@@ -614,36 +651,78 @@ export default function PortfolioEditor() {
     },
   ];
 
-  /** 지금 탭에 보이는 7칸을 현재 프로젝트 행에 저장합니다. 저장 버튼과
-   *  프로젝트 탭 전환 둘 다 여기를 거칩니다 — 탭을 바꿀 때 저장하지 않으면
-   *  방금 고친 내용이 조용히 사라지기 때문입니다. */
-  const saveCurrentProject = async (): Promise<boolean> => {
-    const current = projects[projectIndex];
-    if (!current) return false;
-    setSaving(true);
+  /** 저장 한 건을 상태 표시("저장 중…/저장됨/저장 못 함")에 묶습니다.
+   *  본문·스타일·표지·이름 저장이 모두 이걸 거쳐 위쪽 한 줄에 모입니다. */
+  const track = useCallback(async (work: () => Promise<void>): Promise<boolean> => {
+    setInflight((n) => n + 1);
     setSaveError(null);
     try {
-      const patch = {
-        name: titleField,
-        context,
-        role,
-        problem,
-        execution,
-        outcome,
-        reflection,
-        stack,
-        depth,
-      };
-      await updatePortfolioProject(current.id, patch);
-      setProjects((prev) => prev.map((p, i) => (i === projectIndex ? { ...p, ...patch } : p)));
+      await work();
       setLastSavedAt(Date.now());
       return true;
     } catch (e) {
       setSaveError(e instanceof PortfolioError ? e.message : "저장하지 못했습니다.");
       return false;
     } finally {
-      setSaving(false);
+      setInflight((n) => n - 1);
     }
+  }, []);
+
+  /** 지금 탭의 7칸을 저장합니다(바뀐 게 없으면 아무것도 안 함).
+   *  앞선 저장이 끝난 뒤에 돌고, 돌 때의 최신 값을 읽습니다. */
+  const flushProject = useCallback((): Promise<boolean> => {
+    const run = async () => {
+      const { id, key, patch } = latestRef.current;
+      if (!id || key === savedKeyRef.current) return true;
+      return track(async () => {
+        await updatePortfolioProject(id, patch);
+        if (currentIdRef.current === id) savedKeyRef.current = key;
+        setProjects((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
+      });
+    };
+    const next = chainRef.current.then(run, run);
+    chainRef.current = next;
+    return next;
+  }, [track]);
+
+  const fieldsPatch = { name: titleField, context, role, problem, execution, outcome, reflection, stack, depth };
+  const fieldsKey = JSON.stringify(fieldsPatch);
+  latestRef.current = { id: currentIdRef.current, key: fieldsKey, patch: fieldsPatch };
+  const dirty = Boolean(currentIdRef.current) && fieldsKey !== savedKeyRef.current;
+
+  // 입력을 멈추고 1초 뒤 저장
+  useEffect(() => {
+    if (!dirty) return;
+    const t = window.setTimeout(() => void flushProject(), 1000);
+    return () => window.clearTimeout(t);
+  }, [fieldsKey, dirty, flushProject]);
+
+  // 화면을 떠날 때(사이드바·뒤로가기 등) 남은 것을 저장. SPA 라 요청은 끝까지 갑니다.
+  useEffect(() => () => void flushProject(), [flushProject]);
+
+  // 탭을 닫거나 새로고침할 때는 브라우저 경고
+  useEffect(() => {
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (latestRef.current.key !== savedKeyRef.current || inflight > 0) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [inflight]);
+
+  // "n분 전"이 오래 열어 둬도 맞게
+  useEffect(() => {
+    const t = window.setInterval(() => forceTick((n) => n + 1), 30_000);
+    return () => window.clearInterval(t);
+  }, []);
+
+  /** 저장이 모두 끝난 뒤 이동합니다. 실패하면 머뭅니다(오류는 위쪽에 보임). */
+  const saveThenGo = async (to: string) => {
+    const ok = await flushProject();
+    await chainRef.current.catch(() => undefined);
+    if (ok) navigate(to);
   };
 
   /**
@@ -654,13 +733,13 @@ export default function PortfolioEditor() {
   const goFillByChat = async () => {
     const current = projects[projectIndex];
     if (!current) return;
-    const ok = await saveCurrentProject();
-    if (ok) navigate(`/chat/new?project=${current.id}`);
+    await saveThenGo(`/chat/new?project=${current.id}`);
   };
 
   const switchProject = async (index: number) => {
     if (index === projectIndex) return;
-    await saveCurrentProject();
+    // 저장이 실패하면 옮기지 않습니다 — 옮기면 고친 내용이 화면에서 사라집니다.
+    if (!(await flushProject())) return;
     loadProject(index, projects);
   };
 
@@ -677,7 +756,7 @@ export default function PortfolioEditor() {
     setAddingProject(true);
     setAddProjectError(null);
     try {
-      await saveCurrentProject();
+      if (!(await flushProject())) return;
       const nextPosition = projects.reduce((max, p) => Math.max(max, p.position), -1) + 1;
       const created = await createPortfolioProject(portfolio.id, nextPosition);
       const next = [...projects, created];
@@ -704,6 +783,8 @@ export default function PortfolioEditor() {
       if (next.length > 0) {
         loadProject(Math.min(projectIndex, next.length - 1), next);
       } else {
+        currentIdRef.current = null;
+        savedKeyRef.current = "";
         setProjectIndex(0);
         setTitleField("");
         setContext("");
@@ -737,8 +818,8 @@ export default function PortfolioEditor() {
         <p role="alert" className="text-sm text-brand">
           {loadError ?? "포트폴리오를 찾을 수 없습니다."}
         </p>
-        <Link to="/wizard/source" className="text-xs text-brand hover:underline">
-          원본 자료 입력부터 다시 시작하기
+        <Link to="/library/portfolios" className="text-xs text-brand hover:underline">
+          ← 내 포트폴리오로
         </Link>
       </div>
     );
@@ -748,6 +829,7 @@ export default function PortfolioEditor() {
     <StylePanel
       portfolioId={portfolio.id}
       initial={portfolio}
+      track={track}
       savedCoverUrl={savedCoverUrl}
       onStyleChange={(s) => setPortfolio((prev) => (prev ? { ...prev, ...s } : prev))}
       onCoverPreviewChange={setCoverUrl}
@@ -761,16 +843,54 @@ export default function PortfolioEditor() {
   return (
     <div className="flex items-start gap-6">
       <div className="flex-1 min-w-0 max-w-3xl space-y-6">
-        <div className="flex items-center justify-between">
-          <Link to="/wizard/draft" className="text-xs text-brand hover:underline">
-            AI 초안 생성으로 돌아가기
+        {/* [09-26] 위쪽 막대 — 스크롤해도 따라옵니다. 예전 "AI 초안 생성으로
+            돌아가기"는 늘 빈 화면으로 갔습니다(초안 화면은 자료를 넘겨받아야
+            열림). 편집기는 어디서 왔든 "내 포트폴리오"로 돌아갑니다. */}
+        <div className="sticky top-0 z-10 -mx-3 flex items-center gap-3 border-b border-neutral-800 bg-neutral-950/95 px-3 py-3 backdrop-blur">
+          <Link
+            to="/library/portfolios"
+            className="inline-flex items-center gap-1.5 text-sm text-neutral-400 hover:text-brand"
+          >
+            <ArrowLeft size={15} strokeWidth={1.75} aria-hidden="true" />
+            내 포트폴리오
           </Link>
-          <div className="flex items-center gap-2">
-            <button className="btn-primary" onClick={() => navigate(`/wizard/export/${portfolio.id}`)}>
-              내보내기
-            </button>
-          </div>
+          <span className="flex-1" />
+          <span className="flex items-center gap-1.5 text-xs text-neutral-500" aria-live="polite">
+            {saving ? (
+              <>
+                <LoaderCircle size={13} className="animate-spin" aria-hidden="true" />
+                저장 중…
+              </>
+            ) : saveError ? (
+              <>
+                <CloudOff size={13} className="text-brand" aria-hidden="true" />
+                <span className="text-brand">저장 못 함</span>
+                <button type="button" className="underline hover:text-brand" onClick={() => void flushProject()}>
+                  다시 시도
+                </button>
+              </>
+            ) : dirty ? (
+              "입력 중…"
+            ) : (
+              <>
+                <Check size={13} strokeWidth={2.25} className="text-emerald-600" aria-hidden="true" />
+                {lastSavedAt ? `저장됨 · ${formatRelativeTime(lastSavedAt)}` : "저장됨"}
+              </>
+            )}
+          </span>
+          <button
+            className="btn-primary disabled:opacity-60"
+            disabled={saving}
+            onClick={() => void saveThenGo(`/wizard/export/${portfolio.id}`)}
+          >
+            내보내기
+          </button>
         </div>
+        {saveError && (
+          <p role="alert" className="-mt-3 text-xs text-brand">
+            {saveError} 입력한 내용은 화면에 그대로 있어요. 잠시 후 다시 시도해 주세요.
+          </p>
+        )}
         <div>
           {titleDraft === null ? (
             <button
@@ -931,11 +1051,7 @@ export default function PortfolioEditor() {
           {projects.length === 0 && (
             <div className="space-y-2">
               <p className="text-sm text-neutral-500">
-                프로젝트가 없습니다.{" "}
-                <Link to="/wizard/source" className="text-brand hover:underline">
-                  원본 자료 입력
-                </Link>
-                부터 다시 시작하거나, 아래에서 빈 프로젝트를 직접 추가할 수 있습니다.
+                프로젝트가 없습니다. 아래에서 빈 프로젝트를 추가해 주세요.
               </p>
               <button
                 type="button"
@@ -1519,38 +1635,6 @@ export default function PortfolioEditor() {
           </div>
         </details>
 
-        <div className="entry flex items-center justify-between gap-4">
-          <div className="min-w-0">
-            <p className="text-sm text-neutral-200">
-              마지막 저장: {formatRelativeTime(lastSavedAt)}
-            </p>
-            {saveError && (
-              <p role="alert" className="text-xs text-brand mt-1">
-                {saveError}
-              </p>
-            )}
-            <p className="text-xs text-neutral-600 mt-1">
-              탭을 옮기면 자동으로 먼저 저장됩니다.
-            </p>
-          </div>
-          {/* [2026-09-22] shrink-0 이 없어서 글자가 두 줄로 쪼개졌습니다.
-              justify-between 은 남는 폭을 나눠 가지므로, 줄어들면 안 되는
-              쪽에는 명시해줘야 합니다. */}
-          <button
-            className="btn-secondary shrink-0 whitespace-nowrap disabled:opacity-40 inline-flex items-center gap-1.5"
-            disabled={saving || projects.length === 0}
-            onClick={() => void saveCurrentProject()}
-          >
-            {saving ? (
-              "저장하는 중"
-            ) : (
-              <>
-                <Check size={13} strokeWidth={2.5} aria-hidden="true" />
-                저장
-              </>
-            )}
-          </button>
-        </div>
       </div>
 
       {/* 미리보기 패널을 고정 폭(420/560px)으로 두니 넓은 모니터에서

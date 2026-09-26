@@ -1,7 +1,6 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowUp, FolderGit2, History, Repeat } from "lucide-react";
-import { listOpenInterviews, type InterviewSummary } from "../lib/interview";
+import { ArrowUp } from "lucide-react";
 
 /**
  * 홈 맨 위의 입력창 — "대화로 만들기"의 입구. 설계는 docs/chat-builder-design.md.
@@ -10,17 +9,11 @@ import { listOpenInterviews, type InterviewSummary } from "../lib/interview";
  * 넘어갑니다. 첫 문장은 location.state 로 넘기고 대화 화면이 바로 보냅니다
  * — 여기서 함수를 부르고 기다리면 홈에서 몇 초 멈춰 있는 것처럼 보입니다.
  *
- * 아래 칩은 다른 입구들입니다. 저장소가 많은 개발자에게는 기존 위저드가 더
- * 빠르므로 없애지 않고 "저장소로 시작하기"로 남깁니다.
+ * 아래 한 줄은 다른 입구 "자료로 만들기"(저장소·링크·메모 위저드)입니다.
  */
 export default function ChatStart() {
   const navigate = useNavigate();
   const [text, setText] = useState("");
-  const [open, setOpen] = useState<InterviewSummary[]>([]);
-
-  useEffect(() => {
-    listOpenInterviews(3).then(setOpen).catch(() => setOpen([]));
-  }, []);
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -32,7 +25,7 @@ export default function ChatStart() {
   return (
     <section className="text-center pt-4">
       <h2 className="font-heading text-[28px] leading-snug text-neutral-100">어떤 프로젝트 이야기를 해볼까요?</h2>
-      <p className="mt-2 text-sm text-neutral-500">편하게 말해 주세요. 질문하면서 포트폴리오를 같이 채워 갈게요.</p>
+      <p className="mt-2 text-sm text-neutral-500">한 줄만 적어도 돼요. 질문에 답하면 포트폴리오로 정리해 드려요.</p>
 
       <form
         onSubmit={submit}
@@ -56,25 +49,14 @@ export default function ChatStart() {
         </button>
       </form>
 
-      <div className="mt-4 flex flex-wrap justify-center gap-2">
-        <Chip to="/wizard" icon={FolderGit2} label="저장소로 시작하기" />
-        <Chip to="/job-switch" icon={Repeat} label="공고에 맞춰 다시 쓰기" />
-        {open[0] && (
-          <Chip to={`/chat/${open[0].id}`} icon={History} label={`이어서: ${open[0].title}`} />
-        )}
-      </div>
+      {/* [09-26] 칩 셋(저장소로 시작하기·공고에 맞춰 다시 쓰기·이어서)을 한 줄로.
+          "이어서"는 홈의 "이어서 할 일"로, 직무 전환은 사이드바로 갔습니다. */}
+      <p className="mt-4 text-sm text-neutral-500">
+        깃허브 저장소나 링크·메모가 있다면 →{" "}
+        <Link to="/wizard/source" className="text-brand underline-offset-4 hover:underline">
+          자료로 만들기
+        </Link>
+      </p>
     </section>
-  );
-}
-
-function Chip({ to, icon: Icon, label }: { to: string; icon: typeof Repeat; label: string }) {
-  return (
-    <Link
-      to={to}
-      className="inline-flex max-w-[280px] items-center gap-1.5 rounded-full border border-neutral-800 bg-neutral-900/50 px-3.5 py-1.5 text-sm text-neutral-400 hover:border-brand/50 hover:text-brand transition-colors"
-    >
-      <Icon size={14} strokeWidth={1.75} className="shrink-0" />
-      <span className="truncate">{label}</span>
-    </Link>
   );
 }
