@@ -6,9 +6,9 @@ import { listMyPortfolios, PortfolioError, type LibraryPortfolio } from "../lib/
 import { listOpenInterviews, type InterviewSummary } from "../lib/interview";
 import { listSubmissions, type Submission } from "../lib/submissions";
 import ChatStart from "../components/ChatStart";
-import GrainCover from "../components/GrainCover";
+import Bookshelf from "../components/Bookshelf";
+import Reveal from "../components/Reveal";
 import { NewPortfolioButton } from "../components/NewPortfolio";
-import { formatRelativeTime } from "../lib/formatRelativeTime";
 
 /**
  * 홈 (09-26 정리 — 예시: docs/mockups/navigation.html ①).
@@ -18,7 +18,8 @@ import { formatRelativeTime } from "../lib/formatRelativeTime";
  * 쌓여 있었습니다. 같은 포트폴리오가 두 번 나오고, 만들기 입구가 위아래로
  * 두 개였습니다. 이제 셋만 남깁니다.
  *   1. 대화 입력창 — 이 앱에 온 사람이 하러 온 일
- *   2. 최근 포트폴리오 4개 — 전체는 "내 포트폴리오"
+ *   2. 내 서재(책장) — 이 서비스의 얼굴. 책을 누르면 편집기, 표지에서 이름·색 수정
+ *      (09-26 정리 때 카드 4개로 바꿨다가 되돌렸습니다 — 책장 인터랙션은 핵심입니다)
  *   3. 이어서 할 일 — 하다 만 대화, 최근 제출
  * 직무 전환·커뮤니티는 사이드바에 있어서 홈에서 다시 권하지 않습니다.
  */
@@ -52,9 +53,6 @@ export default function Dashboard() {
     };
   }, [configured, session?.user?.id]);
 
-  const recent = [...(portfolios ?? [])]
-    .sort((a, b) => +new Date(b.updatedAt) - +new Date(a.updatedAt))
-    .slice(0, 4);
 
   const todos: Array<{ key: string; icon: typeof Send; title: string; sub: string; to: string; cta: string }> = [
     ...openChats.map((c) => ({
@@ -84,16 +82,19 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="mx-auto max-w-[1080px] space-y-14">
+    <div className="space-y-14">
       {configured && <ChatStart />}
 
       <section>
         <div className="mb-4 flex items-baseline gap-3">
-          <h2 className="font-heading text-xl text-neutral-100">최근 포트폴리오</h2>
+          <h2 className="font-heading text-xl text-neutral-100">내 서재</h2>
           {portfolios && portfolios.length > 0 && (
-            <Link to="/library/portfolios" className="ml-auto text-sm text-brand hover:underline">
-              전체 보기 →
-            </Link>
+            <>
+              <span className="text-xs text-neutral-600">{portfolios.length}권</span>
+              <Link to="/library/portfolios" className="ml-auto text-sm text-brand hover:underline">
+                목록으로 보기 →
+              </Link>
+            </>
           )}
         </div>
 
@@ -107,7 +108,7 @@ export default function Dashboard() {
           <p role="alert" className="text-sm text-brand">
             {loadError}
           </p>
-        ) : recent.length === 0 ? (
+        ) : portfolios.length === 0 ? (
           <div className="entry flex items-center gap-4">
             <p className="flex-1 text-sm text-neutral-400">
               아직 만든 포트폴리오가 없어요. 위에 프로젝트 이야기를 한 줄 적거나, 자료로 시작해 보세요.
@@ -117,23 +118,12 @@ export default function Dashboard() {
             </NewPortfolioButton>
           </div>
         ) : (
-          <div className="grid grid-cols-4 gap-4">
-            {recent.map((p) => (
-              <Link
-                key={p.id}
-                to={`/wizard/editor/${p.id}`}
-                className="group overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-900/50 transition-colors hover:border-brand/50"
-              >
-                <GrainCover seed={p.id} tint={p.jobColor} className="aspect-[16/9] w-full" />
-                <div className="px-4 py-3">
-                  <p className="truncate font-medium text-neutral-100 group-hover:text-brand">{p.title}</p>
-                  <p className="mt-1 truncate text-xs text-neutral-500">
-                    {formatRelativeTime(new Date(p.updatedAt).getTime())} 수정 · {p.visibility}
-                  </p>
-                </div>
-              </Link>
-            ))}
-          </div>
+          <Reveal>
+            <Bookshelf
+              portfolios={portfolios}
+              onUpdated={(u) => setPortfolios((list) => (list ?? []).map((p) => (p.id === u.id ? u : p)))}
+            />
+          </Reveal>
         )}
       </section>
 
