@@ -29,6 +29,7 @@
  */
 
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { QuotaError, assertQuota } from "../_shared/usage.ts";
 import {
   buildEvidence,
   fillMissingFields,
@@ -376,6 +377,9 @@ Deno.serve(async (req) => {
       reflection: p.reflection ?? "",
     }));
 
+    // 하루 한도 — Sonnet 을 쓰는 가장 비싼 기능이라 모델을 부르기 전에 확인합니다.
+    await assertQuota(sb, user.id, "job_switch");
+
     // ── 0단계 ────────────────────────────────────────────────────
     const evidence = buildEvidence(projects);
     if (evidence.length === 0) {
@@ -475,12 +479,12 @@ Deno.serve(async (req) => {
     // 실패해도 결과는 돌려줍니다 — 기록 실패로 사용자의 결과를 버리지 않습니다.
     await sb
       .from("draft_generations")
-      .insert({ user_id: user.id, portfolio_id: portfolioId, ...usage })
+      .insert({ user_id: user.id, portfolio_id: portfolioId, kind: "job_switch", ...usage })
       .then(({ error }) => error && console.error("사용량 기록 실패", error));
 
     return json({ runId: run.id });
   } catch (e) {
-    if (e instanceof UserFacingError) return json({ error: e.message }, e.status);
+    if (e instanceof UserFacingError || e instanceof QuotaError) return json({ error: e.message }, e.status);
     console.error(e);
     return json({ error: "재구성 중 문제가 생겼습니다. 잠시 후 다시 시도해 주세요." }, 500);
   }

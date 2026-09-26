@@ -189,9 +189,22 @@ npm run tpl:check my-template
 | `portfolio_submissions` + Storage `submissions`(비공개) | 제출 기록. 어디에(회사·포지션) 무엇을(그때 결과물 HTML, 이미지 포함) 냈는지. 포트폴리오를 지워도 남음. 본인만 읽음 |
 | `interview_sessions` · `interview_messages` | 대화로 만들기. 세션은 칸 상태(`fields`)·지금 묻는 칸·질문 수·되묻기 수·토큰 합계, 메시지는 대화 한 줄씩(사용자 답은 `answer_no` 로 근거 id `a{n}:{i}` 의 앞부분) |
 | `job_switch_runs` · `job_switch_projects` | 직무 전환 재구성 결과. 공고 해부·근거 매칭·검증 경고·맨 앞 필드(`lead`)와 프로젝트별 재작성 문장. 원본은 안 바꾸고, "저장"을 눌러야 새 `portfolios` 행이 됩니다 |
-| `draft_generations` | AI 호출 기록 (`input_tokens`/`output_tokens`). 가짜 사용량 배지는 제거했고(09-21), 유료 전환 시 이걸 세서 한도를 붙입니다 |
+| `draft_generations` | AI 호출 기록 (`kind`: draft/translate/job_switch/interview, `input_tokens`/`output_tokens`). 하루 한도를 이걸로 셉니다(아래 "AI 사용량 한도"). 삭제·수정 정책이 없어 사용자가 기록을 지워 한도를 되돌릴 수 없습니다 |
 | Storage `portfolio-covers` | 커버·프로젝트 이미지 (`{userId}/{portfolioId}/...`) |
 | Storage `avatars` | 프로필 사진 (`{userId}/avatar.<ext>` 하나를 덮어씀). 위 버킷과 경로 구조가 달라 분리 |
+
+### AI 사용량 한도 (09-26)
+
+최근 24시간 기준, 사용자별. 넘으면 429 와 "…은 하루 N번까지예요. 3시간 뒤에 다시 쓸 수 있어요." 모델을 부르기 전에 막습니다.
+
+| 기능 | 기본값 | 세는 것 | 바꾸기 (재배포 불필요) |
+|---|---|---|---|
+| AI 초안 생성 | 20 | `draft_generations` kind=draft | `npx supabase secrets set AI_LIMIT_DRAFT=30` |
+| 영어 번역 | 20 | kind=translate | `AI_LIMIT_TRANSLATE` |
+| 직무 전환 | 5 | kind=job_switch (Sonnet 이라 가장 비쌈) | `AI_LIMIT_JOB_SWITCH` |
+| 대화 시작 | 10 | `interview_sessions` 수 (대화로 채우기 포함. 한 대화 안은 질문 12개로 이미 묶임) | `AI_LIMIT_INTERVIEW` |
+
+전체 비용의 마지막 방어선은 여전히 Anthropic 콘솔의 월 한도입니다.
 
 ### Edge Functions
 
@@ -201,6 +214,7 @@ npm run tpl:check my-template
 | `translate-portfolio` | 포트폴리오를 영어로. title/summary/job + 프로젝트 서술형 6필드 + role/stack |
 | `job-switch` | 직무 전환 재구성 4단계(공고 해부 → 근거 매칭 → 재작성 → 기계 검증). 원본은 포트폴리오 id 로 서버가 직접 읽고 **본인 것인지 확인**합니다. 모델은 1단계 `JOB_SWITCH_LIGHT_MODEL`(기본 Haiku), 2·3단계 `JOB_SWITCH_STRONG_MODEL`(기본 `claude-sonnet-5`). 날조 방지 로직은 `_shared/evidence.ts` 에 있고 `interview` 와 같이 씁니다 — 고치면 두 함수 모두 다시 배포 |
 | `interview` | 대화로 만들기. `mode` 가 `start`/`answer`/`draft`. 질문은 `INTERVIEW_MODEL`(기본 Haiku), 초안은 `JOB_SWITCH_STRONG_MODEL`. 서버 규칙(근거 없는 칸 채움 거부, 되묻기 칸당 1회, 질문 12개)은 `rules.ts` |
+| `_shared/usage.ts` | 네 AI 함수 공용: **실제 로그인 확인**(anon 키도 JWT 라 Supabase 의 JWT 검증만으로는 통과함 — 09-26 전까지 generate-draft·translate 는 로그인 없이 불렸음)과 **하루 한도**. 고치면 네 함수 모두 다시 배포 |
 | `delete-account` | 계정 삭제. 대상은 JWT 의 본인뿐(id 를 받지 않음), 두 버킷의 파일까지 지웁니다. service_role 키는 이 함수 안에만 |
 
 제약: **첫 응답까지 150초.** AI 생성이 더 길어지면 큐로 빼거나 그 호출만 분리해야
@@ -407,6 +421,8 @@ FAQ           밝은 면   아코디언
 - 앱 화면은 데스크탑 전용(1200px 미만은 안내 화면), 랜딩·로그인은 모바일 허용
 - 라이트 고정·다크 감춤, 위저드 왼쪽 단계 레일, 로그인 전체 화면 분할
 - 랜딩: 반전 구역, 결과물 무한 가로 띠, 어두운 전체 폭 CTA, 푸터 확장
+
+**2026-09-26** — 배포판 점검: 함수는 올라갔지만 **마이그레이션 3개가 안 올라가 있었음**(db push 필요). generate-draft·translate-portfolio 가 **로그인 없이 호출되던 문제** 수정, 네 AI 함수에 하루 한도.
 
 **2026-09-25** — 집 맥을 `~/Documents/GitHub/Tellmefolio` 로 옮김,
 `package-lock.json` 에 남아 있던 `tsx` 항목 정리. 로그인 왼쪽 책장 그림, 임시 아바타.

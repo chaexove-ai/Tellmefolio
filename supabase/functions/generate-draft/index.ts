@@ -5,11 +5,10 @@
  * AI API 키는 브라우저에 둘 수 없습니다. 배포된 자바스크립트에서 그대로
  * 읽히고, 그 순간 남의 카드로 요금이 나갑니다. 키는 여기에만 있습니다.
  *
- * [인증]
- * Supabase Edge Function 은 기본적으로 JWT 를 검증합니다. 로그인하지 않은
- * 요청은 이 코드에 닿기 전에 막힙니다. 그래도 사용자별 사용 횟수 제한은
- * 아직 없습니다 — DB 테이블이 있어야 세는데 그건 다음 단계입니다.
- * 그전까지는 Anthropic 콘솔에서 월 한도를 걸어두는 것이 유일한 방어선입니다.
+ * [인증·한도]
+ * Supabase 의 JWT 검증은 사이트에 공개된 anon 키도 통과시킵니다 — 그래서
+ * 예전에는 로그인 없이도 이 함수를 부를 수 있었습니다. 이제
+ * _shared/usage.ts 가 실제 사용자인지 확인하고, 하루 호출 수를 셉니다.
  *
  * [모델]
  * 기본값은 Haiku 입니다. 초안 생성에는 충분하고 Sonnet 대비 3분의 1 값입니다.
@@ -24,6 +23,8 @@
  * 그 사이트가 CORS 를 열어두지 않는 한 대부분 막히기 때문에, 이 작업은
  * 브라우저가 아니라 서버가 해야 합니다.
  */
+
+import { AuthError, QuotaError, assertQuota, recordUsage, requireUser } from "../_shared/usage.ts";
 
 const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
 const MODEL = Deno.env.get("MODEL") ?? "claude-haiku-4-5-20251001";
@@ -303,6 +304,14 @@ Deno.serve(async (req) => {
     return json({ error: "서버에 API 키가 설정되지 않았습니다." }, 500);
   }
 
+  let who: Awaited<ReturnType<typeof requireUser>>;
+  try {
+    who = await requireUser(req);
+  } catch (e) {
+    if (e instanceof AuthError) return json({ error: e.message }, e.status);
+    throw e;
+  }
+
   let payload: Payload;
   try {
     payload = await req.json();
@@ -316,6 +325,13 @@ Deno.serve(async (req) => {
     (payload.materials?.length ?? 0) > 0 || Boolean(payload.note?.trim()) || linkUrls.length > 0;
   if (!hasMaterial) {
     return json({ error: "초안을 만들 자료가 없습니다." }, 400);
+  }
+
+  try {
+    await assertQuota(who.sb, who.user.id, "draft");
+  } catch (e) {
+    if (e instanceof QuotaError) return json({ error: e.message }, e.status);
+    throw e;
   }
 
   try {
@@ -362,6 +378,12 @@ Deno.serve(async (req) => {
       return json({ error: "생성 결과를 해석하지 못했습니다. 다시 시도해 주세요." }, 502);
     }
 
+    await recordUsage(who.sb, {
+      user_id: who.user.id,
+      kind: "draft",
+      input_tokens: data.usage?.input_tokens ?? 0,
+      output_tokens: data.usage?.output_tokens ?? 0,
+    });
     return json({ draft, usage: data.usage ?? null });
   } catch (e) {
     console.error(e);

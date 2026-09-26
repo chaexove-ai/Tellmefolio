@@ -22,6 +22,7 @@
  */
 
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
+import { QuotaError, assertQuota } from "../_shared/usage.ts";
 import {
   joinField,
   normalizeSentences,
@@ -378,6 +379,9 @@ async function saveTurn(
 }
 
 async function modeStart(sb: SupabaseClient, userId: string, payload: Record<string, unknown>, usage: Usage) {
+  // 하루에 새로 여는 대화 수("대화로 채우기" 포함). 한 대화 안의 턴은 rules.ts 가 12개로 묶습니다.
+  await assertQuota(sb, userId, "interview");
+
   const projectId = typeof payload.projectId === "string" && payload.projectId ? payload.projectId : null;
   if (projectId) return await startFill(sb, userId, projectId);
 
@@ -624,6 +628,7 @@ async function modeDraft(sb: SupabaseClient, userId: string, payload: Record<str
       // 대화 턴에서 모아 둔 것 + 초안 한 번
       input_tokens: (session.input_tokens ?? 0) + usage.input_tokens,
       output_tokens: (session.output_tokens ?? 0) + usage.output_tokens,
+      kind: "interview",
     })
     .then(({ error }) => error && console.error("사용량 기록 실패", error));
 
@@ -694,6 +699,7 @@ async function draftFill(sb: SupabaseClient, userId: string, session: Session, m
       portfolio_id: session.portfolio_id,
       input_tokens: (session.input_tokens ?? 0) + usage.input_tokens,
       output_tokens: (session.output_tokens ?? 0) + usage.output_tokens,
+      kind: "interview",
     })
     .then(({ error }) => error && console.error("사용량 기록 실패", error));
 
@@ -743,7 +749,7 @@ Deno.serve(async (req) => {
         throw new UserFacingError("알 수 없는 요청입니다.");
     }
   } catch (e) {
-    if (e instanceof UserFacingError) return json({ error: e.message }, e.status);
+    if (e instanceof UserFacingError || e instanceof QuotaError) return json({ error: e.message }, e.status);
     console.error(e);
     return json({ error: "대화 중 문제가 생겼습니다. 다시 보내 주세요." }, 500);
   }

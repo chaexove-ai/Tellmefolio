@@ -19,7 +19,10 @@
  * 화면(Export.tsx)에서 사용자에게 그대로 안내합니다.
  *
  * generate-draft/index.ts 와 같은 인증·CORS·모델 패턴을 그대로 씁니다.
+ * 로그인 확인과 하루 한도는 _shared/usage.ts.
  */
+
+import { AuthError, QuotaError, assertQuota, recordUsage, requireUser } from "../_shared/usage.ts";
 
 const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
 const MODEL = Deno.env.get("MODEL") ?? "claude-haiku-4-5-20251001";
@@ -151,6 +154,14 @@ Deno.serve(async (req) => {
     return json({ error: "서버에 API 키가 설정되지 않았습니다." }, 500);
   }
 
+  let who: Awaited<ReturnType<typeof requireUser>>;
+  try {
+    who = await requireUser(req);
+  } catch (e) {
+    if (e instanceof AuthError) return json({ error: e.message }, e.status);
+    throw e;
+  }
+
   let payload: Payload;
   try {
     payload = await req.json();
@@ -167,6 +178,13 @@ Deno.serve(async (req) => {
 
   if (!title && !summary && !job && projects.length === 0 && blocks.length === 0) {
     return json({ error: "번역할 내용이 없습니다." }, 400);
+  }
+
+  try {
+    await assertQuota(who.sb, who.user.id, "translate");
+  } catch (e) {
+    if (e instanceof QuotaError) return json({ error: e.message }, e.status);
+    throw e;
   }
 
   try {
@@ -210,6 +228,12 @@ Deno.serve(async (req) => {
       return json({ error: "번역 결과를 해석하지 못했습니다. 다시 시도해 주세요." }, 502);
     }
 
+    await recordUsage(who.sb, {
+      user_id: who.user.id,
+      kind: "translate",
+      input_tokens: data.usage?.input_tokens ?? 0,
+      output_tokens: data.usage?.output_tokens ?? 0,
+    });
     return json({ translation: parsed });
   } catch (e) {
     console.error(e);
