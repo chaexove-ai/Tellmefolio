@@ -118,19 +118,29 @@ export function buildEvidence(projects: SourceProject[]): Evidence[] {
 
 /** 코드펜스나 앞뒤 설명이 붙어 와도 가장 바깥 JSON 을 꺼냅니다. */
 export function parseJson(text: string): unknown {
-  const cleaned = text.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
-  try {
-    return JSON.parse(cleaned);
-  } catch {
-    const start = cleaned.indexOf("{");
-    const end = cleaned.lastIndexOf("}");
-    if (start === -1 || end <= start) return null;
+  const tryParse = (t: string): unknown => {
     try {
-      return JSON.parse(cleaned.slice(start, end + 1));
+      return JSON.parse(t);
     } catch {
-      return null;
+      // 모델이 자주 남기는 끝 쉼표({"a":1,} / [1,2,])만 고쳐서 한 번 더
+      try {
+        return JSON.parse(t.replace(/,\s*([}\]])/g, "$1"));
+      } catch {
+        return null;
+      }
     }
-  }
+  };
+  const trimmed = text.trim();
+  // 코드 블록이 설명 문장 뒤에 올 수도 있습니다
+  const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  const cleaned = fenced ? fenced[1].trim() : trimmed.replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
+  const direct = tryParse(cleaned);
+  if (direct && typeof direct === "object") return direct;
+  const start = cleaned.indexOf("{");
+  const end = cleaned.lastIndexOf("}");
+  if (start === -1 || end <= start) return null;
+  const sliced = tryParse(cleaned.slice(start, end + 1));
+  return sliced && typeof sliced === "object" ? sliced : null;
 }
 
 function str(v: unknown, max = 500): string {

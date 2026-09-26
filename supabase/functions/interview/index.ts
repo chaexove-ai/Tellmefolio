@@ -23,6 +23,7 @@
 
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
 import { QuotaError, assertQuota } from "../_shared/usage.ts";
+import { ModelError, callModelJson, type Usage } from "../_shared/model.ts";
 import {
   joinField,
   normalizeSentences,
@@ -78,52 +79,19 @@ class UserFacingError extends Error {
   }
 }
 
-interface Usage {
-  input_tokens: number;
-  output_tokens: number;
-}
 
-async function callModel(model: string, prompt: string, maxTokens: number): Promise<{ data: unknown; usage: Usage }> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), CALL_TIMEOUT_MS);
+async function callModel(
+  model: string,
+  prompt: string,
+  maxTokens: number,
+  stage = "AI 호출"
+): Promise<{ data: unknown; usage: Usage }> {
+  // 실제 호출·재시도·JSON 해석은 _shared/model.ts. 여기서는 오류 모양만 맞춥니다.
   try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      signal: controller.signal,
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": ANTHROPIC_API_KEY!,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({ model, max_tokens: maxTokens, messages: [{ role: "user", content: prompt }] }),
-    });
-    if (!res.ok) {
-      console.error("Anthropic 오류", model, res.status, await res.text());
-      throw new UserFacingError(
-        res.status === 429 ? "요청이 몰렸습니다. 잠시 후 다시 시도해 주세요." : "AI 호출에 실패했습니다. 잠시 후 다시 시도해 주세요.",
-        502
-      );
-    }
-    const body = await res.json();
-    const text = (body.content ?? [])
-      .filter((b: { type: string }) => b.type === "text")
-      .map((b: { text: string }) => b.text)
-      .join("\n");
-    const data = parseJson(text);
-    if (!data) {
-      console.error("JSON 파싱 실패", model, text.slice(0, 500));
-      throw new UserFacingError("AI 응답을 해석하지 못했습니다. 다시 보내 주세요.", 502);
-    }
-    return {
-      data,
-      usage: { input_tokens: body.usage?.input_tokens ?? 0, output_tokens: body.usage?.output_tokens ?? 0 },
-    };
+    return await callModelJson(model, prompt, maxTokens, { stage, timeoutMs: CALL_TIMEOUT_MS });
   } catch (e) {
-    if (e instanceof UserFacingError) throw e;
-    const timedOut = e instanceof Error && e.name === "AbortError";
-    throw new UserFacingError(timedOut ? "AI 응답이 너무 오래 걸립니다. 다시 보내 주세요." : "AI 호출 중 문제가 생겼습니다.", 502);
-  } finally {
-    clearTimeout(timer);
+    if (e instanceof ModelError) throw new UserFacingError(e.message, e.status);
+    throw e;
   }
 }
 
@@ -546,7 +514,7 @@ async function modeDraft(sb: SupabaseClient, userId: string, payload: Record<str
   const textById = new Map(evidence.map((e) => [e.id, e.text]));
   const whole = answers.map((a) => a.text).join("\n");
 
-  const { data, usage: u } = await callModel(STRONG_MODEL, draftPrompt(session.title, session.fields, evidence), 3000);
+  const { data, usage: u } = await callModel(STRONG_MODEL, draftPrompt(session.title, session.fields, evidence), 6000, "초안 만들기");
   usage.input_tokens += u.input_tokens;
   usage.output_tokens += u.output_tokens;
 
@@ -649,7 +617,8 @@ async function draftFill(sb: SupabaseClient, userId: string, session: Session, m
   const { data, usage: u } = await callModel(
     STRONG_MODEL,
     draftPrompt(session.title, session.fields, evidence, filled),
-    2000
+    4000,
+    "빈 칸 채우기"
   );
   usage.input_tokens += u.input_tokens;
   usage.output_tokens += u.output_tokens;
