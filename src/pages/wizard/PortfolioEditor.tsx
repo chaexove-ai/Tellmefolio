@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { ArrowDown, ArrowUp, Check, GripVertical, ImagePlus, Info, LoaderCircle, MessagesSquare, Minus, Plus, Trash2, Type, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, ChevronDown, Clock, GripVertical, ImagePlus, Info, LoaderCircle, MessagesSquare, Minus, Pencil, Plus, Trash2, Type, X } from "lucide-react";
 import {
   getPortfolioWithProjects,
   updatePortfolioProject,
+  updatePortfolioTitle,
   createPortfolioProject,
   deletePortfolioProject,
   getCoverImageUrl,
@@ -114,6 +115,12 @@ export default function PortfolioEditor() {
   const [projects, setProjects] = useState<PortfolioProjectRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+
+  // 포트폴리오 이름 — 내 서재를 카드 격자로 바꾸면서 책장의 제목 고치기가
+  // 사라졌습니다(09-25). 이름이 보이는 편집기 머리에서 바로 고칩니다.
+  const [titleDraft, setTitleDraft] = useState<string | null>(null);
+  const [titleSaving, setTitleSaving] = useState(false);
+  const [titleError, setTitleError] = useState<string | null>(null);
 
   const [sentence, setSentence] = useState("");
   const [showRefine, setShowRefine] = useState(false);
@@ -765,7 +772,70 @@ export default function PortfolioEditor() {
           </div>
         </div>
         <div>
-          <h1 className="text-xl font-heading">{portfolio.title}</h1>
+          {titleDraft === null ? (
+            <button
+              type="button"
+              onClick={() => {
+                setTitleError(null);
+                setTitleDraft(portfolio.title);
+              }}
+              className="group -mx-2 flex max-w-full items-center gap-2 rounded-lg px-2 py-1 text-left hover:bg-neutral-800/50"
+              title="이름 바꾸기"
+            >
+              <h1 className="truncate text-xl font-heading">{portfolio.title}</h1>
+              <Pencil size={15} strokeWidth={1.75} className="shrink-0 text-neutral-500 group-hover:text-brand" />
+              <span className="sr-only">이름 바꾸기</span>
+            </button>
+          ) : (
+            <form
+              className="flex items-center gap-2"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                const next = titleDraft.trim();
+                if (!next) {
+                  setTitleError("이름을 입력해 주세요.");
+                  return;
+                }
+                if (next === portfolio.title) {
+                  setTitleDraft(null);
+                  return;
+                }
+                setTitleSaving(true);
+                try {
+                  await updatePortfolioTitle(portfolio.id, next);
+                  setPortfolio((prev) => (prev ? { ...prev, title: next } : prev));
+                  setTitleDraft(null);
+                } catch (err) {
+                  setTitleError(err instanceof Error ? err.message : "이름을 저장하지 못했습니다.");
+                } finally {
+                  setTitleSaving(false);
+                }
+              }}
+            >
+              <input
+                autoFocus
+                value={titleDraft}
+                maxLength={100}
+                onChange={(e) => setTitleDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") setTitleDraft(null);
+                }}
+                aria-label="포트폴리오 이름"
+                className="field min-w-0 flex-1 font-heading text-xl"
+              />
+              <button type="submit" className="btn-primary" disabled={titleSaving}>
+                {titleSaving ? "저장 중…" : "저장"}
+              </button>
+              <button type="button" className="btn-secondary" onClick={() => setTitleDraft(null)}>
+                취소
+              </button>
+            </form>
+          )}
+          {titleError && (
+            <p role="alert" className="mt-1 text-xs text-brand">
+              {titleError}
+            </p>
+          )}
           {/* [2026-09-22] 요약은 여러 줄짜리 한국어 문단이라 기본 줄
               간격(14/22, 1.57)으로는 답답합니다. 한글은 같은 크기에서 라틴
               문자보다 넓은 행간이 필요합니다 — tailwind.config.js 주석 참고. */}
@@ -1303,11 +1373,35 @@ export default function PortfolioEditor() {
             않고 접어 둡니다 — 만들 화면의 설계가 여기 담겨 있어서 참고용으로
             남길 가치가 있습니다. 실제로 동작하게 되는 순간 이 껍데기를
             벗기면 됩니다. */}
-        <details className="entry">
-          <summary className="cursor-pointer text-xs text-neutral-500 hover:text-brand list-none">
-            아직 동작하지 않는 화면 3개 보기 (AI 문장 다듬기 · 근거 확인 · 이력서 대조)
+        {/* [09-26] 접힌 줄이 작은 회색 글씨 한 줄이라 거의 보이지 않았습니다.
+            "준비 중"임을 분명히 하면서, 무엇이 들어올지는 한눈에 보이게. */}
+        <details className="entry group p-0">
+          <summary className="flex cursor-pointer list-none items-center gap-4 rounded-2xl p-5 transition-colors hover:bg-neutral-800/40 [&::-webkit-details-marker]:hidden">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand/10 text-brand">
+              <Clock className="h-5 w-5" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="flex items-center gap-2 text-sm font-medium text-neutral-100">
+                준비 중인 기능 3개
+                <span className="rounded-full border border-neutral-700 px-2 py-0.5 text-[11px] font-normal text-neutral-400">
+                  아직 동작하지 않아요
+                </span>
+              </span>
+              <span className="mt-2 flex flex-wrap gap-1.5">
+                {["AI 문장 다듬기", "근거 확인", "이력서 대조"].map((name) => (
+                  <span key={name} className="rounded-full bg-neutral-800 px-2.5 py-1 text-xs text-neutral-300">
+                    {name}
+                  </span>
+                ))}
+              </span>
+            </span>
+            <span className="flex shrink-0 items-center gap-1 text-xs text-brand">
+              <span className="group-open:hidden">미리 보기</span>
+              <span className="hidden group-open:inline">접기</span>
+              <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
+            </span>
           </summary>
-          <div className="mt-4 space-y-6">
+          <div className="space-y-6 border-t border-neutral-800 p-6">
           <div className="entry space-y-3">
             <h2 className="entry-title mb-0">AI 문장 다듬기</h2>
             <p className="text-xs text-neutral-400">
