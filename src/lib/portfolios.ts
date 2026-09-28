@@ -55,6 +55,9 @@ export interface PortfolioRow {
    *  직무 전환 재구성으로 만든 포트폴리오에 들어갑니다(20260925100000_job_switch.sql).
    *  마이그레이션 전 행에는 아예 없어서 optional 입니다. */
   lead_field?: string | null;
+  /** [2026-09-28] 사용자가 고친 템플릿 고정 문구. { ko: { contactTitle: "..." }, en: {...} }.
+   *  마이그레이션 전 행은 undefined. 키 목록은 템플릿의 data-tf-text 와 FIELD_LABELS.copyKey. */
+  copy?: PortfolioCopy;
   created_at: string;
   updated_at: string;
 }
@@ -63,6 +66,11 @@ export interface PortfolioRow {
  *  brief = 제목 + 한 줄 설명(context) + 이미지 + 스택.
  *  full  = 5필드 전부 + 이미지. */
 export type ProjectDepth = "brief" | "full";
+
+export interface PortfolioCopy {
+  ko?: Record<string, string>;
+  en?: Record<string, string>;
+}
 
 export interface PortfolioProjectRow {
   id: string;
@@ -260,6 +268,23 @@ export async function deletePortfolioProject(id: string): Promise<void> {
   if (paths.length > 0) {
     await sb.storage.from(COVER_IMAGE_BUCKET).remove(paths);
   }
+}
+
+/** [2026-09-28] 템플릿 고정 문구 바꾸기. 빈 값은 지워서 템플릿 기본 문구로 돌아가게 합니다. */
+export async function updatePortfolioCopy(id: string, copy: PortfolioCopy): Promise<PortfolioCopy> {
+  const clean: PortfolioCopy = {};
+  for (const lang of ["ko", "en"] as const) {
+    const table: Record<string, string> = {};
+    for (const [k, v] of Object.entries(copy[lang] ?? {})) {
+      const t = v.trim().slice(0, 200);
+      if (t) table[k] = t;
+    }
+    clean[lang] = table;
+  }
+  const sb = await requireClient();
+  const { error } = await sb.from("portfolios").update({ copy: clean }).eq("id", id);
+  if (error) throw new PortfolioError("문구를 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+  return clean;
 }
 
 export async function updatePortfolioStyle(

@@ -354,6 +354,8 @@ export async function saveRunAsPortfolio(input: {
       layout: src.layout,
       density: src.density,
       summary: src.summary,
+      // 사용자가 고친 템플릿 문구도 따라갑니다(마이그레이션 전이면 원본에 값이 없음)
+      ...(src.copy !== undefined ? { copy: src.copy } : {}),
       gaps,
       lead_field: run.lead,
     })

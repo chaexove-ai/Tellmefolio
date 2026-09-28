@@ -425,6 +425,11 @@ FAQ           밝은 면   아코디언
 - 라이트 고정·다크 감춤, 위저드 왼쪽 단계 레일, 로그인 전체 화면 분할
 - 랜딩: 반전 구역, 결과물 무한 가로 띠, 어두운 전체 폭 CTA, 푸터 확장
 
+**2026-09-28** — **템플릿 고정 문구 바꾸기**: "함께 일해요", 메뉴, "사용한 도구 · 기술", "그 밖의 작업", 이전/이후 표시, 연락 한 줄, 케이스 스터디 칸 이름(맥락 및 배경 등)을 포트폴리오마다 바꿈. 마이그레이션 `20260928160000_portfolio_copy.sql`(portfolios.copy jsonb `{ko:{키:글}, en:{키:글}}`).
+  - 엔진(`htmlTemplate.ts`): `data-tf-text="키"`(+`data-tf-label` 편집기 이름) — copy[lang][키] 가 있으면 그 글자(textContent), 없으면 템플릿 글자/`data-tf-en`. 사용자가 쓴 줄은 data-tf-if 로 사라지지 않게 조건을 풂. `data-tf-accent-last="클래스"` 는 마지막 낱말을 강조색 span 으로(미니멀 세리프 "함께 <분홍>일해요.</분홍>" 를 바꾼 문구에서도 유지). `listEditableTexts(html)` 가 템플릿에서 바꿀 수 있는 자리를 뽑아 줌 — 템플릿을 추가해도 편집기 코드는 그대로.
+  - 키는 템플릿끼리 맞춤(navWork·navAbout·navContact·heroCta·workEyebrow·workTitle·aboutEyebrow·aboutTitle·toolsTitle·statProjects·statUpdated·otherTitle·compareBefore·compareAfter·contactTitle·contactLine) — 템플릿을 바꿔도 고친 문구가 따라감. 칸 이름은 fieldContext 등(`FIELD_LABELS.copyKey`, buildTemplateData 에서 적용).
+  - 편집기: 템플릿·표지 패널 "문구 → 문구 바꾸기" 창(`components/CopyEditor.tsx`) — 한국어/영어 두 칸, 비우면 기본 문구, 바꾸는 대로 미리보기, 저장/취소. 영어 칸은 AI 번역을 거치지 않고 그대로 나감. DB 컬럼이 없으면 버튼 숨김. 꼬리말 "Tellmefolio로 만들었습니다"는 바꿀 수 없음. 직무 전환 복사 시 copy 도 따라감.
+  - 덤: 데브코어 로고 칸이 누구든 "D" 였던 것 → 포트폴리오 제목 첫 글자(`initial`).
 **2026-09-28** — **프로젝트 보여주기 방식 4종(모바일 화면·비주얼·전후 비교·성과 지표)**: 테마(템플릿=색·글꼴)와 별개로 프로젝트마다 배치를 고름. 마이그레이션 `20260928140000_project_display.sql`(portfolio_projects.display, 기본 auto).
   - 규칙은 `src/lib/templateRules.ts`(순수 함수, Node 검사기도 씀). 자동: 이미지 설명에 이전/이후(before/after·기존/개선안) → 전후 비교, 세로 스크린숏(세로≥가로×1.6)이 2장 이상·절반 이상 → 모바일, 성과 칸에 단위 붙은 숫자 줄이 2개 이상 → 성과 지표, 이미지 3장+·글 400자 미만 → 비주얼, 그 외 케이스/짧은 작업. 직접 골랐는데 재료가 없으면(이미지 0장 등) 기본 배치로.
   - 성과 지표는 사용자가 쓴 줄에서 "단위 붙은 숫자"만 찾아 크게, 그 줄 전체를 아래에 같이 보여 줌(숫자를 만들거나 고치지 않음). 모든 줄이 카드로 올라가면 "핵심 성과" 칸은 중복이라 뺌.

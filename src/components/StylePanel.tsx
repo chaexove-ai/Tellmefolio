@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Type } from "lucide-react";
 import { htmlTemplates } from "../lib/htmlTemplates";
 import { useAuth } from "../auth/AuthProvider";
 import { FONT_STACKS, DEFAULT_FONT } from "../lib/portfolioTheme";
@@ -78,6 +78,8 @@ interface Props {
   onCoverSaved: (url: string) => void;
   /** 편집기의 저장 상태 표시에 묶어 저장합니다 */
   track: (work: () => Promise<void>) => Promise<boolean>;
+  /** [2026-09-28] "문구 바꾸기" 창을 엽니다. 없으면(DB 에 copy 컬럼 전) 버튼을 숨깁니다. */
+  onEditCopy?: () => void;
 }
 
 export default function StylePanel({
@@ -88,6 +90,7 @@ export default function StylePanel({
   onCoverPreviewChange,
   onCoverSaved,
   track,
+  onEditCopy,
 }: Props) {
   const { session } = useAuth();
   // [2026-09-22] 기본을 접힘으로 바꿨습니다.
@@ -246,6 +249,19 @@ export default function StylePanel({
                 ))}
               </div>
             </Group>
+
+            {onEditCopy && (
+              <Group label="문구">
+                <button
+                  type="button"
+                  onClick={onEditCopy}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-800 px-2.5 py-1 text-xs text-neutral-300 transition-colors hover:border-neutral-700"
+                  title="“함께 일해요” 같은 템플릿 문구와 칸 이름을 바꿔요"
+                >
+                  <Type size={12} /> 문구 바꾸기
+                </button>
+              </Group>
+            )}
 
             <Group label="표지">
               {coverPreview ? (

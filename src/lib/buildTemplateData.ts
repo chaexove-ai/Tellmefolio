@@ -24,12 +24,13 @@ import {
 
 import type { TemplateData } from "./htmlTemplate";
 
-const FIELD_LABELS: Array<{ key: keyof PortfolioProjectRow; ko: string; en: string }> = [
-  { key: "context", ko: "맥락 및 배경", en: "BACKGROUND" },
-  { key: "problem", ko: "문제 정의", en: "PROBLEM" },
-  { key: "execution", ko: "실행 내용", en: "EXECUTION" },
-  { key: "outcome", ko: "핵심 성과", en: "OUTCOME" },
-  { key: "reflection", ko: "배운 점", en: "REFLECTION" },
+/** copyKey — 사용자가 "문구 바꾸기"에서 칸 이름을 바꿀 때 쓰는 키(portfolios.copy). */
+export const FIELD_LABELS: Array<{ key: keyof PortfolioProjectRow; copyKey: string; ko: string; en: string }> = [
+  { key: "context", copyKey: "fieldContext", ko: "맥락 및 배경", en: "BACKGROUND" },
+  { key: "problem", copyKey: "fieldProblem", ko: "문제 정의", en: "PROBLEM" },
+  { key: "execution", copyKey: "fieldExecution", ko: "실행 내용", en: "EXECUTION" },
+  { key: "outcome", copyKey: "fieldOutcome", ko: "핵심 성과", en: "OUTCOME" },
+  { key: "reflection", copyKey: "fieldReflection", ko: "배운 점", en: "REFLECTION" },
 ];
 
 export function buildTemplateData(input: {
@@ -60,6 +61,11 @@ export function buildTemplateData(input: {
   // [2026-09-25] 직무 전환으로 만든 포트폴리오는 공고가 가장 먼저 보고
   // 싶어 하는 필드 하나를 맨 앞으로 올립니다. 순서만 바뀌고 내용은 같습니다.
   // 템플릿은 fields 를 배열로 받으므로 템플릿 파일은 손대지 않아도 됩니다.
+  // [2026-09-28] 사용자가 고친 고정 문구(portfolios.copy). 템플릿 문구는 엔진이
+  // data-tf-text 로 바꾸고, 칸 이름은 여기서 바꿉니다.
+  const copy = portfolio.copy ?? {};
+  const copyTable: Record<string, string> = (lang === "en" ? copy.en : copy.ko) ?? {};
+
   const fieldOrder = orderedFields(portfolio.lead_field).map(
     (key) => FIELD_LABELS.find((f) => f.key === key)!
   );
@@ -77,7 +83,7 @@ export function buildTemplateData(input: {
           ? []
           : fieldOrder.map((f) => ({
               key: f.key,
-              label: lang === "en" ? f.en : f.ko,
+              label: copyTable[f.copyKey]?.trim() || (lang === "en" ? f.en : f.ko),
               value: String(p[f.key] ?? "").trim(),
             })).filter((f) => f.value.length > 0);
 
@@ -211,6 +217,9 @@ export function buildTemplateData(input: {
     // 내용이 아닌 글자는 번역 경로가 닿지 않기 때문입니다.
     lang,
     title: portfolio.title.trim(),
+    // 로고 자리 같은 곳에 쓰는 제목 첫 글자
+    initial: Array.from(portfolio.title.trim())[0] ?? "",
+    copy: { ko: { ...(copy.ko ?? {}) }, en: { ...(copy.en ?? {}) } },
     summary: (portfolio.summary ?? "").trim(),
     job: portfolio.job?.trim() || "",
     year: portfolio.year?.trim() || String(new Date(portfolio.created_at).getFullYear()),
@@ -259,6 +268,7 @@ export function buildThumbData(p: {
   return {
     lang: p.lang ?? "ko",
     title: p.title.trim(),
+    initial: Array.from(p.title.trim())[0] ?? "",
     summary: p.summary.trim(),
     job: p.job.trim(),
     year: p.year.trim(),

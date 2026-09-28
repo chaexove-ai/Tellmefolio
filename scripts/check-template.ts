@@ -53,6 +53,8 @@ const SAMPLE = buildTemplateData({
     job: "UX/UI 디자이너", year: "2026", visibility: "public", listed: false, template_id: "x",
     color_theme: "dark", font: "", layout: "1col", density: "normal", cover_image_path: null, gaps: [],
     created_at: "2026-09-01", updated_at: "2026-09-01", job_color: "#000", lead_field: null,
+    // 사용자가 고친 고정 문구 — 연락 제목과 칸 이름 하나
+    copy: { ko: { contactTitle: "같이 만들어요 우리", fieldOutcome: "이룬 것" }, en: {} },
   } as never,
   projects: [
     row({ id: "a", name: "도틀왓제주", role: "브랜드 총괄", context: "제주 풀빌라 브랜드 전 채널 총괄",
@@ -216,7 +218,15 @@ function check(id: string): Result {
     [img("pack2"), "비주얼 이미지"],
     ["재생지 패키지 시리즈", "비주얼 한 줄 설명"],
     ["Lumoji", "짧은 작업 카드"],
+    ["이룬 것", "사용자가 바꾼 칸 이름"],
   ];
+  // 사용자가 바꾼 고정 문구가 들어가는지 — 템플릿에 contactTitle 자리가 있을 때만
+  if (/data-tf-text="contactTitle"/.test(html) && !filled.includes("같이 만들어요")) {
+    errors.push("사용자가 바꾼 문구(contactTitle)가 결과물에 없습니다");
+  }
+  if (/<[a-z0-9]+[^>]*data-tf-text=/i.test(html) && !/data-tf-label=/.test(html)) {
+    warns.push("data-tf-text 에 data-tf-label 이 없습니다 — 편집기에 키 이름이 그대로 보입니다");
+  }
   for (const [needle, label] of mustAppear) {
     if (!filled.includes(needle)) errors.push(`채운 뒤 ${label}이(가) 결과물에 없습니다`);
   }

@@ -23,6 +23,17 @@
  *   data-tf-en="영어 문구"    영어로 내보낼 때만 그 글자로 바꿉니다.
  *                           (2026-09-23 추가 — 아래 설명)
  *
+ *   data-tf-text="키"        사용자가 바꿀 수 있는 고정 문구입니다(2026-09-28).
+ *   data-tf-label="이름"     편집기 "문구 바꾸기"에 보일 이름.
+ *                           포트폴리오의 copy.{ko|en}.키 에 값이 있으면 그 글자로,
+ *                           없으면 템플릿에 적힌 글자(영어면 data-tf-en)로 둡니다.
+ *                           키 이름은 템플릿끼리 맞춥니다(contactTitle 등) —
+ *                           템플릿을 바꿔도 사용자가 고친 문구가 따라갑니다.
+ *
+ *   data-tf-accent-last="클래스"  마지막 낱말을 그 클래스의 <span> 으로 감쌉니다.
+ *                           "함께 <강조>일해요.</강조>" 같은 두 색 제목을, 사용자가
+ *                           문구를 바꿔도 유지하려고 둡니다.
+ *
  * [왜 다섯 번째가 필요했나 — 2026-09-23]
  * 영어로 번역해도 머리말과 꼬리말이 한국어로 남았습니다. "프로젝트 ·
  * 소개 · 연락처", "함께 일해요.", "사용한 도구 · 기술" 같은 글자는
@@ -58,6 +69,22 @@ const REPEAT = "data-tf-repeat";
 const BIND = "data-tf";
 const IF = "data-tf-if";
 const EN = "data-tf-en";
+const TEXT = "data-tf-text";
+const TEXT_LABEL = "data-tf-label";
+const ACCENT = "data-tf-accent-last";
+
+/** 사용자가 고친 고정 문구. buildTemplateData 가 copy 로 넘깁니다. */
+function copyFor(data: TemplateData, lang: string): Record<string, string> {
+  const copy = data.copy as unknown;
+  if (!copy || typeof copy !== "object") return {};
+  const table = (copy as Record<string, unknown>)[lang];
+  if (!table || typeof table !== "object") return {};
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(table as Record<string, unknown>)) {
+    if (typeof v === "string" && v.trim()) out[k] = v.trim();
+  }
+  return out;
+}
 
 /** 언어를 담는 예약 키. 템플릿이 쓰는 이름이 아니라 엔진이 읽는 값입니다. */
 const LANG_KEY = "lang";
@@ -207,7 +234,21 @@ export function fillTemplate(templateHtml: string, data: TemplateData): string {
   // 있는 고정 문구(예: 프로젝트 카드의 "자세히 보기")도 복제되기 전에
   // 한 번만 바꾸면 되기 때문입니다. 복제 뒤에 하면 같은 일을 항목 수만큼
   // 반복합니다.
-  if (data[LANG_KEY] === "en") {
+  const lang = data[LANG_KEY] === "en" ? "en" : "ko";
+
+  // 사용자가 고친 고정 문구를 먼저 넣습니다. 넣은 자리는 영어 교체(data-tf-en)
+  // 대상에서 빼고, 조건(data-tf-if)도 풉니다 — 사용자가 직접 쓴 문장이
+  // "직무가 비었다"는 이유로 사라지면 안 됩니다. 글자는 textContent 로만 넣습니다.
+  const copy = copyFor(data, lang);
+  for (const el of Array.from(doc.querySelectorAll(`[${TEXT}]`))) {
+    const value = copy[el.getAttribute(TEXT) ?? ""];
+    if (!value) continue;
+    el.textContent = value;
+    el.removeAttribute(EN);
+    el.removeAttribute(IF);
+  }
+
+  if (lang === "en") {
     for (const el of Array.from(doc.querySelectorAll(`[${EN}]`))) {
       const en = el.getAttribute(EN);
       if (en !== null) el.textContent = en;
@@ -215,6 +256,19 @@ export function fillTemplate(templateHtml: string, data: TemplateData): string {
   }
 
   fillScope(doc.body, data);
+
+  // 마지막 낱말 강조 — 글자가 모두 정해진 뒤에 합니다.
+  for (const el of Array.from(doc.querySelectorAll(`[${ACCENT}]`))) {
+    const cls = el.getAttribute(ACCENT) ?? "";
+    const text = (el.textContent ?? "").trim();
+    const cut = text.lastIndexOf(" ");
+    if (!cls || cut <= 0) continue;
+    const span = doc.createElement("span");
+    span.className = cls;
+    span.textContent = text.slice(cut + 1);
+    el.textContent = `${text.slice(0, cut)} `;
+    el.appendChild(span);
+  }
 
   // 템플릿 파일의 주석은 템플릿 만드는 사람을 위한 것입니다. 사용자
   // 포트폴리오의 소스 보기에 우리 구현 설명이 실려 나갈 이유가 없습니다.
@@ -224,13 +278,46 @@ export function fillTemplate(templateHtml: string, data: TemplateData): string {
   for (const c of comments) c.remove();
   // 남은 표시는 지웁니다 — 데이터에 없는 키가 템플릿에 있을 수 있고,
   // 그 흔적이 결과물 HTML 에 남을 이유가 없습니다.
-  for (const el of Array.from(doc.querySelectorAll(`[${BIND}],[${REPEAT}],[${IF}],[${EN}]`))) {
+  for (const el of Array.from(
+    doc.querySelectorAll(`[${BIND}],[${REPEAT}],[${IF}],[${EN}],[${TEXT}],[${TEXT_LABEL}],[${ACCENT}]`)
+  )) {
     el.removeAttribute(BIND);
     el.removeAttribute(REPEAT);
     el.removeAttribute(IF);
     el.removeAttribute(EN);
+    el.removeAttribute(TEXT);
+    el.removeAttribute(TEXT_LABEL);
+    el.removeAttribute(ACCENT);
   }
   return `<!DOCTYPE html>\n${doc.documentElement.outerHTML}`;
+}
+
+export interface EditableText {
+  key: string;
+  label: string;
+  ko: string;
+  en: string;
+}
+
+/**
+ * 템플릿에서 사용자가 바꿀 수 있는 고정 문구 목록(편집기 "문구 바꾸기"용).
+ * 같은 키가 여러 곳에 있으면(머리말·첫 화면의 "연락하기") 한 번만 돌려줍니다.
+ */
+export function listEditableTexts(templateHtml: string): EditableText[] {
+  const doc = new DOMParser().parseFromString(templateHtml, "text/html");
+  const seen = new Map<string, EditableText>();
+  for (const el of Array.from(doc.querySelectorAll(`[${TEXT}]`))) {
+    const key = el.getAttribute(TEXT) ?? "";
+    if (!key || seen.has(key)) continue;
+    const ko = (el.textContent ?? "").replace(/\s+/g, " ").trim();
+    seen.set(key, {
+      key,
+      label: el.getAttribute(TEXT_LABEL) ?? key,
+      ko,
+      en: (el.getAttribute(EN) ?? ko).trim(),
+    });
+  }
+  return [...seen.values()];
 }
 
 /** 템플릿 파일을 받아옵니다. public/templates/ 아래 우리 파일만 씁니다. */

@@ -527,9 +527,9 @@ figcaption { margin-top: .7rem; font-size: .8rem; color: var(--tfw-muted); }
             <div class="max-w-7xl mx-auto flex justify-between items-end">
                 <a href="#" id="nav-logo" class="text-2xl font-display italic tracking-tighter"><span data-tf="title">포트폴리오</span></a>
                 <div class="hidden md:flex items-center gap-16 text-[10px] font-semibold uppercase tracking-[0.3em] text-white/40">
-                    <a href="#work" id="nav-work-link" class="hover:text-white transition-colors" data-tf-en="Work">프로젝트</a>
-                    <a href="#about" id="nav-about-link" class="hover:text-white transition-colors" data-tf-en="About">소개</a>
-                    <a href="#contact" id="nav-contact-link" class="hover:text-white transition-colors" data-tf-en="Contact">연락처</a>
+                    <a href="#work" id="nav-work-link" class="hover:text-white transition-colors" data-tf-text="navWork" data-tf-label="메뉴 — 프로젝트" data-tf-en="Work">프로젝트</a>
+                    <a href="#about" id="nav-about-link" class="hover:text-white transition-colors" data-tf-text="navAbout" data-tf-label="메뉴 — 소개" data-tf-en="About">소개</a>
+                    <a href="#contact" id="nav-contact-link" class="hover:text-white transition-colors" data-tf-text="navContact" data-tf-label="연락 버튼" data-tf-en="Contact">연락처</a>
                 </div>
             </div>
         </nav>
@@ -562,8 +562,8 @@ figcaption { margin-top: .7rem; font-size: .8rem; color: var(--tfw-muted); }
         <section id="work" class="tfw" data-tf-if="projects">
           <div class="tfw-wrap">
             <header class="tfw-head">
-              <span class="tfw-eyebrow" data-tf-en="Portfolio Selection">Portfolio Selection</span>
-              <h2 class="tfw-h2" data-tf-en="Selected Works">Selected Works</h2>
+              <span class="tfw-eyebrow" data-tf-text="workEyebrow" data-tf-label="프로젝트 영역 윗줄" data-tf-en="Portfolio Selection">Portfolio Selection</span>
+              <h2 class="tfw-h2" data-tf-text="workTitle" data-tf-label="프로젝트 영역 제목" data-tf-en="Selected Works">Selected Works</h2>
             </header>
 
             <div data-tf-if="caseStudies" class="tfw-cases">
@@ -596,12 +596,12 @@ figcaption { margin-top: .7rem; font-size: .8rem; color: var(--tfw-muted); }
                 <!-- 전후 비교 -->
                 <div data-tf-if="isCompare" class="tfw-compare">
                   <figure data-tf-if="before">
-                    <span class="tfw-compare-tag" data-tf-en="Before">이전</span>
+                    <span class="tfw-compare-tag" data-tf-text="compareBefore" data-tf-label="전후 비교 — 이전 표시" data-tf-en="Before">이전</span>
                     <div class="tfw-frame"><img data-tf="before.url" src="" alt=""></div>
                     <figcaption data-tf-if="before.caption" data-tf="before.caption"></figcaption>
                   </figure>
                   <figure data-tf-if="after">
-                    <span class="tfw-compare-tag tfw-compare-after" data-tf-en="After">이후</span>
+                    <span class="tfw-compare-tag tfw-compare-after" data-tf-text="compareAfter" data-tf-label="전후 비교 — 이후 표시" data-tf-en="After">이후</span>
                     <div class="tfw-frame"><img data-tf="after.url" src="" alt=""></div>
                     <figcaption data-tf-if="after.caption" data-tf="after.caption"></figcaption>
                   </figure>
@@ -644,7 +644,7 @@ figcaption { margin-top: .7rem; font-size: .8rem; color: var(--tfw-muted); }
             </div>
 
             <div data-tf-if="otherWorks" class="tfw-others">
-              <h3 data-tf-if="caseStudies" class="tfw-subhead" data-tf-en="Other work">그 밖의 작업</h3>
+              <h3 data-tf-if="caseStudies" class="tfw-subhead" data-tf-text="otherTitle" data-tf-label="짧은 작업 제목" data-tf-en="Other work">그 밖의 작업</h3>
               <div class="tfw-grid">
                 <article data-tf-repeat="otherWorks" class="tfw-card">
                   <div data-tf-if="hero" class="tfw-frame tfw-thumb"><img data-tf="hero" src="" alt=""></div>
@@ -670,7 +670,7 @@ figcaption { margin-top: .7rem; font-size: .8rem; color: var(--tfw-muted); }
                         </div>
                     </div>
                     <div class="lg:col-span-7 flex flex-col justify-center">
-                        <span class="text-[10px] font-bold uppercase tracking-[0.4em] text-[#00FFFF] mb-10 block">Background</span>
+                        <span class="text-[10px] font-bold uppercase tracking-[0.4em] text-[#00FFFF] mb-10 block" data-tf-text="aboutEyebrow" data-tf-label="소개 윗줄">Background</span>
                         <h2 data-tf="title" class="text-4xl md:text-5xl font-display font-medium mb-10 leading-tight"></h2>
                         <p data-tf="summary" class="text-white/40 text-xl font-light leading-relaxed max-w-2xl"></p>
 
@@ -679,7 +679,7 @@ figcaption { margin-top: .7rem; font-size: .8rem; color: var(--tfw-muted); }
                              것이었고, 전문 분야는 누가 쓰든 같은 항목이 나왔습니다.
                              프로젝트에 적은 스택에서 모아 씁니다. -->
                         <div data-tf-if="stack" class="mt-16 pt-10 border-t border-white/5">
-                            <h5 class="text-[10px] font-bold uppercase tracking-[0.4em] text-white/20 mb-5" data-tf-en="Tools &amp; Technologies">사용한 도구 · 기술</h5>
+                            <h5 class="text-[10px] font-bold uppercase tracking-[0.4em] text-white/20 mb-5" data-tf-text="toolsTitle" data-tf-label="도구·기술 제목" data-tf-en="Tools &amp; Technologies">사용한 도구 · 기술</h5>
                             <ul class="flex flex-wrap gap-x-6 gap-y-2 text-sm text-white/60">
                                 <li data-tf-repeat="stack" data-tf="."></li>
                             </ul>
@@ -691,9 +691,7 @@ figcaption { margin-top: .7rem; font-size: .8rem; color: var(--tfw-muted); }
 
         <section id="contact" class="py-40 px-8 md:px-20 border-t border-white/5">
             <div class="max-w-7xl mx-auto text-center">
-                <h2 class="text-5xl md:text-8xl font-display font-medium tracking-tight mb-16">
-                    <span data-tf-en="Let's work">함께</span> <span class="text-[#FF006E]" data-tf-en="together.">일해요.</span>
-                </h2>
+                <h2 class="text-5xl md:text-8xl font-display font-medium tracking-tight mb-16" data-tf-text="contactTitle" data-tf-label="연락 영역 제목" data-tf-en="Let's work together." data-tf-accent-last="text-[#FF006E]">함께 일해요.</h2>
                 <div class="flex flex-col items-center gap-10">
                     <a data-tf-if="email" data-tf="emailHref" href="#" class="text-2xl md:text-4xl font-display italic hover:text-[#00FFFF] transition-colors pb-4 border-b border-white/10">
                         <span data-tf="email"></span>

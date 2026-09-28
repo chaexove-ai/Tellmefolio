@@ -6,6 +6,7 @@ import {
   getPortfolioWithProjects,
   updatePortfolioProject,
   updatePortfolioTitle,
+  updatePortfolioCopy,
   createPortfolioProject,
   deletePortfolioProject,
   getCoverImageUrl,
@@ -28,6 +29,7 @@ import { formatRelativeTime } from "../../lib/formatRelativeTime";
 import EditorPreview from "../../components/EditorPreview";
 import StylePanel from "../../components/StylePanel";
 import DeletePortfolioDialog from "../../components/DeletePortfolioDialog";
+import CopyEditor from "../../components/CopyEditor";
 import TemplateFrame from "../../components/TemplateFrame";
 
 import { shrinkImage } from "../../lib/images";
@@ -129,6 +131,7 @@ export default function PortfolioEditor() {
   const { session } = useAuth();
   const navigate = useNavigate();
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [copyOpen, setCopyOpen] = useState(false);
   const deletedRef = useRef(false);
   const { id } = useParams<{ id: string }>();
   // [2026-09-25] ?project=… 이면 그 프로젝트 탭으로 엽니다. "대화로 채우기"를
@@ -946,6 +949,8 @@ export default function PortfolioEditor() {
         setCoverUrl(url);
         setSavedCoverUrl(url);
       }}
+      // [2026-09-28] 문구 바꾸기 — DB 에 copy 컬럼이 생긴 뒤(값이 undefined 가 아님)에만
+      onEditCopy={portfolio.copy !== undefined ? () => setCopyOpen(true) : undefined}
     />
   );
 
@@ -1770,6 +1775,21 @@ export default function PortfolioEditor() {
             <Trash2 size={14} strokeWidth={1.75} /> 삭제하기
           </button>
         </section>
+
+        {copyOpen && (
+          <CopyEditor
+            templateId={portfolio.template_id}
+            initial={portfolio.copy ?? {}}
+            onPreview={(copy) => setPortfolio((prev) => (prev ? { ...prev, copy } : prev))}
+            onSave={(copy) =>
+              track(async () => {
+                const saved = await updatePortfolioCopy(portfolio.id, copy);
+                setPortfolio((prev) => (prev ? { ...prev, copy: saved } : prev));
+              })
+            }
+            onClose={() => setCopyOpen(false)}
+          />
+        )}
 
         {deleteOpen && (
           <DeletePortfolioDialog
