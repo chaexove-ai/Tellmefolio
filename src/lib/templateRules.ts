@@ -94,12 +94,15 @@ export interface Metric {
 const METRIC_RE =
   /([+\-−]?\d[\d,]*(?:\.\d+)?)\s*(%p|%|배|x(?![a-z])|명|건|개|곳|원|만\s?원|억|만|시간|분|초|일|주|개월|점|위|회|pt|ms)/i;
 
-/** 사용자가 쓴 글에서 "단위가 붙은 숫자가 있는 줄"을 찾습니다. 최대 4개. */
+/** 한 줄이 이보다 길면 성과 "지표"가 아니라 서술입니다(예: "인터뷰 12건을 진행해 …했습니다"). */
+const METRIC_LINE_MAX = 60;
+
+/** 사용자가 쓴 글에서 "단위가 붙은 숫자가 있는 짧은 줄"을 찾습니다. 최대 4개. */
 export function extractMetrics(text: string): Metric[] {
   const out: Metric[] = [];
   for (const raw of text.split(/\n+/)) {
     const line = raw.replace(/^[\s•·\-–*]+/, "").trim();
-    if (!line) continue;
+    if (!line || line.length > METRIC_LINE_MAX) continue;
     const m = METRIC_RE.exec(line);
     if (!m) continue;
     out.push({ value: `${m[1]}${m[2]}`.replace(/\s+/g, ""), label: line });

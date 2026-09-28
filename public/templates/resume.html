@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>포트폴리오 — 이력서형</title>
+<!-- [2026-09-28] 이력서형 템플릿.
+     한 장짜리 이력서처럼 위에서 아래로 읽히게: 이름·직무·연락처 → 소개 → 기술 →
+     프로젝트(역할·성과 위주로 촘촘하게) → 그 밖의 작업.
+     · PDF 제출이 주 용도라 인쇄 규칙을 먼저 설계했습니다. 글자는 전부 실제
+       글자라 채용 시스템(ATS)이 읽습니다. 장식용 이미지·아이콘 글꼴을 쓰지 않습니다.
+     · 이미지는 프로젝트마다 작은 줄로만(최대 4장) — 이력서의 주인공은 글입니다.
+     · 스크립트 없음. 색·서체는 분위기 층(--tf-*)으로 바뀝니다.
+     이 파일을 브라우저로 그냥 열면 아래 예시 글자로 모양을 볼 수 있습니다. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+:root {
+  --r-bg: #ffffff;
+  --r-paper: #ffffff;
+  --r-ink: #16161a;
+  --r-body: #3a3a42;
+  --r-muted: #6b6b76;
+  --r-line: #e4e4e8;
+  --r-accent: #2f5bd3;
+  --r-accent-ink: #ffffff;
+  --r-font: 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  --r-title-font: var(--r-font);
+  --r-radius: 4px;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: #eef0f3;
+  color: var(--r-body);
+  font-family: var(--r-font);
+  font-size: 15px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, h4, p, ul, dl, dd, figure { margin: 0; padding: 0; }
+ul { list-style: none; }
+a { color: inherit; text-decoration: none; }
+h1, h2, h3, h4 { word-break: keep-all; overflow-wrap: anywhere; color: var(--r-ink); }
+.r-pre { white-space: pre-line; word-break: keep-all; overflow-wrap: anywhere; }
+
+/* 종이 한 장 */
+.r-page {
+  max-width: 820px;
+  margin: 48px auto;
+  background: var(--r-paper);
+  padding: 64px 72px 56px;
+  border-radius: var(--r-radius);
+  box-shadow: 0 1px 2px rgba(0,0,0,.05), 0 12px 40px -12px rgba(0,0,0,.12);
+}
+
+/* 머리 */
+.r-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 32px; padding-bottom: 22px; border-bottom: 2px solid var(--r-ink); }
+.r-name { font-family: var(--r-title-font); font-size: 30px; line-height: 1.25; font-weight: 700; letter-spacing: -0.02em; }
+.r-job { margin-top: 6px; font-size: 15px; font-weight: 500; color: var(--r-accent); }
+.r-contact { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-size: 13px; color: var(--r-muted); text-align: right; flex-shrink: 0; }
+.r-contact a:hover { color: var(--r-accent); }
+
+/* 칸 */
+.r-section { display: grid; grid-template-columns: 132px minmax(0, 1fr); column-gap: 28px; padding: 22px 0; border-bottom: 1px solid var(--r-line); }
+.r-section:last-of-type { border-bottom: 0; }
+.r-label { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--r-ink); padding-top: 3px; }
+.r-summary { font-size: 15px; color: var(--r-body); }
+.r-skills { display: flex; flex-wrap: wrap; gap: 4px 0; font-size: 14px; }
+.r-skills li { color: var(--r-body); }
+.r-skills li:not(:last-child)::after { content: "·"; margin: 0 8px; color: var(--r-muted); }
+
+/* 프로젝트 */
+.r-projects { display: flex; flex-direction: column; gap: 26px; }
+.r-project-head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; }
+.r-project-title { font-family: var(--r-title-font); font-size: 17px; font-weight: 700; line-height: 1.4; }
+.r-no { font-size: 12px; font-weight: 500; color: var(--r-muted); font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.r-role { margin-top: 2px; font-size: 14px; font-weight: 500; color: var(--r-accent); }
+.r-stack { margin-top: 4px; font-size: 13px; color: var(--r-muted); }
+.r-stack li { display: inline; }
+.r-stack li:not(:last-child)::after { content: ", "; }
+.r-intro { margin-top: 8px; font-size: 14px; }
+
+/* 성과 지표 — 사용자가 성과 칸에 쓴 줄에서 찾은 숫자. 숫자 옆에 그 줄 전체를 둡니다. */
+.r-metrics { margin-top: 10px; display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
+.r-metric { padding: 8px 10px; border-left: 3px solid var(--r-accent); background: color-mix(in srgb, var(--r-accent) 6%, transparent); }
+.r-metric strong { display: block; font-size: 18px; line-height: 1.2; color: var(--r-ink); }
+.r-metric span { display: block; margin-top: 2px; font-size: 12px; line-height: 1.5; color: var(--r-muted); word-break: keep-all; }
+
+/* 칸별 글 — 이력서답게 촘촘하게: 작은 머리말 + 본문 */
+.r-fields { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.r-field { display: grid; grid-template-columns: 84px minmax(0, 1fr); column-gap: 12px; font-size: 14px; }
+.r-field dt { font-size: 12px; font-weight: 500; color: var(--r-muted); padding-top: 2px; word-break: keep-all; }
+.r-field dd { color: var(--r-body); }
+
+/* 이미지는 작은 줄로 — 자르지 않고 높이만 맞춥니다 */
+.r-thumbs { margin-top: 10px; display: flex; gap: 6px; overflow: hidden; }
+.r-thumbs figure:nth-child(n+5) { display: none; }
+.r-thumbs img { display: block; height: 72px; width: auto; max-width: 160px; object-fit: contain; background: var(--r-line); border-radius: min(var(--r-radius), 6px); }
+
+/* 그 밖의 작업 */
+.r-others { display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+.r-others li { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px; }
+.r-other-title { font-weight: 700; color: var(--r-ink); }
+.r-other-lead { color: var(--r-body); }
+.r-other-stack { font-size: 12px; color: var(--r-muted); text-align: right; }
+.r-other-stack li { display: inline; }
+.r-other-stack li:not(:last-child)::after { content: ", "; }
+
+.r-foot { max-width: 820px; margin: -32px auto 48px; padding: 0 8px; font-size: 11px; color: var(--r-muted); text-align: right; }
+
+@media screen and (max-width: 720px) {
+  .r-page { margin: 0; padding: 36px 22px; border-radius: 0; box-shadow: none; }
+  .r-head { flex-direction: column; align-items: flex-start; gap: 14px; }
+  .r-contact { align-items: flex-start; text-align: left; }
+  .r-section { grid-template-columns: minmax(0, 1fr); row-gap: 10px; }
+  .r-field { grid-template-columns: minmax(0, 1fr); }
+  .r-others li { grid-template-columns: minmax(0, 1fr); }
+  .r-other-stack { text-align: left; }
+  .r-foot { margin: 0; padding: 16px 22px; text-align: left; }
+}
+
+/* ── 인쇄(PDF) — 이 템플릿의 주 용도 ──
+   종이 여백은 브라우저 인쇄 설정이 맡고, 여기서는 그림자·바탕을 걷고
+   프로젝트가 페이지 중간에서 잘리지 않게만 합니다. */
+@media print {
+  @page { size: A4; margin: 14mm 14mm 16mm; }
+  html, body { background: #fff !important; }
+  body { font-size: 10pt; color: #222; }
+  .r-page { max-width: none; margin: 0; padding: 0; box-shadow: none; border-radius: 0; }
+  .r-head { padding-bottom: 10pt; }
+  .r-name { font-size: 20pt; }
+  .r-section { padding: 10pt 0; grid-template-columns: 26mm minmax(0, 1fr); column-gap: 6mm; }
+  .r-metric, .r-field, .r-others li, .r-thumbs { break-inside: avoid; }
+  .r-project-head, .r-role { break-after: avoid; }
+  .r-project-head { break-after: avoid; }
+  .r-projects { gap: 12pt; }
+  .r-thumbs img { height: 16mm; }
+  .r-metric { background: none; }
+  .r-foot { margin: 8pt 0 0; padding: 0; }
+  a { color: inherit !important; }
+}
+</style>
+<style data-tf-layer="theme">
+/* ── 분위기 층 (2026-09-28) — 편집기 "분위기"에서 바꾼 값이 있을 때만 켜집니다.
+   이 템플릿은 인쇄가 주 용도라 종이는 늘 밝게 둡니다: 어두운 바탕을 골라도
+   화면의 "책상"(종이 바깥)만 그 색이 되고, 종이 위 글자는 강조색·서체만 따릅니다. */
+@media screen {
+  html[data-tf-theme~="colors"] body { background: var(--tf-bg) !important; }
+  html[data-tf-theme~="colors"] { --r-accent: var(--tf-accent-on-light); }
+}
+@media screen {
+  html[data-tf-theme~="colors"] .r-foot { color: var(--tf-muted); }
+}
+html[data-tf-theme~="title-font"] { --r-title-font: var(--tf-title-font); }
+html[data-tf-theme~="body-font"] { --r-font: var(--tf-body-font); }
+html[data-tf-theme~="radius"] { --r-radius: var(--tf-radius); }
+</style>
+</head>
+<body>
+  <main class="r-page">
+    <header class="r-head">
+      <div>
+        <h1 data-tf="title" class="r-name">이름 또는 포트폴리오 제목</h1>
+        <p data-tf-if="job" data-tf="job" class="r-job">지원 직무</p>
+      </div>
+      <div class="r-contact">
+        <a data-tf-if="email" data-tf="emailHref" href="#"><span data-tf="email">email@example.com</span></a>
+        <a data-tf-if="github" data-tf="github" href="#" target="_blank" rel="noreferrer">GitHub</a>
+        <a data-tf-if="site" data-tf="site" href="#" target="_blank" rel="noreferrer" data-tf-en="Website">웹사이트</a>
+      </div>
+    </header>
+
+    <section data-tf-if="summary" class="r-section">
+      <h2 class="r-label" data-tf-text="aboutTitle" data-tf-label="소개 제목" data-tf-en="Summary">소개</h2>
+      <p data-tf="summary" class="r-summary r-pre">한두 문단의 자기소개가 여기 들어갑니다.</p>
+    </section>
+
+    <section data-tf-if="stack" class="r-section">
+      <h2 class="r-label" data-tf-text="toolsTitle" data-tf-label="기술 제목" data-tf-en="Skills">기술</h2>
+      <ul class="r-skills"><li data-tf-repeat="stack" data-tf=".">Figma</li></ul>
+    </section>
+
+    <section id="work" data-tf-if="caseStudies" class="r-section">
+      <h2 class="r-label" data-tf-text="workTitle" data-tf-label="프로젝트 제목" data-tf-en="Projects">프로젝트</h2>
+      <div class="r-projects">
+        <article data-tf-repeat="caseStudies" class="r-project">
+          <div class="r-project-head">
+            <h3 data-tf="title" class="r-project-title">프로젝트 이름</h3>
+            <span data-tf="no" class="r-no">01</span>
+          </div>
+          <p data-tf-if="role" data-tf="role" class="r-role">역할</p>
+          <ul data-tf-if="stack" class="r-stack"><li data-tf-repeat="stack" data-tf=".">Figma</li></ul>
+          <p data-tf-if="intro" data-tf="intro" class="r-intro r-pre"></p>
+
+          <div data-tf-if="metrics" class="r-metrics">
+            <div data-tf-repeat="metrics" class="r-metric">
+              <strong data-tf="value">18%p</strong>
+              <span data-tf="label">가입 완료율 18%p 상승</span>
+            </div>
+          </div>
+
+          <dl data-tf-if="fields" class="r-fields">
+            <div data-tf-repeat="fields" class="r-field">
+              <dt data-tf="label">맥락 및 배경</dt>
+              <dd data-tf="value" class="r-pre">본문</dd>
+            </div>
+          </dl>
+          <dl data-tf-if="blocks" class="r-fields">
+            <div data-tf-repeat="blocks" class="r-field">
+              <dt data-tf="label"></dt>
+              <dd data-tf-if="text" data-tf="text" class="r-pre"></dd>
+            </div>
+          </dl>
+
+          <!-- 이미지는 방식(모바일·전후 비교 등)과 상관없이 원본 목록 그대로 작게 -->
+          <div data-tf-if="images" class="r-thumbs">
+            <figure data-tf-repeat="images"><img data-tf="url" src="" alt=""></figure>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section data-tf-if="otherWorks" class="r-section">
+      <h2 class="r-label" data-tf-text="otherTitle" data-tf-label="짧은 작업 제목" data-tf-en="Other work">그 밖의 작업</h2>
+      <ul class="r-others">
+        <li data-tf-repeat="otherWorks">
+          <p><span data-tf="title" class="r-other-title">작업 이름</span><span data-tf-if="lead"> — </span><span data-tf-if="lead" data-tf="lead" class="r-other-lead">한 줄 설명</span></p>
+          <ul data-tf-if="stack" class="r-other-stack"><li data-tf-repeat="stack" data-tf=".">Illustrator</li></ul>
+        </li>
+      </ul>
+    </section>
+  </main>
+  <p class="r-foot"><span data-tf-en="Made with Tellmefolio">Tellmefolio로 만들었습니다</span></p>
+</body>
+</html>

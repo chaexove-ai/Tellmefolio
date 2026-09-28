@@ -33,13 +33,13 @@ export default function ThemeControls({
   const [error, setError] = useState<string | null>(null);
   const [manual, setManual] = useState(false);
 
-  const ask = async () => {
-    if (!prompt.trim() || busy) return;
+  const ask = async (text = prompt) => {
+    if (!text.trim() || busy) return;
     setBusy(true);
     setError(null);
     setNote(null);
     try {
-      const r = await suggestTheme({ prompt: prompt.trim(), current: value, job });
+      const r = await suggestTheme({ prompt: text.trim(), current: value, job });
       onChange(r.theme);
       setNote(r.note || null);
     } catch (e) {
@@ -75,6 +75,25 @@ export default function ThemeControls({
           {busy ? "고르는 중…" : "AI로 바꾸기"}
         </button>
       </form>
+      {/* 요청 예시 칩 — 누르면 그 문장으로 바로 AI 에 요청합니다(v0 방식).
+          아직 안 바꿨으면 크게 바꾸는 말, 바꾼 뒤에는 이어서 다듬는 말. */}
+      <div className="flex flex-wrap gap-1.5">
+        {(isEmptyTheme(value) ? START_CHIPS : REFINE_CHIPS).map((chip) => (
+          <button
+            key={chip}
+            type="button"
+            disabled={busy}
+            onClick={() => {
+              setPrompt(chip);
+              void ask(chip);
+            }}
+            className="rounded-full border border-dashed border-neutral-700 px-2.5 py-0.5 text-[11px] text-neutral-400 transition-colors hover:border-brand/50 hover:text-brand disabled:opacity-50"
+          >
+            {chip}
+          </button>
+        ))}
+      </div>
+
       {(note || error) && (
         <p className={`text-xs break-keep ${error ? "text-red-500" : "text-neutral-500"}`}>{error ?? note}</p>
       )}
@@ -198,3 +217,8 @@ export default function ThemeControls({
     </div>
   );
 }
+
+/** 처음 — 스타일을 크게 바꾸는 말 */
+const START_CHIPS = ["브루탈리즘으로", "신문처럼 흑백", "따뜻한 종이 느낌", "형광 포인트 하나만", "차분한 다크 모드", "파스텔로 부드럽게"];
+/** 바꾼 뒤 — 이어서 다듬는 말 */
+const REFINE_CHIPS = ["더 차분하게", "더 과감하게", "강조색만 바꿔 줘", "밝은 배경으로", "어두운 배경으로", "제목 서체를 더 개성 있게"];

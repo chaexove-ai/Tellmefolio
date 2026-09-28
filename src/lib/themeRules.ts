@@ -152,6 +152,8 @@ export interface ThemePalette {
   accent: string;
   accent2: string;
   accentInk: string;
+  /** 흰 종이 위에서 읽히는 강조색(대비 4.5 이상) — 이력서형처럼 종이가 늘 밝은 템플릿용 */
+  accentOnLight: string;
   dark: boolean;
 }
 
@@ -167,8 +169,13 @@ export function derivePalette(bgHex: string, accentHex: string): ThemePalette {
   for (let i = 0; i < 10 && contrast(toHex(accent), bgHex) < 3; i++) accent = mix(ink, accent, 0.15 + i * 0.05);
   const accentOut = toHex(accent);
 
+  // 흰 종이용: 검정 쪽으로 당겨 대비 4.5 이상
+  let onLight = toRgb(accentOut);
+  for (let i = 0; i < 12 && contrast(toHex(onLight), "#ffffff") < 4.5; i++) onLight = mix([16, 16, 20], onLight, 0.12 + i * 0.04);
+
   return {
     bg: bgHex,
+    accentOnLight: toHex(onLight),
     surface: toHex(mix(ink, bg, 0.05)),
     surface2: toHex(mix(ink, bg, 0.09)),
     ink: inkHex,
@@ -207,7 +214,7 @@ export function themeToCss(themeIn: PortfolioTheme): { css: string; fontHref: st
       `--tf-bg:${p.bg}`, `--tf-surface:${p.surface}`, `--tf-surface-2:${p.surface2}`, `--tf-ink:${p.ink}`,
       `--tf-body:${p.body}`, `--tf-muted:${p.muted}`, `--tf-faint:${p.faint}`, `--tf-line:${p.line}`,
       `--tf-line-strong:${p.lineStrong}`, `--tf-accent:${p.accent}`, `--tf-accent-2:${p.accent2}`,
-      `--tf-accent-ink:${p.accentInk}`
+      `--tf-accent-ink:${p.accentInk}`, `--tf-accent-on-light:${p.accentOnLight}`
     );
     flags.push("colors");
   }

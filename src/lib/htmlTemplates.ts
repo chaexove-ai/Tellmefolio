@@ -43,6 +43,12 @@ export const htmlTemplates: HtmlTemplate[] = [
     desc: "굵은 타이포와 형광 포인트. 개발 직군에 맞습니다",
     dark: true,
   },
+  {
+    id: "resume",
+    name: "이력서형",
+    desc: "한 장짜리 이력서처럼 촘촘하게. PDF 제출·채용 시스템에 맞습니다",
+    dark: false,
+  },
 ];
 
 export function htmlTemplateName(id: string): string {

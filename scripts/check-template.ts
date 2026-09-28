@@ -96,7 +96,9 @@ function check(id: string): Result {
 
   // ── 1. 필수 바인딩 ──
   for (const key of REQUIRED) {
-    const re = new RegExp(`data-tf(?:-repeat|-if)?="${key}"`);
+    // [2026-09-28] 프로젝트는 caseStudies·otherWorks 로 나눠 받아도 됩니다(둘 다 projects 에서 나온 것).
+    const alt = key === "projects" ? "|caseStudies|otherWorks" : "";
+    const re = new RegExp(`data-tf(?:-repeat|-if)?="(?:${key}${alt})"`);
     if (!re.test(html)) errors.push(`data-tf="${key}" 가 없습니다 — 그 내용이 결과물에서 사라집니다`);
   }
   if (/data-tf-repeat="projects"/.test(html)) {
