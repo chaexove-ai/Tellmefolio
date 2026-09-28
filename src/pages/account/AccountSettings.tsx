@@ -101,7 +101,7 @@ export default function AccountSettings() {
       <Row
         icon={Trash2}
         title="개인 데이터 및 계정 삭제"
-        desc="내 데이터를 내려받거나 특정 포트폴리오 또는 계정 전체를 삭제할 수 있습니다."
+        desc="내 데이터를 파일로 내려받거나 계정 전체를 삭제할 수 있습니다."
         to="/settings/data"
       />
 
