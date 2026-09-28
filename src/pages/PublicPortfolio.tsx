@@ -114,7 +114,7 @@ export default function PublicPortfolio() {
     };
   }, [id, me]);
 
-  // 로그인한 남이 보고 있을 때만 "참고할게요"를 띄웁니다.
+  // 로그인한 남이 보고 있을 때만 "북마크"를 띄웁니다.
   useEffect(() => {
     if (!me || !portfolio || portfolio.user_id === me) return;
     getMyBookmarkIds()
@@ -226,13 +226,13 @@ export default function PublicPortfolio() {
           type="button"
           onClick={() => void toggleBookmark()}
           disabled={bookmarkBusy}
-          title="참고한 포트폴리오에 모아 둬요. 작성자에게는 누가 눌렀는지 없이 수만 보여요."
+          title="커뮤니티의 북마크 탭에 모아 둬요. 작성자에게는 누가 눌렀는지 없이 수만 보여요."
           className={`fixed bottom-5 right-5 z-20 inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-medium shadow-lg transition-colors ${
             bookmarked ? "bg-brand-solid text-white" : "bg-white text-[#2a211b] border border-[#d9cfc4] hover:border-[#a05829]"
           }`}
         >
           {bookmarked ? <BookmarkCheck size={16} strokeWidth={2} /> : <Bookmark size={16} strokeWidth={2} />}
-          {bookmarked ? "참고함" : "참고할게요"}
+          {bookmarked ? "북마크됨" : "북마크"}
         </button>
       )}
 

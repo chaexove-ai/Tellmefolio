@@ -64,7 +64,7 @@ export default function PortfolioList() {
   const [nickname, setNickname] = useState<string>("");
   /** 포트폴리오 id → 제출 기록 수 (카드의 "제출 기록 N") */
   const [submissionCounts, setSubmissionCounts] = useState<Record<string, number>>({});
-  // [09-28] 조회·참고 수 — 주인에게만 보입니다(서버 함수 my_portfolio_stats 가 내 것만 돌려줌)
+  // [09-28] 조회·북마크 수 — 주인에게만 보입니다(서버 함수 my_portfolio_stats 가 내 것만 돌려줌)
   const [stats, setStats] = useState<Record<string, PortfolioStats>>({});
 
   useEffect(() => {
@@ -351,7 +351,7 @@ export default function PortfolioList() {
                       {p.visibility === "공개" && stats[p.id] && (
                         <p
                           className="mt-2 flex items-center gap-3 text-xs text-neutral-400"
-                          title="나만 보는 숫자예요. 공개 링크(/p/…)가 열린 횟수(같은 사람은 하루 한 번)와 참고할게요 수."
+                          title="나만 보는 숫자예요. 공개 링크(/p/…)가 열린 횟수(같은 사람은 하루 한 번)와 북마크 수."
                         >
                           <span className="inline-flex items-center gap-1">
                             <Eye size={13} strokeWidth={1.75} /> 조회 {stats[p.id].views}
@@ -360,7 +360,7 @@ export default function PortfolioList() {
                             )}
                           </span>
                           <span className="inline-flex items-center gap-1">
-                            <Bookmark size={13} strokeWidth={1.75} /> 참고 {stats[p.id].bookmarks}
+                            <Bookmark size={13} strokeWidth={1.75} /> 북마크 {stats[p.id].bookmarks}
                           </span>
                           <Lock size={11} strokeWidth={2} className="text-neutral-600" aria-label="나만 봄" />
                         </p>

@@ -1,11 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { NewPortfolioButton } from "../../components/NewPortfolio";
-import { Link } from "react-router-dom";
-import { Globe, Lock, SlidersHorizontal, Upload, Bookmark, BookmarkCheck } from "lucide-react";
+import { Link, useSearchParams } from "react-router-dom";
+import { Globe, Lock, SlidersHorizontal, Upload, Bookmark, BookmarkCheck, Search, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { useAuth } from "../../auth/AuthProvider";
 import {
   listMyPortfolios,
-  listPublicPortfolios,
+  searchPublicPortfolios,
+  listCommunityFacets,
+  cleanSearch,
+  COMMUNITY_PAGE_SIZE,
   updatePortfolioListed,
   updatePortfolioVisibility,
   PortfolioError,
@@ -41,8 +44,14 @@ import type { Profile } from "../../lib/profile";
  * 해결됐고 뒤쪽은 설정 화면의 안내 문구와 아래 올리기 창의 안내로
  * 다룹니다 — 올리기 직전에 어떤 이름으로 뜨는지 보여줍니다.
  *
- * 프로필은 목록을 받은 뒤 한 번에 읽습니다. 60건을 한 건씩 조회하면
- * 요청이 60번 갑니다.
+ * 프로필은 목록을 받은 뒤 한 번에 읽습니다. 30건을 한 건씩 조회하면
+ * 요청이 30번 갑니다.
+ *
+ * [검색·쪽 나누기 — 2026-09-28]
+ * 커뮤니티가 커질 것에 대비해, 최근 60건을 받아 화면에서 거르던 것을
+ * 서버 검색(lib/portfolios searchPublicPortfolios)과 30건씩 쪽 나누기로
+ * 바꿨습니다. 검색어·필터·쪽·탭은 주소(?q=&job=&year=&page=&tab=)에 둡니다.
+ * "참고할게요 / 참고한 포트폴리오"는 "북마크"로 이름을 바꿨습니다.
  *
  * [빠진 필터]
  * '구성 방식' 필터를 뺐습니다. 그런 컬럼이 없어서 골라도 아무것도 걸러지지
@@ -52,33 +61,82 @@ export default function Gallery() {
   const { session, configured } = useAuth();
   const userId = session?.user?.id;
 
-  const [items, setItems] = useState<LibraryPortfolio[] | null>(null);
+  // [09-28] 검색·필터·쪽·탭을 주소에 둡니다 — 카드를 열었다가 뒤로 오면
+  // 보던 검색어와 쪽 그대로 돌아옵니다. 링크로 남에게 보낼 수도 있습니다.
+  const [params, setParams] = useSearchParams();
+  const tab: "all" | "bookmarks" = params.get("tab") === "bookmarks" && userId ? "bookmarks" : "all";
+  const q = params.get("q") ?? "";
+  const job = params.get("job") ?? "";
+  const year = params.get("year") ?? "";
+  const page = Math.max(1, Number(params.get("page")) || 1);
+
+  /** 주소 값을 바꿉니다. 쪽 말고 다른 것이 바뀌면 1쪽으로 돌아갑니다. */
+  const update = (patch: Record<string, string | null>) => {
+    setParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        for (const [k, v] of Object.entries(patch)) {
+          if (v) next.set(k, v);
+          else next.delete(k);
+        }
+        if (!("page" in patch)) next.delete("page");
+        return next;
+      },
+      { replace: !("page" in patch) && !("tab" in patch) }
+    );
+  };
+
+  // 검색창 — 치는 동안은 화면만, 멈추면(0.3초) 주소와 목록이 바뀝니다
+  const [draft, setDraft] = useState(q);
+  useEffect(() => setDraft(q), [q]);
+  useEffect(() => {
+    if (draft.trim() === q) return;
+    const t = setTimeout(() => update({ q: draft.trim() || null }), 300);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft]);
+
+  const [result, setResult] = useState<{ rows: LibraryPortfolio[]; total: number } | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [facets, setFacets] = useState<{ jobs: string[]; years: string[] } | null>(null);
   const [authors, setAuthors] = useState<Map<string, Profile>>(new Map());
   const [loadError, setLoadError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
-  const [job, setJob] = useState("전체 직무");
-  const [year, setYear] = useState("전체 연도");
-
-  // [09-28] 참고할게요 — 내가 누른 것만 알고, 남의 수는 모릅니다(주인에게만 보임)
-  const [tab, setTab] = useState<"all" | "saved">("all");
+  // 북마크 — 내가 누른 것만 알고, 남의 수는 모릅니다(주인에게만 보임)
   const [bookmarks, setBookmarks] = useState<Set<string>>(new Set());
   const [saved, setSaved] = useState<LibraryPortfolio[] | null>(null);
 
   const [pickerOpen, setPickerOpen] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
-  const load = () => {
-    listPublicPortfolios()
-      .then((rows) => {
-        setItems(rows);
-        // 작성자 이름은 목록이 뜬 뒤에 붙습니다. 여기서 기다리면
-        // 프로필 조회가 느릴 때 목록 전체가 같이 늦어집니다.
-        void getProfiles(rows.map((r) => r.userId)).then(setAuthors);
-      })
-      .catch(() => setLoadError(true));
-  };
+  const addAuthors = (rows: LibraryPortfolio[]) =>
+    void getProfiles(rows.map((r) => r.userId)).then((m) => setAuthors((prev) => new Map([...prev, ...m])));
 
-  useEffect(load, []);
+  // 전체 탭: 서버에서 거르고 30건씩
+  useEffect(() => {
+    if (tab !== "all") return;
+    let alive = true;
+    setLoading(true);
+    setLoadError(false);
+    searchPublicPortfolios({ q, job: job || null, year: year || null, page })
+      .then((r) => {
+        if (!alive) return;
+        setResult(r);
+        // 작성자 이름은 목록이 뜬 뒤에 붙습니다(프로필 조회가 느려도 목록은 먼저)
+        addAuthors(r.rows);
+      })
+      .catch(() => alive && setLoadError(true))
+      .finally(() => alive && setLoading(false));
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, q, job, year, page, reloadKey]);
+
+  useEffect(() => {
+    listCommunityFacets().then(setFacets).catch(() => setFacets({ jobs: [], years: [] }));
+  }, [reloadKey]);
 
   useEffect(() => {
     if (!userId) return;
@@ -86,15 +144,23 @@ export default function Gallery() {
   }, [userId]);
 
   useEffect(() => {
-    if (tab !== "saved") return;
+    if (tab !== "bookmarks") return;
     setSaved(null);
     listBookmarkedPortfolios()
       .then((rows) => {
         setSaved(rows);
-        void getProfiles(rows.map((r) => r.userId)).then((m) => setAuthors((prev) => new Map([...prev, ...m])));
+        addAuthors(rows);
       })
       .catch(() => setSaved([]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab]);
+
+  // 쪽을 넘기면 목록 맨 위로
+  const topRef = useRef<HTMLDivElement>(null);
+  const goPage = (n: number) => {
+    update({ page: n > 1 ? String(n) : null });
+    topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   const toggleBookmark = async (id: string) => {
     const on = !bookmarks.has(id);
@@ -109,24 +175,39 @@ export default function Gallery() {
     }
   };
 
-  const jobs = useMemo(
-    () => ["전체 직무", ...Array.from(new Set((items ?? []).map((g) => g.job)))],
-    [items]
-  );
-  const years = useMemo(
-    () => ["전체 연도", ...Array.from(new Set((items ?? []).map((g) => g.year)))],
-    [items]
-  );
+  // 북마크 탭: 많아야 수백 건이라 화면에서 거르고 나눕니다
+  const savedFiltered = useMemo(() => {
+    const needle = cleanSearch(q).toLowerCase();
+    return (saved ?? []).filter((g) => {
+      if (job && g.job !== job) return false;
+      if (year && g.year !== year) return false;
+      if (!needle) return true;
+      const author = authors.get(g.userId)?.nickname ?? "";
+      return [g.title, g.job, g.summary, author].some((t) => t.toLowerCase().includes(needle));
+    });
+  }, [saved, q, job, year, authors]);
 
-  const source = tab === "saved" ? saved ?? [] : items ?? [];
-  const filtered = source.filter(
-    (g) =>
-      (job === "전체 직무" || g.job === job) &&
-      (year === "전체 연도" || g.year === year)
-  );
+  const jobs = tab === "all" ? facets?.jobs ?? [] : [...new Set((saved ?? []).map((g) => g.job))].sort();
+  const years =
+    tab === "all" ? facets?.years ?? [] : [...new Set((saved ?? []).map((g) => g.year))].sort().reverse();
+
+  const total = tab === "all" ? result?.total ?? 0 : savedFiltered.length;
+  const pages = Math.max(1, Math.ceil(total / COMMUNITY_PAGE_SIZE));
+  const shown =
+    tab === "all"
+      ? result?.rows ?? []
+      : savedFiltered.slice((page - 1) * COMMUNITY_PAGE_SIZE, page * COMMUNITY_PAGE_SIZE);
+  const ready = tab === "all" ? result !== null : saved !== null;
+  const filtering = Boolean(q || job || year);
+
+  // 없는 쪽(예: 검색 뒤 결과가 줄었는데 주소는 5쪽)이면 마지막 쪽으로
+  useEffect(() => {
+    if (ready && !loading && page > pages) update({ page: pages > 1 ? String(pages) : null });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, loading, page, pages]);
 
   return (
-    <div className="max-w-4xl space-y-6">
+    <div ref={topRef} className="max-w-4xl space-y-6 scroll-mt-6">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-xl font-heading">커뮤니티</h1>
@@ -150,31 +231,22 @@ export default function Gallery() {
         <nav className="flex gap-6 border-b border-neutral-800">
           {([
             ["all", "전체"],
-            ["saved", `참고한 포트폴리오${bookmarks.size ? ` ${bookmarks.size}` : ""}`],
+            ["bookmarks", `북마크${bookmarks.size ? ` ${bookmarks.size}` : ""}`],
           ] as const).map(([key, label]) => (
             <button
               key={key}
               type="button"
-              onClick={() => setTab(key)}
+              onClick={() => update({ tab: key === "all" ? null : key })}
               aria-current={tab === key ? "page" : undefined}
               className={`-mb-px border-b-2 py-2.5 text-sm transition-colors ${
                 tab === key ? "border-neutral-100 font-medium text-neutral-100" : "border-transparent text-neutral-500 hover:text-neutral-200"
               }`}
             >
-              {key === "saved" && <Bookmark size={13} strokeWidth={2} className="mr-1 inline -mt-0.5" />}
+              {key === "bookmarks" && <Bookmark size={13} strokeWidth={2} className="mr-1 inline -mt-0.5" />}
               {label}
             </button>
           ))}
         </nav>
-      )}
-
-      {tab === "saved" && saved !== null && saved.length === 0 && (
-        <div className="entry p-8 text-center">
-          <p className="text-sm text-neutral-300">아직 참고한 포트폴리오가 없어요.</p>
-          <p className="mt-2 text-xs text-neutral-500">
-            카드 오른쪽 위 책갈피나, 열어 본 포트폴리오의 "참고할게요"를 누르면 여기 모여요.
-          </p>
-        </div>
       )}
 
       {notice && (
@@ -183,28 +255,101 @@ export default function Gallery() {
         </p>
       )}
 
-      {items !== null && items.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-sm text-neutral-300">
-          <SlidersHorizontal size={15} className="text-neutral-600 shrink-0" />
-          <select className="field w-auto py-2" value={job} onChange={(e) => setJob(e.target.value)}>
-            {jobs.map((j) => (
-              <option key={j} className="bg-neutral-900">{j}</option>
-            ))}
-          </select>
-          <select className="field w-auto py-2" value={year} onChange={(e) => setYear(e.target.value)}>
-            {years.map((y) => (
-              <option key={y} className="bg-neutral-900">{y}</option>
-            ))}
-          </select>
+      {/* 검색 · 필터 */}
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-sm text-neutral-300">
+        <label className="relative min-w-0 flex-1 basis-60">
+          <span className="sr-only">검색</span>
+          <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
+          <input
+            type="text"
+            role="searchbox"
+            enterKeyHint="search"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") update({ q: draft.trim() || null });
+            }}
+            placeholder="제목·직무·작성자로 검색"
+            maxLength={40}
+            className="field w-full py-2 pl-9 pr-9"
+          />
+          {draft && (
+            <button
+              type="button"
+              onClick={() => {
+                setDraft("");
+                update({ q: null });
+              }}
+              aria-label="검색어 지우기"
+              className="absolute right-2 top-1/2 grid size-6 -translate-y-1/2 place-items-center rounded-full text-neutral-500 hover:bg-neutral-800 hover:text-neutral-200"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </label>
+        <SlidersHorizontal size={15} className="text-neutral-600 shrink-0" aria-hidden="true" />
+        <select
+          aria-label="직무"
+          className="field w-auto py-2"
+          value={job}
+          onChange={(e) => update({ job: e.target.value || null })}
+        >
+          <option value="" className="bg-neutral-900">전체 직무</option>
+          {job && !jobs.includes(job) && <option className="bg-neutral-900">{job}</option>}
+          {jobs.map((j) => (
+            <option key={j} className="bg-neutral-900">{j}</option>
+          ))}
+        </select>
+        <select
+          aria-label="연도"
+          className="field w-auto py-2"
+          value={year}
+          onChange={(e) => update({ year: e.target.value || null })}
+        >
+          <option value="" className="bg-neutral-900">전체 연도</option>
+          {year && !years.includes(year) && <option className="bg-neutral-900">{year}</option>}
+          {years.map((y) => (
+            <option key={y} className="bg-neutral-900">{y}</option>
+          ))}
+        </select>
+      </div>
+
+      {ready && (total > 0 || filtering) && (
+        <div className="flex items-center gap-3 text-xs text-neutral-500">
+          <span>
+            {q ? (
+              <>
+                <span className="text-neutral-200">“{q}”</span> 검색 결과{" "}
+              </>
+            ) : filtering ? (
+              "조건에 맞는 "
+            ) : tab === "bookmarks" ? (
+              "북마크 "
+            ) : (
+              "전체 "
+            )}
+            <span className="text-neutral-200">{total.toLocaleString()}</span>개
+            {pages > 1 && ` · ${page} / ${pages}쪽`}
+          </span>
+          {filtering && (
+            <button
+              type="button"
+              className="btn-ghost-muted ml-auto"
+              onClick={() => {
+                setDraft("");
+                update({ q: null, job: null, year: null });
+              }}
+            >
+              <X size={13} /> 조건 지우기
+            </button>
+          )}
         </div>
       )}
 
-      {((tab === "all" && items === null) || (tab === "saved" && saved === null)) && !loadError && (
-        <p className="text-sm text-neutral-500">불러오는 중…</p>
-      )}
-      {loadError && <p className="text-sm text-red-400">목록을 불러오지 못했습니다.</p>}
+      {!ready && !loadError && <p className="text-sm text-neutral-500">불러오는 중…</p>}
+      {loadError && tab === "all" && <p className="text-sm text-red-400">목록을 불러오지 못했습니다.</p>}
 
-      {tab === "all" && items !== null && items.length === 0 && (
+      {ready && total === 0 && !filtering && tab === "all" && (
         <div className="entry p-8 text-center">
           <p className="text-sm text-neutral-300">아직 올라온 포트폴리오가 없습니다.</p>
           <p className="text-xs text-neutral-500 mt-2">
@@ -213,9 +358,32 @@ export default function Gallery() {
         </div>
       )}
 
-      {filtered.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {filtered.map((g, i) => (
+      {ready && total === 0 && !filtering && tab === "bookmarks" && (
+        <div className="entry p-8 text-center">
+          <p className="text-sm text-neutral-300">아직 북마크한 포트폴리오가 없어요.</p>
+          <p className="mt-2 text-xs text-neutral-500">
+            카드 오른쪽 위 책갈피나, 열어 본 포트폴리오의 "북마크"를 누르면 여기 모여요.
+          </p>
+        </div>
+      )}
+
+      {ready && total === 0 && filtering && (
+        <div className="entry p-8 text-center">
+          <p className="text-sm text-neutral-300">
+            {q ? `“${q}”에 맞는 포트폴리오가 없어요.` : "조건에 맞는 포트폴리오가 없어요."}
+          </p>
+          <p className="mt-2 text-xs text-neutral-500">
+            다른 낱말로 찾거나, 직무·연도 조건을 풀어 보세요.
+          </p>
+        </div>
+      )}
+
+      {shown.length > 0 && (
+        <div
+          className={`grid grid-cols-1 md:grid-cols-3 gap-4 transition-opacity ${loading ? "opacity-50" : ""}`}
+          aria-busy={loading}
+        >
+          {shown.map((g, i) => (
             <Reveal key={g.id} delay={(i % 3) * 0.08}>
               {/* 공개 열람 페이지로 바로 보냅니다 — 방문자가 보는 화면과
                   같은 것을 보여주는 편이 정직하고, 화면도 하나면 됩니다. */}
@@ -236,8 +404,8 @@ export default function Gallery() {
                         void toggleBookmark(g.id);
                       }}
                       aria-pressed={bookmarks.has(g.id)}
-                      aria-label={bookmarks.has(g.id) ? "참고 표시 지우기" : "참고할게요"}
-                      title={bookmarks.has(g.id) ? "참고함 — 누르면 지워요" : "참고할게요 — 작성자에게는 수만 보여요"}
+                      aria-label={bookmarks.has(g.id) ? "북마크 지우기" : "북마크"}
+                      title={bookmarks.has(g.id) ? "북마크됨 — 누르면 지워요" : "북마크 — 작성자에게는 수만 보여요"}
                       className={`absolute right-2 top-2 grid size-8 place-items-center rounded-full shadow-sm transition-colors ${
                         bookmarks.has(g.id) ? "bg-brand-solid text-white" : "bg-white/95 text-[#2a211b] hover:bg-white"
                       }`}
@@ -257,9 +425,7 @@ export default function Gallery() {
         </div>
       )}
 
-      {source.length > 0 && filtered.length === 0 && (
-        <p className="text-sm text-neutral-500">조건에 맞는 포트폴리오가 없습니다.</p>
-      )}
+      {pages > 1 && <Pager page={Math.min(page, pages)} pages={pages} onGo={goPage} />}
 
       {pickerOpen && userId && (
         <UploadPicker
@@ -268,12 +434,69 @@ export default function Gallery() {
           onDone={(message) => {
             setPickerOpen(false);
             setNotice(message);
-            setItems(null);
-            load();
+            setReloadKey((k) => k + 1);
           }}
         />
       )}
     </div>
+  );
+}
+
+/** 보여 줄 쪽 번호: 1 … 4 5 [6] 7 8 … 20 */
+function pageList(page: number, pages: number): Array<number | "…"> {
+  if (pages <= 7) return Array.from({ length: pages }, (_, i) => i + 1);
+  const out: Array<number | "…"> = [1];
+  const lo = Math.max(2, Math.min(page - 1, pages - 4));
+  const hi = Math.min(pages - 1, Math.max(page + 1, 5));
+  if (lo > 2) out.push("…");
+  for (let n = lo; n <= hi; n++) out.push(n);
+  if (hi < pages - 1) out.push("…");
+  out.push(pages);
+  return out;
+}
+
+function Pager({ page, pages, onGo }: { page: number; pages: number; onGo: (n: number) => void }) {
+  const cell = "grid h-9 min-w-9 place-items-center rounded-lg px-2 text-sm transition-colors";
+  return (
+    <nav aria-label="쪽 이동" className="flex items-center justify-center gap-1 pt-2">
+      <button
+        type="button"
+        onClick={() => onGo(page - 1)}
+        disabled={page <= 1}
+        aria-label="이전 쪽"
+        className={`${cell} text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100 disabled:opacity-30 disabled:hover:bg-transparent`}
+      >
+        <ChevronLeft size={16} />
+      </button>
+      {pageList(page, pages).map((n, i) =>
+        n === "…" ? (
+          <span key={`gap${i}`} className={`${cell} text-neutral-600`} aria-hidden="true">
+            …
+          </span>
+        ) : (
+          <button
+            key={n}
+            type="button"
+            onClick={() => onGo(n)}
+            aria-current={n === page ? "page" : undefined}
+            className={`${cell} ${
+              n === page ? "bg-brand-solid font-medium text-white" : "text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100"
+            }`}
+          >
+            {n}
+          </button>
+        )
+      )}
+      <button
+        type="button"
+        onClick={() => onGo(page + 1)}
+        disabled={page >= pages}
+        aria-label="다음 쪽"
+        className={`${cell} text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100 disabled:opacity-30 disabled:hover:bg-transparent`}
+      >
+        <ChevronRight size={16} />
+      </button>
+    </nav>
   );
 }
 

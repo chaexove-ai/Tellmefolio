@@ -715,6 +715,88 @@ export async function listPublicPortfolios(limit = 60): Promise<LibraryPortfolio
   return ((data ?? []) as PortfolioRow[]).map(toLibraryPortfolio);
 }
 
+/**
+ * [2026-09-28] 커뮤니티 검색·페이지 나누기.
+ *
+ * 전에는 최근 60건을 한 번에 받아 화면에서 걸렀습니다. 커지면 61번째부터는
+ * 아예 볼 방법이 없었습니다. 이제 서버에서 거르고 30건씩 나눕니다.
+ *
+ * 검색어는 제목·직무·소개와 작성자 닉네임에서 찾습니다. PostgREST 의 or()
+ * 문법을 깨는 문자(쉼표·괄호·%·*)는 빼고 넣습니다.
+ */
+export const COMMUNITY_PAGE_SIZE = 30;
+
+export interface CommunityQuery {
+  q?: string;
+  job?: string | null;
+  year?: string | null;
+  page?: number;
+}
+
+export function cleanSearch(q: string): string {
+  return q.replace(/[,()%*\\"]/g, " ").replace(/\s+/g, " ").trim().slice(0, 40);
+}
+
+export async function searchPublicPortfolios(
+  query: CommunityQuery
+): Promise<{ rows: LibraryPortfolio[]; total: number }> {
+  const sb = await getSupabase();
+  if (!sb) return { rows: [], total: 0 };
+  const page = Math.max(1, query.page ?? 1);
+  const from = (page - 1) * COMMUNITY_PAGE_SIZE;
+
+  let req = sb
+    .from("portfolios")
+    .select("*", { count: "exact" })
+    .eq("visibility", "public")
+    .eq("listed", true);
+
+  // or 조건 여러 개를 한 번에 겁니다: or=(and(or(…),or(…))) — or 를 여러 번 붙이는 것보다 안전합니다.
+  const groups: string[] = [];
+  const q = cleanSearch(query.q ?? "");
+  if (q) {
+    // 닉네임이 맞는 작성자도 찾습니다
+    const { data: people } = await sb.from("profiles").select("id").ilike("nickname", `%${q}%`).limit(50);
+    const ids = (people ?? []).map((p: { id: string }) => p.id);
+    const parts = [`title.ilike.%${q}%`, `job.ilike.%${q}%`, `summary.ilike.%${q}%`];
+    if (ids.length) parts.push(`user_id.in.(${ids.join(",")})`);
+    groups.push(`or(${parts.join(",")})`);
+  }
+  if (query.job === "직무 미지정") groups.push("or(job.is.null,job.eq.)");
+  else if (query.job) req = req.eq("job", query.job);
+  if (query.year && /^\d{4}$/.test(query.year)) {
+    const y = Number(query.year);
+    // year 칸이 비어 있으면 만든 해로 봅니다(toLibraryPortfolio 와 같은 규칙)
+    groups.push(`or(year.eq.${y},and(year.is.null,created_at.gte.${y}-01-01,created_at.lt.${y + 1}-01-01))`);
+  }
+  if (groups.length) req = req.or(`and(${groups.join(",")})`);
+
+  const { data, count, error } = await req
+    .order("updated_at", { ascending: false })
+    .range(from, from + COMMUNITY_PAGE_SIZE - 1);
+  if (error) throw new PortfolioError("목록을 불러오지 못했습니다.");
+  return { rows: ((data ?? []) as PortfolioRow[]).map(toLibraryPortfolio), total: count ?? 0 };
+}
+
+/** 필터에 띄울 직무·연도 목록. 가벼운 칸만 읽습니다. */
+export async function listCommunityFacets(): Promise<{ jobs: string[]; years: string[] }> {
+  const sb = await getSupabase();
+  if (!sb) return { jobs: [], years: [] };
+  const { data } = await sb
+    .from("portfolios")
+    .select("job, year, created_at")
+    .eq("visibility", "public")
+    .eq("listed", true)
+    .limit(5000);
+  const jobs = new Set<string>();
+  const years = new Set<string>();
+  for (const r of (data ?? []) as Array<{ job: string | null; year: string | null; created_at: string }>) {
+    jobs.add(r.job?.trim() || "직무 미지정");
+    years.add(r.year?.trim() || String(new Date(r.created_at).getFullYear()));
+  }
+  return { jobs: [...jobs].sort(), years: [...years].sort().reverse() };
+}
+
 /** 로그인한 사용자의 포트폴리오 전체를 최근 수정순으로. */
 export async function listMyPortfolios(userId: string): Promise<LibraryPortfolio[]> {
   const sb = await requireClient();

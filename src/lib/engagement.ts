@@ -3,7 +3,7 @@ import type { LibraryPortfolio, PortfolioRow } from "./portfolios";
 import { toLibraryPortfolio } from "./portfolios";
 
 /**
- * 조회수 · "참고할게요" (09-28). 설계는 supabase/migrations/20260928100000_views_bookmarks.sql.
+ * 조회수 · 북마크 (09-28, 처음 이름은 "참고할게요"). 설계는 supabase/migrations/20260928100000_views_bookmarks.sql.
  * 숫자는 포트폴리오 주인에게만 보입니다.
  */
 
@@ -37,7 +37,7 @@ export interface PortfolioStats {
   bookmarks: number;
 }
 
-/** 내 포트폴리오들의 조회·참고 수. 테이블이 아직 없으면(마이그레이션 전) 빈 값. */
+/** 내 포트폴리오들의 조회·북마크 수. 테이블이 아직 없으면(마이그레이션 전) 빈 값. */
 export async function getMyStats(): Promise<Record<string, PortfolioStats>> {
   const sb = await getSupabase();
   if (!sb) return {};
@@ -50,7 +50,7 @@ export async function getMyStats(): Promise<Record<string, PortfolioStats>> {
   return out;
 }
 
-/** 내가 "참고할게요"를 누른 포트폴리오 id */
+/** 내가 북마크한 포트폴리오 id */
 export async function getMyBookmarkIds(): Promise<Set<string>> {
   const sb = await getSupabase();
   if (!sb) return new Set();
@@ -69,12 +69,12 @@ export async function setBookmark(portfolioId: string, on: boolean): Promise<voi
     ? await sb.from("portfolio_bookmarks").insert({ portfolio_id: portfolioId })
     : await sb.from("portfolio_bookmarks").delete().eq("portfolio_id", portfolioId);
   // 이미 눌려 있었으면(중복 키) 성공으로 봅니다
-  if (error && error.code !== "23505") throw new Error(on ? "참고 표시를 하지 못했어요." : "참고 표시를 지우지 못했어요.");
+  if (error && error.code !== "23505") throw new Error(on ? "북마크하지 못했어요." : "북마크를 지우지 못했어요.");
 }
 
 /**
- * 참고한 포트폴리오 목록. 공개가 해제된 것은 RLS 로 빠집니다.
- * 커뮤니티 목록(최근 60)에 없는 오래된 것도 나와야 해서 따로 읽습니다.
+ * 북마크한 포트폴리오 목록. 공개가 해제된 것은 RLS 로 빠집니다.
+ * 커뮤니티 목록의 다른 쪽에 있는 것도 한꺼번에 나와야 해서 따로 읽습니다.
  */
 export async function listBookmarkedPortfolios(): Promise<LibraryPortfolio[]> {
   const sb = await getSupabase();
