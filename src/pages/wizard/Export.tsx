@@ -6,6 +6,7 @@ import { useAuth } from "../../auth/AuthProvider";
 import {
   createSubmission,
   suggestFromJobSwitch,
+  listSubmissions,
   SubmissionError,
   type SubmissionFormat,
 } from "../../lib/submissions";
@@ -81,6 +82,9 @@ export default function Export() {
   // [2026-09] 공개 링크. visibility 컬럼과 RLS 는 처음부터 있었는데 값을
   // 바꾸는 방법이 없어서 전부 private 에 고정돼 있었습니다.
   const [sharing, setSharing] = useState(false);
+  // [09-28] 링크로 제출한 곳. 비공개로 바꾸면 그곳에서 링크가 안 열리므로 한 번 확인합니다.
+  const [linkSubs, setLinkSubs] = useState<Array<{ company: string; position: string }>>([]);
+  const [confirmPrivate, setConfirmPrivate] = useState(false);
   const [shareError, setShareError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [listing, setListing] = useState(false);
@@ -176,6 +180,15 @@ export default function Export() {
     return () => {
       alive = false;
     };
+  }, [id]);
+
+  useEffect(() => {
+    if (!id) return;
+    listSubmissions(id)
+      .then((rows) =>
+        setLinkSubs(rows.filter((r) => r.format === "link").map((r) => ({ company: r.company, position: r.position })))
+      )
+      .catch(() => {});
   }, [id]);
 
   // 직무 전환으로 만든 포트폴리오면 그 공고의 직무·링크를 미리 채웁니다.
@@ -315,9 +328,14 @@ export default function Export() {
   const isPublic = portfolio?.visibility === "public";
   const shareUrl = portfolio ? `${window.location.origin}/p/${portfolio.id}` : "";
 
-  const toggleVisibility = async () => {
+  const toggleVisibility = async (confirmed = false) => {
     if (!portfolio) return;
     const next = isPublic ? "private" : "public";
+    if (next === "private" && linkSubs.length > 0 && !confirmed) {
+      setConfirmPrivate(true);
+      return;
+    }
+    setConfirmPrivate(false);
     setSharing(true);
     setShareError(null);
     try {
@@ -532,6 +550,29 @@ export default function Export() {
                 현재 {isPublic ? "공개" : "비공개"}
               </span>
             </div>
+
+            {confirmPrivate && (
+              <div role="alert" className="mt-3 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm">
+                <p className="text-neutral-200 break-keep">
+                  이 링크로 제출한 곳이 {linkSubs.length}곳 있어요
+                  {" "}({linkSubs.slice(0, 3).map((s) => s.company || "회사 미입력").join(", ")}
+                  {linkSubs.length > 3 ? " 외" : ""}). 비공개로 바꾸면 그곳에서 링크를 열어도
+                  "공개되지 않은 포트폴리오"만 보여요.
+                </p>
+                <div className="mt-2 flex gap-2">
+                  <button
+                    type="button"
+                    className="rounded-lg bg-red-600/90 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-red-600"
+                    onClick={() => void toggleVisibility(true)}
+                  >
+                    그래도 비공개로
+                  </button>
+                  <button type="button" className="btn-ghost-muted text-xs" onClick={() => setConfirmPrivate(false)}>
+                    공개 유지
+                  </button>
+                </div>
+              </div>
+            )}
 
             {isPublic && (
               <div className="mt-3 flex items-center gap-2">

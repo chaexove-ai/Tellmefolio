@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import BackLink from "../components/BackLink";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import LibraryTabs from "../components/LibraryTabs";
-import { Copy, Download, FileText, Globe2, LoaderCircle, Printer, Send, Trash2, List as ListIcon } from "lucide-react";
+import { getPortfolio, updatePortfolioVisibility } from "../lib/portfolios";
+import { Copy, Download, FileText, Globe2, LoaderCircle, Printer, Send, Trash2, List as ListIcon, ExternalLink, Lock } from "lucide-react";
 import { useAuth } from "../auth/AuthProvider";
 import {
   deleteSubmission,
@@ -294,15 +295,7 @@ export default function SubmissionHistory() {
               )}
 
               {selected.format === "link" ? (
-                <div className="px-6 py-16 text-center">
-                  <Globe2 size={26} strokeWidth={1.5} className="text-neutral-500 mx-auto" />
-                  <p className="mt-3 text-sm text-neutral-400">링크로 보낸 기록이라 저장된 파일이 없어요.</p>
-                  {selected.portfolio_id && (
-                    <Link to={`/p/${selected.portfolio_id}`} className="btn-ghost mt-2">
-                      공개 링크 열기
-                    </Link>
-                  )}
-                </div>
+                <LinkPanel portfolioId={selected.portfolio_id} company={selected.company} />
               ) : loadingHtml ? (
                 <p className="px-6 py-16 text-sm text-neutral-500 inline-flex items-center gap-2">
                   <LoaderCircle size={14} className="animate-spin" /> 그때 낸 결과물을 불러오는 중…
@@ -345,6 +338,87 @@ function SnapshotFrame({ html }: { html: string }) {
         srcDoc={html}
         style={{ width: BASE, height: HEIGHT, border: 0, transform: `scale(${scale})`, transformOrigin: "top left" }}
       />
+    </div>
+  );
+}
+
+/**
+ * 링크로 낸 기록 (09-28). 그 포트폴리오가 지금 비공개면 링크가 안 열립니다 —
+ * 전에는 "공개 링크 열기"를 누르면 "공개되지 않은 포트폴리오" 화면으로 가서
+ * 거기 버튼이 로그인 전 첫 화면으로 보냈습니다. 지금 상태를 먼저 보여 주고,
+ * 비공개면 그 자리에서 다시 공개할 수 있게 합니다.
+ */
+function LinkPanel({ portfolioId, company }: { portfolioId: string | null; company: string }) {
+  const [vis, setVis] = useState<"public" | "private" | "gone" | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const url = portfolioId ? `${window.location.origin}/p/${portfolioId}` : "";
+
+  useEffect(() => {
+    if (!portfolioId) {
+      setVis("gone");
+      return;
+    }
+    setVis(null);
+    getPortfolio(portfolioId)
+      .then((p) => setVis(p.visibility))
+      .catch(() => setVis("gone"));
+  }, [portfolioId]);
+
+  const makePublic = async () => {
+    if (!portfolioId) return;
+    setBusy(true);
+    try {
+      await updatePortfolioVisibility(portfolioId, "public");
+      setVis("public");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="px-6 py-14 text-center">
+      <Globe2 size={26} strokeWidth={1.5} className="text-neutral-500 mx-auto" />
+      <p className="mt-3 text-sm text-neutral-400">링크로 보낸 기록이라 저장된 파일이 없어요.</p>
+
+      {vis === "public" && (
+        <div className="mt-3 flex flex-wrap items-center justify-center gap-1">
+          <a href={url} target="_blank" rel="noreferrer" className="btn-ghost">
+            <ExternalLink size={15} strokeWidth={1.75} /> 공개 링크 열기
+          </a>
+          <button
+            type="button"
+            className="btn-ghost-muted"
+            onClick={() => {
+              void navigator.clipboard?.writeText(url).then(() => setCopied(true));
+            }}
+          >
+            <Copy size={14} strokeWidth={1.75} /> {copied ? "복사됨" : "링크 복사"}
+          </button>
+        </div>
+      )}
+
+      {vis === "private" && (
+        <div className="mx-auto mt-4 max-w-md rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-left">
+          <p className="text-sm text-neutral-200 break-keep">
+            <Lock size={13} strokeWidth={2} className="mr-1 inline -mt-0.5" />
+            지금 비공개라 이 링크가 열리지 않아요.{company ? ` ${company}에서` : " 제출한 곳에서"} 열어도
+            "공개되지 않은 포트폴리오"만 보여요.
+          </p>
+          <div className="mt-2.5 flex gap-2">
+            <button type="button" className="btn-primary py-1.5 text-sm" disabled={busy} onClick={() => void makePublic()}>
+              {busy ? "바꾸는 중…" : "다시 공개하기"}
+            </button>
+            {portfolioId && (
+              <Link to={`/wizard/editor/${portfolioId}`} className="btn-ghost-muted">
+                편집기에서 보기
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
+
+      {vis === "gone" && <p className="mt-2 text-xs text-neutral-500">원본 포트폴리오가 지워져 링크도 더는 열리지 않아요.</p>}
     </div>
   );
 }
