@@ -25,6 +25,7 @@ import {
 import { formatRelativeTime } from "../../lib/formatRelativeTime";
 import EditorPreview from "../../components/EditorPreview";
 import StylePanel from "../../components/StylePanel";
+import DeletePortfolioDialog from "../../components/DeletePortfolioDialog";
 import TemplateFrame from "../../components/TemplateFrame";
 
 import { shrinkImage } from "../../lib/images";
@@ -122,6 +123,8 @@ function fieldsKeyOf(p: PortfolioProjectRow): string {
 export default function PortfolioEditor() {
   const { session } = useAuth();
   const navigate = useNavigate();
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const deletedRef = useRef(false);
   const { id } = useParams<{ id: string }>();
   // [2026-09-25] ?project=… 이면 그 프로젝트 탭으로 엽니다. "대화로 채우기"를
   // 끝내고 돌아왔을 때 방금 채운 프로젝트가 보여야 합니다.
@@ -702,6 +705,7 @@ export default function PortfolioEditor() {
    *  앞선 저장이 끝난 뒤에 돌고, 돌 때의 최신 값을 읽습니다. */
   const flushProject = useCallback((): Promise<boolean> => {
     const run = async () => {
+      if (deletedRef.current) return true;
       const { id, key, patch } = latestRef.current;
       if (!id || key === savedKeyRef.current) return true;
       return track(async () => {
@@ -1666,6 +1670,40 @@ export default function PortfolioEditor() {
 
           </div>
         </details>
+
+        {/* [09-28] 포트폴리오 삭제 — 맨 아래, 이름을 똑같이 입력해야 지워집니다 */}
+        <section className="flex items-center gap-4 rounded-2xl border border-red-500/25 p-5">
+          <div className="min-w-0 flex-1">
+            <h2 className="text-sm font-medium text-neutral-100">포트폴리오 삭제</h2>
+            <p className="mt-0.5 text-xs text-neutral-500 break-keep">
+              프로젝트·이미지·공개 링크가 모두 지워지고 되돌릴 수 없어요.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setDeleteOpen(true)}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-red-500/40 px-3.5 py-2 text-sm text-red-600 transition-colors hover:bg-red-500/10"
+          >
+            <Trash2 size={14} strokeWidth={1.75} /> 삭제하기
+          </button>
+        </section>
+
+        {deleteOpen && (
+          <DeletePortfolioDialog
+            portfolio={{
+              id: portfolio.id,
+              title: portfolio.title,
+              visibility: portfolio.visibility === "public" ? "공개" : "비공개",
+              listed: portfolio.listed,
+            }}
+            onClose={() => setDeleteOpen(false)}
+            onDeleted={() => {
+              // 지운 행에 남은 저장이 가지 않게 막고 떠납니다
+              deletedRef.current = true;
+              navigate("/library/portfolios", { replace: true, state: { deleted: portfolio.title } });
+            }}
+          />
+        )}
 
       </div>
 

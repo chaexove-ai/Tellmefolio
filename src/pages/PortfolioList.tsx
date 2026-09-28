@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { SlidersHorizontal, LoaderCircle, Palette, Pencil, Share, Send, Eye, Bookmark, Lock } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { SlidersHorizontal, LoaderCircle, Palette, Pencil, Share, Send, Eye, Bookmark, Lock, Trash2 } from "lucide-react";
 import { useAuth } from "../auth/AuthProvider";
 import {
   listMyPortfolios,
@@ -18,6 +18,7 @@ import { NewPortfolioButton } from "../components/NewPortfolio";
 import { getMyProfile, FALLBACK_NICKNAME } from "../lib/profile";
 import { countSubmissionsByPortfolio } from "../lib/submissions";
 import { getMyStats, type PortfolioStats } from "../lib/engagement";
+import DeletePortfolioDialog from "../components/DeletePortfolioDialog";
 
 /**
  * [2026-09] mockData.portfolios(고정 4건, 직무·연도가 미리 정해져 있던
@@ -66,6 +67,19 @@ export default function PortfolioList() {
   const [submissionCounts, setSubmissionCounts] = useState<Record<string, number>>({});
   // [09-28] 조회·북마크 수 — 주인에게만 보입니다(서버 함수 my_portfolio_stats 가 내 것만 돌려줌)
   const [stats, setStats] = useState<Record<string, PortfolioStats>>({});
+  // [09-28] 삭제 — 이름을 똑같이 입력해야 지워집니다(DeletePortfolioDialog).
+  // 편집기에서 지우고 오면 location.state.deleted 로 제목을 받아 알립니다.
+  const [deleteFor, setDeleteFor] = useState<LibraryPortfolio | null>(null);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [deletedNotice, setDeletedNotice] = useState<string | null>(
+    (location.state as { deleted?: string } | null)?.deleted ?? null
+  );
+  useEffect(() => {
+    // 새로고침·뒤로 가기로 알림이 다시 뜨지 않게 state 를 비웁니다
+    if ((location.state as { deleted?: string } | null)?.deleted) navigate(location.pathname, { replace: true, state: null });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!configured) return;
@@ -233,6 +247,12 @@ export default function PortfolioList() {
         }
       />
 
+      {deletedNotice && (
+        <p className="entry py-3 text-sm text-neutral-200 border-l-2 border-l-red-500">
+          “{deletedNotice}”을(를) 삭제했어요.
+        </p>
+      )}
+
       {!configured ? (
         <p className="text-sm text-neutral-500">
           Supabase 설정이 없어 서재를 불러올 수 없습니다.
@@ -299,7 +319,7 @@ export default function PortfolioList() {
             <div className="grid gap-5 grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {list.map((p, i) => (
                 <Reveal key={p.id} delay={(i % 4) * 0.06} className="h-full">
-                  <article className="entry p-0 overflow-hidden h-full flex flex-col transition-colors hover:border-neutral-700">
+                  <article className="group relative entry p-0 overflow-hidden h-full flex flex-col transition-colors hover:border-neutral-700">
                     <Link to={`/wizard/editor/${p.id}`} className="relative block" aria-label={`${p.title} 편집하기`}>
                       <GrainCover seed={p.id} tint={p.jobColor} className="aspect-[16/9] w-full" />
                       <span
@@ -310,6 +330,15 @@ export default function PortfolioList() {
                         {p.visibility}
                       </span>
                     </Link>
+                    <button
+                      type="button"
+                      onClick={() => setDeleteFor(p)}
+                      aria-label={`${p.title} 삭제`}
+                      title="삭제"
+                      className="absolute left-3 top-3 grid size-8 place-items-center rounded-full bg-white/90 text-[#6b5a4c] opacity-0 shadow-sm transition-opacity hover:bg-white hover:text-red-600 focus-visible:opacity-100 group-hover:opacity-100"
+                    >
+                      <Trash2 size={14} strokeWidth={1.75} />
+                    </button>
 
                     <div className="p-5 flex-1 flex flex-col">
                       {editingJobId === p.id ? (
@@ -409,6 +438,18 @@ export default function PortfolioList() {
             </div>
           )}
         </>
+      )}
+
+      {deleteFor && (
+        <DeletePortfolioDialog
+          portfolio={deleteFor}
+          onClose={() => setDeleteFor(null)}
+          onDeleted={() => {
+            setPortfolios((prev) => prev.filter((row) => row.id !== deleteFor.id));
+            setDeletedNotice(deleteFor.title);
+            setDeleteFor(null);
+          }}
+        />
       )}
 
       {confirmFor && (
