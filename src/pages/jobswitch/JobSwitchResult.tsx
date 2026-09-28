@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import BackLink from "../../components/BackLink";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   AlertTriangle,
@@ -112,9 +113,7 @@ export default function JobSwitchResult() {
   if (error) {
     return (
       <div className="max-w-3xl space-y-4">
-        <Link to="/job-switch" className="text-xs text-brand hover:underline">
-          직무 전환으로 돌아가기
-        </Link>
+        <BackLink to="/job-switch">직무 전환</BackLink>
         <p className="text-sm text-neutral-400">{error}</p>
       </div>
     );
@@ -184,9 +183,7 @@ export default function JobSwitchResult() {
       {/* ── 머리: 무엇의 결과인지 + 할 일 ─────────────────────── */}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <Link to="/job-switch" className="text-xs text-brand hover:underline">
-            ← 직무 전환
-          </Link>
+          <BackLink to="/job-switch">직무 전환</BackLink>
           <h1 className="text-xl font-heading mt-2">{run.target_job}</h1>
           <p className="text-xs text-neutral-500 mt-1">
             원본 · {source?.title ?? "(삭제된 포트폴리오)"}

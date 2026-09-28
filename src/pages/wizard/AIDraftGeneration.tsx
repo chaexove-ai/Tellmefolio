@@ -1,4 +1,5 @@
 import { useEffect, useState, type KeyboardEvent } from "react";
+import BackLink from "../../components/BackLink";
 import { clearSession, readSession, writeSession, WIZARD_PREFIX } from "../../lib/sessionState";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
@@ -219,9 +220,7 @@ export default function AIDraftGeneration() {
     // 폭 기준은 SourceInput 주석 참고 — 칸은 넓게, 읽는 글만 좁게.
     <div className="space-y-6">
       <div>
-        <Link to="/wizard/source" className="text-xs text-brand hover:underline">
-          원본 자료 수정
-        </Link>
+        <BackLink to="/wizard/source">원본 자료 수정</BackLink>
         <h1 className="text-xl font-heading mt-2">AI 포트폴리오 초안 생성</h1>
       </div>
 
@@ -234,7 +233,7 @@ export default function AIDraftGeneration() {
         {materials.length === 0 && note.trim().length === 0 && links.length === 0 ? (
           <p className="text-sm text-neutral-500">
             선택된 자료가 없습니다.{" "}
-            <Link to="/wizard/source" className="text-brand hover:underline">
+            <Link to="/wizard/source" className="link-inline">
               이전 단계
             </Link>
             에서 저장소를 고르거나 메모를 적어주세요.

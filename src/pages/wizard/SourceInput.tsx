@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import BackLink from "../../components/BackLink";
 import { readSession, writeSession, WIZARD_SOURCE_KEY } from "../../lib/sessionState";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -285,9 +286,7 @@ export default function SourceInput() {
     // 저장소 목록이 한 줄짜리 항목으로 길게 내려갑니다.
     <div className="space-y-6">
       <div>
-        <Link to="/library" className="text-xs text-brand hover:underline">
-          ← 홈
-        </Link>
+        <BackLink to="/library">홈</BackLink>
         <h1 className="text-xl font-heading mt-2">원본 자료 입력</h1>
         <p className="text-sm text-neutral-400 mt-1 max-w-[62ch]">
           포트폴리오 생성에 사용할 원본 자료를 자료함에 모으세요. 여러 형식의 자료를
@@ -400,7 +399,7 @@ export default function SourceInput() {
                   type="button"
                   onClick={() => void loadRepos()}
                   disabled={reposLoading}
-                  className="text-xs text-brand hover:underline inline-flex items-center gap-1 disabled:opacity-50"
+                  className="btn-ghost text-xs"
                 >
                   <RefreshCw size={12} strokeWidth={1.5} />
                   새로 고침

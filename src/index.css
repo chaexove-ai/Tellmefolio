@@ -703,6 +703,30 @@ summary::marker { content: ""; }
       transition-all duration-150;
   }
 
+  /* [09-28] 글자만 갈색이던 버튼들의 자리. 누를 수 있는 넓이(패딩)와 눌렀을 때의
+     바탕색, 앞에 아이콘을 둡니다 — 글자색 하나만으로는 설명문 속 강조와 버튼이
+     구분되지 않았습니다. 쓰는 곳: 섹션 머리의 보조 행동(목록으로 보기, 직무 색상
+     설정, 새로 고침…), 카드 하단 행동. */
+  .btn-ghost {
+    @apply inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-sm font-medium text-brand
+      hover:bg-brand/10 active:scale-[0.98] transition-colors duration-150
+      disabled:opacity-40 disabled:pointer-events-none;
+  }
+  /* 회색 보조 행동(카드의 내보내기·제출 기록처럼 주 행동 옆에 서는 것) */
+  .btn-ghost-muted {
+    @apply inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-sm text-neutral-400
+      hover:bg-neutral-800 hover:text-neutral-100 active:scale-[0.98] transition-colors duration-150
+      disabled:opacity-40 disabled:pointer-events-none;
+  }
+  /* 뒤로 가기 — components/BackLink.tsx */
+  .link-back {
+    @apply inline-flex items-center gap-1 text-sm text-neutral-500 hover:text-neutral-100 transition-colors;
+  }
+  /* 문장 안의 링크는 늘 밑줄. 색만으로 링크를 알리면 색각 차이가 있는 사람에게 안 보입니다. */
+  .link-inline {
+    @apply text-brand underline underline-offset-4 decoration-brand/40 hover:decoration-brand transition-colors;
+  }
+
   .btn-secondary {
     @apply inline-flex items-center justify-center gap-2 rounded-xl border border-neutral-700 bg-neutral-900/40 px-4 py-2.5 text-sm font-medium text-neutral-200
       hover:border-neutral-500 hover:bg-neutral-900 active:scale-[0.98] transition-all duration-150;

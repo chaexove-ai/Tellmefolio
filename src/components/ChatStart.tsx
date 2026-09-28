@@ -53,7 +53,7 @@ export default function ChatStart() {
           "이어서"는 홈의 "이어서 할 일"로, 직무 전환은 사이드바로 갔습니다. */}
       <p className="mt-4 text-sm text-neutral-500">
         깃허브 저장소나 링크·메모가 있다면 →{" "}
-        <Link to="/wizard/source" className="text-brand underline-offset-4 hover:underline">
+        <Link to="/wizard/source" className="link-inline">
           자료로 만들기
         </Link>
       </p>

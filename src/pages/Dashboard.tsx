@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, History, LoaderCircle, Plus, Send } from "lucide-react";
+import { ArrowRight, History, LoaderCircle, Plus, Send, LayoutGrid } from "lucide-react";
 import { useAuth } from "../auth/AuthProvider";
 import { listMyPortfolios, PortfolioError, type LibraryPortfolio } from "../lib/portfolios";
 import { listOpenInterviews, type InterviewSummary } from "../lib/interview";
@@ -91,8 +91,8 @@ export default function Dashboard() {
           {portfolios && portfolios.length > 0 && (
             <>
               <span className="text-xs text-neutral-600">{portfolios.length}권</span>
-              <Link to="/library/portfolios" className="ml-auto text-sm text-brand hover:underline">
-                목록으로 보기 →
+              <Link to="/library/portfolios" className="btn-ghost ml-auto">
+                <LayoutGrid size={15} strokeWidth={1.75} /> 목록으로 보기
               </Link>
             </>
           )}

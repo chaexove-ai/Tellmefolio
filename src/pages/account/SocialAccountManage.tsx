@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import BackLink from "../../components/BackLink";
 import { Link } from "react-router-dom";
 import { LoaderCircle, RefreshCw } from "lucide-react";
 import type { UserIdentity } from "@supabase/supabase-js";
@@ -140,9 +141,7 @@ export default function SocialAccountManage() {
 
   return (
     <div className="max-w-3xl space-y-6">
-      <Link to="/settings" className="text-xs text-brand hover:underline">
-        계정 설정으로
-      </Link>
+      <BackLink to="/settings">계정 설정</BackLink>
       <h1 className="text-xl font-heading">소셜 계정 관리</h1>
 
       {!configured && (

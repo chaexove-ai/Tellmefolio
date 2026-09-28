@@ -21,8 +21,8 @@ export default function RecentSubmissions() {
       <div className="flex items-baseline justify-between mb-4">
         <h2 className="text-lg font-heading text-neutral-200">최근 제출</h2>
         {items.length > 0 && (
-          <Link to="/submissions" className="text-sm text-brand hover:underline">
-            전체 제출 기록
+          <Link to="/submissions" className="btn-ghost">
+            전체 제출 기록 <ArrowRight size={14} />
           </Link>
         )}
       </div>

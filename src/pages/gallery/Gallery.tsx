@@ -372,7 +372,7 @@ function UploadPicker({
               {me.nickname.trim() || FALLBACK_NICKNAME}
             </span>{" "}
             으로 표시됩니다.{" "}
-            <Link to="/settings" className="text-brand hover:underline">
+            <Link to="/settings" className="link-inline">
               이름 바꾸기
             </Link>
           </p>

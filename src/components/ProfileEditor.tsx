@@ -153,7 +153,7 @@ export default function ProfileEditor() {
               <div className="mt-2 flex flex-col items-center gap-1">
                 <button
                   type="button"
-                  className="text-xs text-brand hover:underline disabled:opacity-40"
+                  className="btn-ghost text-xs"
                   disabled={busy !== null}
                   onClick={() => fileRef.current?.click()}
                 >

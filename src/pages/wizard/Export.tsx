@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
+import BackLink from "../../components/BackLink";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { Check, LoaderCircle, Send } from "lucide-react";
+import { Check, LoaderCircle, Send, ExternalLink } from "lucide-react";
 import { useAuth } from "../../auth/AuthProvider";
 import {
   createSubmission,
@@ -413,9 +414,7 @@ export default function Export() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <Link to={id ? `/wizard/editor/${id}` : "/wizard"} className="text-xs text-brand hover:underline">
-        편집기로 돌아가기
-      </Link>
+      <BackLink to={id ? `/wizard/editor/${id}` : "/library/portfolios"}>편집기</BackLink>
       <h1 className="text-xl font-heading">내보내기</h1>
 
       {loading && (
@@ -550,9 +549,9 @@ export default function Export() {
                   href={shareUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="shrink-0 text-xs text-brand hover:underline"
+                  className="btn-ghost shrink-0 text-xs"
                 >
-                  열어보기
+                  <ExternalLink size={13} strokeWidth={1.75} /> 열어보기
                 </a>
               </div>
             )}
@@ -642,7 +641,7 @@ export default function Export() {
               </p>
               <button
                 type="button"
-                className="text-xs text-brand hover:underline shrink-0 disabled:opacity-40 disabled:no-underline"
+                className="btn-ghost shrink-0 text-xs"
                 disabled={!wantsRecord || recording}
                 onClick={() => void saveRecord("link")}
               >
@@ -662,7 +661,7 @@ export default function Export() {
             {recorded && !recording && (
               <p className="text-xs text-emerald-600 mt-2 inline-flex items-center gap-1.5 flex-wrap">
                 <Check size={13} strokeWidth={2} /> {recorded.label} 제출 기록에 남겼어요.
-                <Link to={`/library/portfolios/${portfolio.id}/versions`} className="text-brand hover:underline">
+                <Link to={`/library/portfolios/${portfolio.id}/versions`} className="link-inline">
                   제출 기록 보기
                 </Link>
                 {!recorded.imagesInlined && (

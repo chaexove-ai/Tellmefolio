@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import BackLink from "../components/BackLink";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import LibraryTabs from "../components/LibraryTabs";
-import { Copy, Download, FileText, Globe2, LoaderCircle, Printer, Send, Trash2 } from "lucide-react";
+import { Copy, Download, FileText, Globe2, LoaderCircle, Printer, Send, Trash2, List as ListIcon } from "lucide-react";
 import { useAuth } from "../auth/AuthProvider";
 import {
   deleteSubmission,
@@ -146,9 +147,7 @@ export default function SubmissionHistory() {
       {portfolioId ? (
         <div className="flex items-end justify-between gap-4">
           <div>
-            <Link to="/library/portfolios" className="text-xs text-brand hover:underline">
-              ← 내 포트폴리오
-            </Link>
+            <BackLink to="/library/portfolios">내 포트폴리오</BackLink>
             <h1 className="text-xl font-heading mt-2">
               제출 기록{" "}
               {items && items.length > 0 && <span className="text-sm text-neutral-500 font-sans">{items.length}건</span>}
@@ -156,8 +155,8 @@ export default function SubmissionHistory() {
             <p className="text-xs text-neutral-500 mt-1">{heading ?? "이 포트폴리오"}로 낸 곳</p>
           </div>
           <div className="flex items-center gap-4">
-            <Link to="/submissions" className="text-xs text-brand hover:underline">
-              전체 제출 기록
+            <Link to="/submissions" className="btn-ghost">
+              <ListIcon size={15} strokeWidth={1.75} /> 전체 제출 기록
             </Link>
             <Link to={`/wizard/export/${portfolioId}`} className="btn-secondary py-2">
               <Send size={15} strokeWidth={1.75} /> 내보내며 기록하기
@@ -234,7 +233,7 @@ export default function SubmissionHistory() {
                     {formatDate(selected.submitted_on)} 제출 · {FORMAT_LABEL[selected.format]}
                     {selected.lang === "en" ? " · 영어" : ""} ·{" "}
                     {selected.portfolio_id ? (
-                      <Link to={`/wizard/editor/${selected.portfolio_id}`} className="text-brand hover:underline">
+                      <Link to={`/wizard/editor/${selected.portfolio_id}`} className="link-inline">
                         {selected.portfolio_title}
                       </Link>
                     ) : (
@@ -243,7 +242,7 @@ export default function SubmissionHistory() {
                     {selected.jd_url && (
                       <>
                         {" · "}
-                        <a href={selected.jd_url} target="_blank" rel="noreferrer" className="text-brand hover:underline">
+                        <a href={selected.jd_url} target="_blank" rel="noreferrer" className="link-inline">
                           공고
                         </a>
                       </>
@@ -267,10 +266,10 @@ export default function SubmissionHistory() {
                   {confirmDelete ? (
                     <span className="inline-flex items-center gap-2 text-xs text-neutral-400">
                       지울까요?
-                      <button type="button" className="text-brand hover:underline" onClick={() => void remove()}>
+                      <button type="button" className="rounded-lg bg-red-600/90 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-red-600" onClick={() => void remove()}>
                         지우기
                       </button>
-                      <button type="button" className="hover:underline" onClick={() => setConfirmDelete(false)}>
+                      <button type="button" className="btn-ghost-muted text-xs" onClick={() => setConfirmDelete(false)}>
                         취소
                       </button>
                     </span>
@@ -299,7 +298,7 @@ export default function SubmissionHistory() {
                   <Globe2 size={26} strokeWidth={1.5} className="text-neutral-500 mx-auto" />
                   <p className="mt-3 text-sm text-neutral-400">링크로 보낸 기록이라 저장된 파일이 없어요.</p>
                   {selected.portfolio_id && (
-                    <Link to={`/p/${selected.portfolio_id}`} className="text-sm text-brand hover:underline mt-2 inline-block">
+                    <Link to={`/p/${selected.portfolio_id}`} className="btn-ghost mt-2">
                       공개 링크 열기
                     </Link>
                   )}

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { SlidersHorizontal, LoaderCircle } from "lucide-react";
+import { SlidersHorizontal, LoaderCircle, Palette, Pencil, Share, Send } from "lucide-react";
 import { useAuth } from "../auth/AuthProvider";
 import {
   listMyPortfolios,
@@ -223,8 +223,8 @@ export default function PortfolioList() {
       <LibraryTabs
         portfolioCount={portfolios.length}
         actions={
-          <button className="text-xs text-brand hover:underline" onClick={openColorModal}>
-            직무 색상 설정
+          <button className="btn-ghost" onClick={openColorModal}>
+            <Palette size={16} strokeWidth={1.75} /> 직무 색상 설정
           </button>
         }
       />
@@ -246,7 +246,7 @@ export default function PortfolioList() {
         <div className="entry">
           <p className="text-sm text-neutral-400">
             아직 만든 포트폴리오가 없습니다.{" "}
-            <NewPortfolioButton className="text-brand hover:underline">
+            <NewPortfolioButton className="link-inline">
               지금 첫 포트폴리오를 만들어보세요
             </NewPortfolioButton>
             .
@@ -345,18 +345,22 @@ export default function PortfolioList() {
                         {p.year} · 마지막 수정 {p.updatedAt.slice(0, 10)}
                       </p>
 
-                      <div className="mt-auto pt-4 flex items-center gap-4 text-xs">
-                        <Link to={`/wizard/editor/${p.id}`} className="text-brand hover:underline">
-                          편집하기
+                      <div className="-mx-2 mt-auto pt-3 flex items-center text-xs">
+                        <Link to={`/wizard/editor/${p.id}`} className="btn-ghost text-xs px-2">
+                          <Pencil size={13} strokeWidth={1.75} /> 편집
                         </Link>
-                        <Link to={`/wizard/export/${p.id}`} className="text-neutral-400 hover:underline">
-                          내보내기
+                        <Link to={`/wizard/export/${p.id}`} className="btn-ghost-muted text-xs px-2">
+                          <Share size={13} strokeWidth={1.75} /> 내보내기
                         </Link>
-                        <Link to={`/library/portfolios/${p.id}/versions`} className="text-neutral-400 hover:underline">
-                          제출 기록{submissionCounts[p.id] ? ` ${submissionCounts[p.id]}` : ""}
+                        <Link
+                          to={`/library/portfolios/${p.id}/versions`}
+                          className="btn-ghost-muted text-xs px-2"
+                          title="제출 기록 — 어디에 냈는지"
+                        >
+                          <Send size={13} strokeWidth={1.75} /> 제출{submissionCounts[p.id] ? ` ${submissionCounts[p.id]}` : ""}
                         </Link>
 
-                        <label className="ml-auto inline-flex items-center gap-2 cursor-pointer select-none text-neutral-500">
+                        <label className="ml-auto mr-2 inline-flex shrink-0 items-center gap-2 whitespace-nowrap cursor-pointer select-none text-neutral-500">
                           커뮤니티
                           <button
                             type="button"
@@ -408,7 +412,7 @@ export default function PortfolioList() {
                 <span className="text-brand">•</span>
                 <span className="text-neutral-300 break-keep">
                   커뮤니티에는 <b className="text-neutral-100">{nickname || FALLBACK_NICKNAME}</b>{euro(nickname || FALLBACK_NICKNAME)} 표시됩니다.{" "}
-                  <Link to="/settings" className="text-brand hover:underline">
+                  <Link to="/settings" className="link-inline">
                     이름 바꾸기
                   </Link>
                 </span>

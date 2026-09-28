@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import BackLink from "../../components/BackLink";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { AlertTriangle, ArrowRight, Check, LoaderCircle, Minus, Plus, SendHorizontal } from "lucide-react";
 import { useAuth } from "../../auth/AuthProvider";
@@ -210,9 +211,7 @@ function ChatBuilder() {
   if (loadError) {
     return (
       <div className="space-y-3">
-        <Link to="/library" className="text-xs text-brand hover:underline">
-          ← 홈
-        </Link>
+        <BackLink to="/library">홈</BackLink>
         <p className="text-sm text-neutral-400">{loadError}</p>
       </div>
     );
@@ -225,9 +224,9 @@ function ChatBuilder() {
       {/* ── 왼쪽: 채팅 ───────────────────────────────────────── */}
       <section className="entry p-0 flex flex-col min-h-0">
         <header className="flex items-center gap-3 px-5 py-4 border-b border-neutral-800">
-          <Link to="/library" className="text-xs text-brand hover:underline shrink-0">
-            ← 홈
-          </Link>
+          <BackLink to="/library" className="shrink-0">
+            홈
+          </BackLink>
           <h1 className="font-heading text-lg truncate">{s?.title || "새 이야기"}</h1>
           {s && (
             <span className="ml-auto text-xs text-neutral-500 tabular-nums shrink-0">

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import BackLink from "../../components/BackLink";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { ArrowDown, ArrowLeft, ArrowUp, Check, ChevronDown, CloudOff, Clock, GripVertical, ImagePlus, Info, LoaderCircle, MessagesSquare, Minus, Pencil, Plus, Sparkles, Trash2, Undo2, Type, X } from "lucide-react";
 import {
@@ -865,9 +866,7 @@ export default function PortfolioEditor() {
         <p role="alert" className="text-sm text-brand">
           {loadError ?? "포트폴리오를 찾을 수 없습니다."}
         </p>
-        <Link to="/library/portfolios" className="text-xs text-brand hover:underline">
-          ← 내 포트폴리오로
-        </Link>
+        <BackLink to="/library/portfolios">내 포트폴리오</BackLink>
       </div>
     );
   }
@@ -1044,7 +1043,7 @@ export default function PortfolioEditor() {
               <div className="flex items-center gap-2 shrink-0 ml-3">
                 <button
                   type="button"
-                  className="text-neutral-400 hover:underline"
+                  className="btn-ghost-muted text-xs"
                   onClick={() => setDeleteConfirming(false)}
                   disabled={deleting}
                 >
@@ -1052,7 +1051,7 @@ export default function PortfolioEditor() {
                 </button>
                 <button
                   type="button"
-                  className="font-medium text-brand hover:underline disabled:opacity-40"
+                  className="rounded-lg bg-red-600/90 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-red-600 disabled:opacity-40"
                   onClick={() => void handleDeleteProject()}
                   disabled={deleting}
                 >
@@ -1161,7 +1160,7 @@ export default function PortfolioEditor() {
                     {" "}· {currentImages.length}/{MAX_PROJECT_IMAGES}
                   </span>
                 </span>
-                <label className="text-xs text-brand hover:underline cursor-pointer inline-flex items-center gap-1">
+                <label className="btn-ghost text-xs cursor-pointer">
                   <ImagePlus size={12} aria-hidden="true" />
                   {uploadingImage ? "올리는 중…" : "이미지 추가"}
                   <input

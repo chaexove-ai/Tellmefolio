@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import BackLink from "../../components/BackLink";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/AuthProvider";
 import { listMyPortfolios } from "../../lib/portfolios";
@@ -117,9 +118,7 @@ export default function DataManage() {
 
   return (
     <div className="max-w-3xl space-y-6">
-      <Link to="/settings" className="text-xs text-brand hover:underline">
-        계정 설정으로
-      </Link>
+      <BackLink to="/settings">계정 설정</BackLink>
       <h1 className="text-xl font-heading">데이터 관리</h1>
 
       {notice && (
