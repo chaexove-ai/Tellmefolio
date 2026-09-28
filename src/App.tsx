@@ -23,7 +23,7 @@ const PublicPortfolio = lazy(() => import("./pages/PublicPortfolio"));
 
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const PortfolioList = lazy(() => import("./pages/PortfolioList"));
-const VersionHistory = lazy(() => import("./pages/VersionHistory"));
+const SubmissionHistory = lazy(() => import("./pages/SubmissionHistory"));
 
 const WizardLayout = lazy(() => import("./components/WizardLayout"));
 const SourceInput = lazy(() => import("./pages/wizard/SourceInput"));
@@ -32,10 +32,10 @@ const PortfolioEditor = lazy(() => import("./pages/wizard/PortfolioEditor"));
 const Export = lazy(() => import("./pages/wizard/Export"));
 
 const JobSwitchRequest = lazy(() => import("./pages/jobswitch/JobSwitchRequest"));
+const JobSwitchResult = lazy(() => import("./pages/jobswitch/JobSwitchResult"));
+const ChatBuilder = lazy(() => import("./pages/chat/ChatBuilder"));
 
 const Gallery = lazy(() => import("./pages/gallery/Gallery"));
-const ShareSettings = lazy(() => import("./pages/gallery/ShareSettings"));
-const VisitStats = lazy(() => import("./pages/gallery/VisitStats"));
 
 const AccountSettings = lazy(() => import("./pages/account/AccountSettings"));
 const SocialAccountManage = lazy(() => import("./pages/account/SocialAccountManage"));
@@ -80,10 +80,12 @@ export default function App() {
           페이지를 옮길 때마다 사이드바까지 같이 사라졌다 돌아옵니다. */}
       <Route element={<RequireAuth />}>
         <Route element={<AppLayout />}>
-        {/* 내 서재 */}
+        {/* 홈 · 내 포트폴리오(포트폴리오 / 제출 기록 탭) */}
         <Route path="/library" element={<Dashboard />} />
         <Route path="/library/portfolios" element={<PortfolioList />} />
-        <Route path="/library/portfolios/:id/versions" element={<VersionHistory />} />
+        {/* [2026-09-25] "버전 관리" 목업 → 제출 기록. 이미 걸린 링크가 있어 주소는 그대로 둡니다. */}
+        <Route path="/library/portfolios/:id/versions" element={<SubmissionHistory />} />
+        <Route path="/submissions" element={<SubmissionHistory />} />
 
         {/* 포트폴리오 생성 위저드.
             editor/style/export 는 :id 가 필요합니다 — [2026-09] 마법사가
@@ -107,12 +109,13 @@ export default function App() {
           <Route path="/wizard/export/:id" element={<Export />} />
         </Route>
 
+        {/* 대화로 만들기 — /chat/new 는 새 대화, 나머지는 세션 id */}
+        <Route path="/chat/:sessionId" element={<ChatBuilder />} />
+
         {/* 직무 전환 재구성 */}
         <Route path="/job-switch" element={<JobSwitchRequest />} />
-        {/* [2026-09-23] 결과 화면을 없앴습니다. 제안을 보면서 목표 직무를
-            고쳐 다시 돌리는 일이 잦은데, 화면이 갈리면 그때마다 뒤로
-            가야 했습니다. 이제 한 화면에서 입력하고 제안을 봅니다.
-            예전 주소는 그대로 되돌려 보냅니다. */}
+        <Route path="/job-switch/result/:runId" element={<JobSwitchResult />} />
+        {/* 목업 시절 주소. 결과가 run 마다 따로 생기면서 id 가 필요해졌습니다. */}
         <Route path="/job-switch/result" element={<Navigate to="/job-switch" replace />} />
 
         {/* 커뮤니티 및 공유.
@@ -124,8 +127,7 @@ export default function App() {
             보여주던 자리입니다. 둘을 유지하면 한쪽만 고치는 일이 생기므로
             /p/:id 하나로 합쳤습니다. 기존 링크는 그리로 넘깁니다. */}
         <Route path="/community/:id" element={<CommunityDetailRedirect />} />
-        <Route path="/community/share" element={<ShareSettings />} />
-        <Route path="/community/stats" element={<VisitStats />} />
+        {/* [09-26] /community/share·/community/stats 는 어디서도 들어갈 수 없는 목업(가짜 숫자)이라 지웠습니다. */}
 
         <Route path="/gallery" element={<Navigate to="/community" replace />} />
         <Route path="/gallery/*" element={<Navigate to="/community" replace />} />

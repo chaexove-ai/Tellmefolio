@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { readSession, writeSession, WIZARD_SOURCE_KEY } from "../../lib/sessionState";
 import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowRight,
@@ -57,7 +58,12 @@ export default function SourceInput() {
   const navigate = useNavigate();
   const { githubLogin, signIn } = useAuth();
 
-  const [repos, setRepos] = useState<GitHubRepo[]>([]);
+  // [09-26] 자료함을 탭 안에 임시 저장합니다. 다음 화면에서 "원본 자료 수정"으로
+  // 돌아오거나 새로고침해도 고른 저장소·링크·메모가 그대로 있습니다.
+  const [saved] = useState(() =>
+    readSession<{ selectedRepos: GitHubRepo[]; excluded: string[]; links: LinkSource[]; note: string }>(WIZARD_SOURCE_KEY)
+  );
+  const [repos, setRepos] = useState<GitHubRepo[]>(saved?.selectedRepos ?? []);
   const [reposLoading, setReposLoading] = useState(false);
   const [reposError, setReposError] = useState<string | null>(null);
   // [2026-09] GitHub OAuth 토큰은 Supabase 세션에 저장되지 않고 로그인
@@ -68,7 +74,9 @@ export default function SourceInput() {
   // reposError 와 구분해서 재연결 버튼을 따로 보여줍니다.
   const [reposAuthError, setReposAuthError] = useState(false);
   const [reconnecting, setReconnecting] = useState(false);
-  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [selected, setSelected] = useState<Set<number>>(
+    () => new Set((saved?.selectedRepos ?? []).map((r) => r.id))
+  );
   /**
    * [2026-09-23] 자료함에서 "이번 생성에 뺄 것".
    *
@@ -81,7 +89,7 @@ export default function SourceInput() {
    * 해제는 목록에 남은 채 이번 생성에만 빠집니다 — 안내 문구가 말하는
    * "언제든지 다시 추가할 수 있습니다"가 이 동작입니다.
    */
-  const [excluded, setExcluded] = useState<Set<string>>(new Set());
+  const [excluded, setExcluded] = useState<Set<string>>(() => new Set(saved?.excluded ?? []));
 
   const isIncluded = (key: string) => !excluded.has(key);
   const toggleIncluded = (key: string) =>
@@ -100,8 +108,17 @@ export default function SourceInput() {
   const [collectError, setCollectError] = useState<string | null>(null);
 
   const [linkUrl, setLinkUrl] = useState("");
-  const [links, setLinks] = useState<LinkSource[]>([]);
-  const [note, setNote] = useState("");
+  const [links, setLinks] = useState<LinkSource[]>(saved?.links ?? []);
+  const [note, setNote] = useState(saved?.note ?? "");
+
+  useEffect(() => {
+    writeSession(WIZARD_SOURCE_KEY, {
+      selectedRepos: repos.filter((r) => selected.has(r.id)),
+      excluded: [...excluded],
+      links,
+      note,
+    });
+  }, [repos, selected, excluded, links, note]);
 
   const [openPanel, setOpenPanel] = useState<QuickAddPanel>(null);
   const togglePanel = (panel: QuickAddPanel) =>
@@ -114,10 +131,17 @@ export default function SourceInput() {
     setReposAuthError(false);
     try {
       const list = await fetchUserRepos(githubLogin);
-      setRepos(list);
-      // 처음 열 때는 최근 수정한 다섯 개만 켜둡니다. 저장소가 수십 개인
-      // 사람이 전부 선택된 화면을 보면 하나씩 끄는 일부터 하게 됩니다.
-      setSelected(new Set(list.slice(0, 5).map((r) => r.id)));
+      const kept = saved?.selectedRepos ?? [];
+      if (kept.length > 0) {
+        // 돌아온 경우: 전에 고른 것을 그대로(주소로 따로 담은 저장소도 잃지 않게 합칩니다)
+        setRepos([...kept.filter((k) => !list.some((r) => r.id === k.id)), ...list]);
+        setSelected(new Set(kept.map((r) => r.id)));
+      } else {
+        setRepos(list);
+        // 처음 열 때는 최근 수정한 다섯 개만 켜둡니다. 저장소가 수십 개인
+        // 사람이 전부 선택된 화면을 보면 하나씩 끄는 일부터 하게 됩니다.
+        setSelected(new Set(list.slice(0, 5).map((r) => r.id)));
+      }
     } catch (e) {
       if (e instanceof GitHubError && e.status === 401) {
         setReposAuthError(true);
@@ -262,7 +286,7 @@ export default function SourceInput() {
     <div className="space-y-6">
       <div>
         <Link to="/library" className="text-xs text-brand hover:underline">
-          내 서재로
+          ← 홈
         </Link>
         <h1 className="text-xl font-heading mt-2">원본 자료 입력</h1>
         <p className="text-sm text-neutral-400 mt-1 max-w-[62ch]">

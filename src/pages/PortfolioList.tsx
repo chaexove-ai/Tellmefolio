@@ -6,10 +6,17 @@ import {
   listMyPortfolios,
   updateJobColor,
   updatePortfolioJob,
+  updatePortfolioListed,
+  updatePortfolioVisibility,
   PortfolioError,
   type LibraryPortfolio,
 } from "../lib/portfolios";
 import Reveal from "../components/Reveal";
+import GrainCover from "../components/GrainCover";
+import LibraryTabs from "../components/LibraryTabs";
+import { NewPortfolioButton } from "../components/NewPortfolio";
+import { getMyProfile, FALLBACK_NICKNAME } from "../lib/profile";
+import { countSubmissionsByPortfolio } from "../lib/submissions";
 
 /**
  * [2026-09] mockData.portfolios(고정 4건, 직무·연도가 미리 정해져 있던
@@ -47,6 +54,54 @@ export default function PortfolioList() {
   const [editingJobId, setEditingJobId] = useState<string | null>(null);
   const [savingJobId, setSavingJobId] = useState<string | null>(null);
   const [jobEditError, setJobEditError] = useState<string | null>(null);
+
+  // [2026-09-25] 카드에서 바로 커뮤니티에 올리고 내리기.
+  // 비공개인 것을 올리면 공개 링크도 같이 열리므로 그때만 확인창을 띄웁니다.
+  const [listingId, setListingId] = useState<string | null>(null);
+  const [confirmFor, setConfirmFor] = useState<LibraryPortfolio | null>(null);
+  const [listError, setListError] = useState<string | null>(null);
+  const [nickname, setNickname] = useState<string>("");
+  /** 포트폴리오 id → 제출 기록 수 (카드의 "제출 기록 N") */
+  const [submissionCounts, setSubmissionCounts] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (!configured) return;
+    countSubmissionsByPortfolio().then(setSubmissionCounts).catch(() => setSubmissionCounts({}));
+  }, [configured]);
+
+  useEffect(() => {
+    const uid = session?.user?.id;
+    if (!configured || !uid) return;
+    getMyProfile(uid)
+      .then((p) => setNickname(p.nickname.trim()))
+      .catch(() => setNickname(""));
+  }, [configured, session?.user?.id]);
+
+  const setListed = async (p: LibraryPortfolio, listed: boolean, alsoPublic = false) => {
+    setListingId(p.id);
+    setListError(null);
+    try {
+      if (alsoPublic) await updatePortfolioVisibility(p.id, "public");
+      await updatePortfolioListed(p.id, listed);
+      setPortfolios((prev) =>
+        prev.map((row) =>
+          row.id === p.id ? { ...row, listed, visibility: alsoPublic ? "공개" : row.visibility } : row
+        )
+      );
+      setConfirmFor(null);
+    } catch (e) {
+      setListError(e instanceof PortfolioError ? e.message : "커뮤니티 설정을 바꾸지 못했습니다.");
+    } finally {
+      setListingId(null);
+    }
+  };
+
+  const toggleListed = (p: LibraryPortfolio) => {
+    if (p.listed) return void setListed(p, false); // 내리기는 확인 없이. 공개 링크는 그대로 둡니다
+    if (p.visibility === "공개") return void setListed(p, true);
+    setListError(null);
+    setConfirmFor(p);
+  };
 
   useEffect(() => {
     if (!configured) {
@@ -159,19 +214,20 @@ export default function PortfolioList() {
   if (sort === "최근 수정순")
     list = [...list].sort((a, b) => +new Date(b.updatedAt) - +new Date(a.updatedAt));
 
+  // [2026-09-25] 데스크탑 전용이 된 뒤에도 max-w-3xl 한 줄 목록이라 화면
+  // 오른쪽 절반이 비어 있었습니다. 표지가 있는 카드 격자로 바꿔 남는 폭을
+  // 씁니다. 홈의 책장이 "훑어보기"라면 이 화면은 "찾고 정리하기"입니다 —
+  // 필터·정렬·직무 이름/색 일괄 수정이 여기에만 있습니다.
   return (
-    <div className="max-w-3xl space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-heading">내 서재</h1>
-        <div className="flex gap-4 items-center">
+    <div className="space-y-6">
+      <LibraryTabs
+        portfolioCount={portfolios.length}
+        actions={
           <button className="text-xs text-brand hover:underline" onClick={openColorModal}>
             직무 색상 설정
           </button>
-          <Link to="/wizard" className="btn-primary">
-            새 포트폴리오 만들기
-          </Link>
-        </div>
-      </div>
+        }
+      />
 
       {!configured ? (
         <p className="text-sm text-neutral-500">
@@ -190,9 +246,9 @@ export default function PortfolioList() {
         <div className="entry">
           <p className="text-sm text-neutral-400">
             아직 만든 포트폴리오가 없습니다.{" "}
-            <Link to="/wizard" className="text-brand hover:underline">
+            <NewPortfolioButton className="text-brand hover:underline">
               지금 첫 포트폴리오를 만들어보세요
-            </Link>
+            </NewPortfolioButton>
             .
           </p>
         </div>
@@ -221,66 +277,162 @@ export default function PortfolioList() {
             </select>
           </div>
 
+          {listError && !confirmFor && (
+            <p role="alert" className="text-xs text-brand">
+              {listError}
+            </p>
+          )}
+
           {jobEditError && (
             <p role="alert" className="text-xs text-brand">
               {jobEditError}
             </p>
           )}
 
-          <div className="space-y-4">
-            {list.map((p, i) => (
-              <Reveal key={p.id} delay={(i % 4) * 0.06}>
-                <div className="entry flex items-start justify-between">
-                  <div>
-                    {editingJobId === p.id ? (
-                      <input
-                        autoFocus
-                        type="text"
-                        defaultValue={p.job === "직무 미지정" ? "" : p.job}
-                        placeholder="직무 입력"
-                        onBlur={(e) => void handleSaveJob(p, e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-                          if (e.key === "Escape") setEditingJobId(null);
-                        }}
-                        className="badge mb-2 bg-transparent border outline-none w-40 max-w-full"
-                        style={{ borderColor: p.jobColor, color: p.jobColor }}
-                      />
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => setEditingJobId(p.id)}
-                        disabled={savingJobId === p.id}
-                        title="눌러서 직무 수정"
-                        className="badge mb-2 hover:opacity-75 transition-opacity disabled:opacity-50"
-                        style={{ backgroundColor: `${p.jobColor}22`, color: p.jobColor }}
+          {list.length === 0 ? (
+            <p className="text-sm text-neutral-500">조건에 맞는 포트폴리오가 없습니다.</p>
+          ) : (
+            <div className="grid gap-5 grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+              {list.map((p, i) => (
+                <Reveal key={p.id} delay={(i % 4) * 0.06} className="h-full">
+                  <article className="entry p-0 overflow-hidden h-full flex flex-col transition-colors hover:border-neutral-700">
+                    <Link to={`/wizard/editor/${p.id}`} className="relative block" aria-label={`${p.title} 편집하기`}>
+                      <GrainCover seed={p.id} tint={p.jobColor} className="aspect-[16/9] w-full" />
+                      <span
+                        className={`badge absolute top-3 right-3 shadow-sm ${
+                          p.visibility === "공개" ? "bg-white/85 text-emerald-700" : "bg-white/85 text-neutral-600"
+                        }`}
                       >
-                        {savingJobId === p.id ? "저장 중…" : p.job}
-                      </button>
-                    )}
-                    <p className="font-medium text-neutral-100">{p.title}</p>
-                    <p className="text-xs text-neutral-500 mt-1">마지막 수정 {p.updatedAt.slice(0, 10)}</p>
-                    <div className="flex gap-3 mt-2">
+                        {p.visibility}
+                      </span>
+                    </Link>
+
+                    <div className="p-5 flex-1 flex flex-col">
+                      {editingJobId === p.id ? (
+                        <input
+                          autoFocus
+                          type="text"
+                          defaultValue={p.job === "직무 미지정" ? "" : p.job}
+                          placeholder="직무 입력"
+                          onBlur={(e) => void handleSaveJob(p, e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                            if (e.key === "Escape") setEditingJobId(null);
+                          }}
+                          className="badge self-start bg-transparent border outline-none w-40 max-w-full"
+                          style={{ borderColor: p.jobColor, color: p.jobColor }}
+                        />
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setEditingJobId(p.id)}
+                          disabled={savingJobId === p.id}
+                          title="눌러서 직무 수정"
+                          className="badge self-start hover:opacity-75 transition-opacity disabled:opacity-50"
+                          style={{ backgroundColor: `${p.jobColor}22`, color: p.jobColor }}
+                        >
+                          {savingJobId === p.id ? "저장 중…" : p.job}
+                        </button>
+                      )}
+
                       <Link
                         to={`/wizard/editor/${p.id}`}
-                        className="text-xs text-brand hover:underline inline-block"
+                        className="mt-2.5 font-medium text-neutral-100 leading-snug line-clamp-2 break-keep hover:text-brand"
                       >
-                        편집하기
+                        {p.title}
                       </Link>
-                      <Link
-                        to={`/library/portfolios/${p.id}/versions`}
-                        className="text-xs text-neutral-400 hover:underline inline-block"
-                      >
-                        버전 관리
-                      </Link>
+                      <p className="text-xs text-neutral-500 mt-1.5">
+                        {p.year} · 마지막 수정 {p.updatedAt.slice(0, 10)}
+                      </p>
+
+                      <div className="mt-auto pt-4 flex items-center gap-4 text-xs">
+                        <Link to={`/wizard/editor/${p.id}`} className="text-brand hover:underline">
+                          편집하기
+                        </Link>
+                        <Link to={`/wizard/export/${p.id}`} className="text-neutral-400 hover:underline">
+                          내보내기
+                        </Link>
+                        <Link to={`/library/portfolios/${p.id}/versions`} className="text-neutral-400 hover:underline">
+                          제출 기록{submissionCounts[p.id] ? ` ${submissionCounts[p.id]}` : ""}
+                        </Link>
+
+                        <label className="ml-auto inline-flex items-center gap-2 cursor-pointer select-none text-neutral-500">
+                          커뮤니티
+                          <button
+                            type="button"
+                            role="switch"
+                            aria-checked={p.listed}
+                            aria-label={`${p.title} 커뮤니티에 ${p.listed ? "내리기" : "올리기"}`}
+                            disabled={listingId === p.id}
+                            onClick={() => toggleListed(p)}
+                            className={`relative h-5 w-9 rounded-full transition-colors disabled:opacity-50 ${
+                              p.listed ? "bg-brand-solid" : "bg-neutral-700"
+                            }`}
+                          >
+                            <span
+                              className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${
+                                p.listed ? "translate-x-4" : ""
+                              }`}
+                            />
+                          </button>
+                        </label>
+                      </div>
                     </div>
-                  </div>
-                  <span className="badge bg-neutral-800 text-neutral-300 shrink-0">{p.visibility}</span>
-                </div>
-              </Reveal>
-            ))}
-          </div>
+                  </article>
+                </Reveal>
+              ))}
+            </div>
+          )}
         </>
+      )}
+
+      {confirmFor && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-10 p-4">
+          <div className="surface w-full max-w-md" role="dialog" aria-modal="true" aria-labelledby="list-confirm-title">
+            <h2 id="list-confirm-title" className="entry-title mb-1">
+              커뮤니티에 올릴까요?
+            </h2>
+            <p className="text-sm text-neutral-400 mb-4 break-keep">“{confirmFor.title}”</p>
+            <ul className="space-y-2 text-sm">
+              <li className="flex gap-2">
+                <span className="text-brand">•</span>
+                <span className="text-neutral-300 break-keep">
+                  지금 <b className="text-neutral-100">비공개</b>라서 공개 링크도 함께 열립니다.
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-brand">•</span>
+                <span className="text-neutral-300 break-keep">재직 중이라면 회사 사람도 볼 수 있습니다.</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-brand">•</span>
+                <span className="text-neutral-300 break-keep">
+                  커뮤니티에는 <b className="text-neutral-100">{nickname || FALLBACK_NICKNAME}</b>{euro(nickname || FALLBACK_NICKNAME)} 표시됩니다.{" "}
+                  <Link to="/settings" className="text-brand hover:underline">
+                    이름 바꾸기
+                  </Link>
+                </span>
+              </li>
+            </ul>
+            {listError && (
+              <p role="alert" className="text-xs text-brand mt-3">
+                {listError}
+              </p>
+            )}
+            <div className="flex justify-end gap-2 mt-6">
+              <button className="btn-secondary" onClick={() => setConfirmFor(null)} disabled={listingId !== null}>
+                취소
+              </button>
+              <button
+                className="btn-primary disabled:opacity-40"
+                onClick={() => void setListed(confirmFor, true, true)}
+                disabled={listingId !== null}
+              >
+                {listingId ? "올리는 중" : "공개하고 올리기"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {showColorModal && (
@@ -340,4 +492,12 @@ export default function PortfolioList() {
       )}
     </div>
   );
+}
+
+/** 받침에 따라 "로"/"으로". 한글이 아니면(영문 닉네임 등) "(으)로" */
+function euro(word: string) {
+  const code = word.charCodeAt(word.length - 1) - 0xac00;
+  if (code < 0 || code > 11171) return "(으)로";
+  const jong = code % 28;
+  return jong === 0 || jong === 8 ? "로" : "으로"; // 받침 없음 또는 ㄹ → "로"
 }

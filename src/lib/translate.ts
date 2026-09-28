@@ -106,7 +106,7 @@ export async function translatePortfolioToEnglish(
     console.error("translate-portfolio 실패:", error, detail);
     throw new TranslateError(
       detail
-        ? `번역 요청이 실패했습니다: ${detail}`
+        ? detail
         : "번역 요청이 실패했습니다. 잠시 후 다시 시도해 주세요."
     );
   }

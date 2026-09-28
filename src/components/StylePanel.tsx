@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
-import { Check, ChevronDown, LoaderCircle } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { htmlTemplates } from "../lib/htmlTemplates";
-import { formatRelativeTime } from "../lib/formatRelativeTime";
 import { useAuth } from "../auth/AuthProvider";
 import { FONT_STACKS, DEFAULT_FONT } from "../lib/portfolioTheme";
 import { shrinkImage, formatBytes } from "../lib/images";
@@ -25,11 +24,10 @@ import {
  * 안에 또 자기만의 미리보기가 있었습니다(같은 것이 두 벌). 바꾸는 손과
  * 보이는 결과가 한 화면에 있으면 그럴 필요가 없습니다.
  *
- * 저장 모델은 옛 페이지 그대로 "고치고 → 저장" 입니다. 바꾸는 즉시
- * 미리보기에는 반영되지만(onStyleChange 로 부모에 올림) DB 기록은 저장을
- * 눌러야 일어납니다 — 표지 이미지가 이 흐름에 묶여 있기 때문입니다.
- * 파일을 고르자마자 버킷에 올려버리면 "되돌리기"를 눌러도 파일은 이미
- * 올라간 뒤라 되돌릴 것이 없어집니다.
+ * [09-26] 저장 모델을 "고르면 바로 저장"으로 바꿨습니다. 전에는 이 패널에만
+ * 따로 저장·되돌리기 버튼이 있어서, 편집기 본문 저장과 헷갈리고 저장을
+ * 잊은 채 떠나면 사라졌습니다. 남은 설정이 템플릿·표지 둘뿐이라 즉시
+ * 저장해도 부담이 없습니다. 저장 상태는 편집기 위쪽 한 줄(track)에 모입니다.
  */
 
 const fontOptions = Object.keys(FONT_STACKS);
@@ -78,6 +76,8 @@ interface Props {
   onCoverPreviewChange: (url: string | null) => void;
   /** 업로드까지 끝난 새 표지의 공개 URL. 저장된 값 자체가 바뀝니다. */
   onCoverSaved: (url: string) => void;
+  /** 편집기의 저장 상태 표시에 묶어 저장합니다 */
+  track: (work: () => Promise<void>) => Promise<boolean>;
 }
 
 export default function StylePanel({
@@ -87,6 +87,7 @@ export default function StylePanel({
   onStyleChange,
   onCoverPreviewChange,
   onCoverSaved,
+  track,
 }: Props) {
   const { session } = useAuth();
   // [2026-09-22] 기본을 접힘으로 바꿨습니다.
@@ -105,14 +106,7 @@ export default function StylePanel({
     layout: initial.layout,
     density: initial.density,
   });
-  const [snapshot, setSnapshot] = useState<FullDraft>(draft);
-  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
-  const [, forceTick] = useState(0);
-
-  const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
-
-  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
   // [2026-09] 표지를 올리기 전에 줄입니다. 줄인 결과를 안내에 쓰려고
   // 크기를 들고 있습니다 — 4.2MB 가 180KB 가 됐다는 걸 보여주면,
   // 사용자가 "화질이 깎였나" 대신 "빨라지겠네"로 읽습니다.
@@ -125,13 +119,8 @@ export default function StylePanel({
     const next = { ...draft, ...patch };
     setDraft(next);
     onStyleChange(next);
+    void track(() => updatePortfolioStyle(portfolioId, next));
   };
-
-  // "n분 전" 이 오래 열어둬도 최신으로 보이게 30초마다 다시 그립니다.
-  useEffect(() => {
-    const t = window.setInterval(() => forceTick((n) => n + 1), 30_000);
-    return () => window.clearInterval(t);
-  }, []);
 
   // 고른 서체만 받습니다 — 7종을 처음부터 다 불러오면 안 쓸 폰트까지
   // 네트워크를 태웁니다.
@@ -152,7 +141,7 @@ export default function StylePanel({
   // 사라집니다. (coverFile 을 의존성에 넣지 않는 이유도 같습니다:
   // 파일을 고르는 순간 이 effect 가 다시 돌면 안 됩니다.)
   useEffect(() => {
-    if (!coverFile) setCoverPreview(savedCoverUrl);
+    if (!uploading) setCoverPreview(savedCoverUrl);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [savedCoverUrl]);
 
@@ -163,14 +152,7 @@ export default function StylePanel({
     };
   }, [coverPreview]);
 
-  const dirty =
-    coverFile !== null ||
-    draft.template_id !== snapshot.template_id ||
-    draft.color_theme !== snapshot.color_theme ||
-    draft.font !== snapshot.font ||
-    draft.layout !== snapshot.layout ||
-    draft.density !== snapshot.density;
-
+  /** 고르면 줄여서 바로 올립니다. 실패하면 원래 표지로 돌려놓습니다. */
   const pickCover = async (e: ChangeEvent<HTMLInputElement>) => {
     const picked = e.target.files?.[0];
     if (!picked) return;
@@ -181,66 +163,29 @@ export default function StylePanel({
     const result = await shrinkImage(picked);
     setPreparing(false);
 
-    if (coverPreview?.startsWith("blob:")) URL.revokeObjectURL(coverPreview);
-    const url = URL.createObjectURL(result.file);
-    setCoverFile(result.file);
-    setCoverPreview(url);
-    onCoverPreviewChange(url);
+    const blobUrl = URL.createObjectURL(result.file);
+    setCoverPreview(blobUrl);
+    onCoverPreviewChange(blobUrl);
     setShrinkNote(
-      result.changed
-        ? `${formatBytes(result.originalBytes)} → ${formatBytes(result.bytes)}로 줄였습니다`
-        : null
+      result.changed ? `${formatBytes(result.originalBytes)} → ${formatBytes(result.bytes)}로 줄였습니다` : null
     );
-  };
 
-  const revert = () => {
-    setDraft(snapshot);
-    onStyleChange(snapshot);
-    if (coverPreview?.startsWith("blob:")) URL.revokeObjectURL(coverPreview);
-    setCoverFile(null);
-    setCoverPreview(savedCoverUrl);
-    onCoverPreviewChange(savedCoverUrl);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-    setShrinkNote(null);
-    setSaveError(null);
-  };
-
-  const save = async () => {
-    setSaving(true);
-    setSaveError(null);
-    try {
-      let cover_image_path: string | undefined;
-      if (coverFile) {
-        if (!session?.user?.id) {
-          throw new PortfolioError("로그인 정보를 확인할 수 없어 표지를 올릴 수 없습니다.");
-        }
-        cover_image_path = await uploadCoverImage({
-          userId: session.user.id,
-          portfolioId,
-          file: coverFile,
-        });
-      }
-      await updatePortfolioStyle(portfolioId, {
-        ...draft,
-        ...(cover_image_path ? { cover_image_path } : {}),
-      });
-      setSnapshot(draft);
-      if (cover_image_path) {
-        // 방금 올린 파일의 진짜 공개 URL로 바꿉니다. 화면에 띄워둔
-        // blob URL 은 이 탭에서만 유효한 임시 주소라, 저장된 값으로
-        // 그대로 두면 다음 "되돌리기"가 복원할 대상이 되지 못합니다.
-        const url = await getCoverImageUrl(cover_image_path);
-        if (coverPreview?.startsWith("blob:")) URL.revokeObjectURL(coverPreview);
-        setCoverPreview(url);
-        onCoverSaved(url);
-      }
-      setCoverFile(null);
-      setLastSavedAt(Date.now());
-    } catch (e) {
-      setSaveError(e instanceof PortfolioError ? e.message : "스타일을 저장하지 못했습니다.");
-    } finally {
-      setSaving(false);
+    setUploading(true);
+    const ok = await track(async () => {
+      if (!session?.user?.id) throw new PortfolioError("로그인 정보를 확인할 수 없어 표지를 올릴 수 없습니다.");
+      const cover_image_path = await uploadCoverImage({ userId: session.user.id, portfolioId, file: result.file });
+      await updatePortfolioStyle(portfolioId, { ...draft, cover_image_path });
+      const url = await getCoverImageUrl(cover_image_path);
+      setCoverPreview(url);
+      onCoverSaved(url);
+    });
+    setUploading(false);
+    if (!ok) {
+      setCoverPreview(savedCoverUrl);
+      onCoverPreviewChange(savedCoverUrl);
+      setShrinkNote(null);
     }
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   return (
@@ -258,7 +203,6 @@ export default function StylePanel({
               {htmlTemplates.find((t) => t.id === draft.template_id)?.name ?? "템플릿 선택"}
             </span>
           )}
-          {dirty && <span className="size-1.5 rounded-full bg-brand shrink-0" aria-label="저장 안 됨" />}
           <ChevronDown
             size={14}
             strokeWidth={1.5}
@@ -319,11 +263,11 @@ export default function StylePanel({
                   type="file"
                   accept="image/*"
                   onChange={(e) => void pickCover(e)}
-                  disabled={preparing}
+                  disabled={preparing || uploading}
                   className="block w-[160px] text-xs text-neutral-500 file:mr-2 file:rounded file:border-0 file:bg-neutral-800 file:px-2 file:py-1 file:text-xs file:text-neutral-300 disabled:opacity-50"
                 />
-                {preparing && (
-                  <p className="text-xs text-neutral-500 mt-1">이미지 준비 중…</p>
+                {(preparing || uploading) && (
+                  <p className="text-xs text-neutral-500 mt-1">{preparing ? "이미지 준비 중…" : "올리는 중…"}</p>
                 )}
                 {!preparing && shrinkNote && (
                   <p className="text-xs text-neutral-500 mt-1">{shrinkNote}</p>
@@ -334,40 +278,7 @@ export default function StylePanel({
             
           </div>
 
-          {saveError && (
-            <p role="alert" className="text-xs text-brand">
-              {saveError}
-            </p>
-          )}
-
-          <div className="flex items-center justify-between gap-2 mt-1 pt-2.5 border-t border-neutral-800/70">
-            <span className="text-xs text-neutral-600 truncate">
-              마지막 저장: {formatRelativeTime(lastSavedAt)}
-            </span>
-            <div className="flex items-center gap-1.5 shrink-0">
-              <button
-                type="button"
-                className="text-xs text-neutral-500 hover:text-brand disabled:opacity-40"
-                disabled={!dirty || saving}
-                onClick={revert}
-              >
-                되돌리기
-              </button>
-              <button
-                type="button"
-                className="btn-primary text-xs px-2.5 py-1 disabled:opacity-40 inline-flex items-center gap-1"
-                disabled={!dirty || saving}
-                onClick={() => void save()}
-              >
-                {saving ? (
-                  <LoaderCircle size={12} className="animate-spin" aria-hidden="true" />
-                ) : (
-                  <Check size={12} strokeWidth={2.5} aria-hidden="true" />
-                )}
-                저장
-              </button>
-            </div>
-          </div>
+          <p className="text-xs text-neutral-600">고르면 바로 저장돼요.</p>
         </div>
       )}
     </div>

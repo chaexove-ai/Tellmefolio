@@ -3,7 +3,7 @@
 새 세션에서 이 프로젝트를 이어받을 때 이 파일부터 읽으면 됩니다.
 사람이 읽어도 되고, AI 에이전트에게 "repo의 CONTEXT.md 읽어줘"라고 해도 됩니다.
 
-> 마지막 갱신: 2026-09-21 (커밋 `259f0e6`)
+> 마지막 갱신: 2026-09-25 (커밋 `32bb840` 기준)
 
 ---
 
@@ -30,7 +30,8 @@ GSAP (ScrollTrigger)      — 랜딩 모션
 react-router-dom          — 라우팅 (랜딩만 정적 import, 나머지는 React.lazy)
 lucide-react              — 아이콘
 Supabase                  — Auth + DB + Storage + Edge Functions
-jsPDF + html2canvas       — PDF 내보내기 (동적 import, 별도 청크)
+브라우저 인쇄 엔진         — PDF 내보내기 (템플릿 iframe 의 print(), 글자가 선택되는 PDF)
+jsdom (dev)               — tpl:check 템플릿 검증
 ```
 
 **Next.js 가 아닙니다.** 빌드는 `tsc -b && vite build` 라 타입 에러가 있으면
@@ -42,15 +43,18 @@ jsPDF + html2canvas       — PDF 내보내기 (동적 import, 별도 청크)
 
 | | |
 |---|---|
-| 로컬 (집 맥) | `~/Projects/tellmefolio-app` — 원격 SSH |
+| 로컬 (집 맥) | `~/Documents/GitHub/Tellmefolio` — 원격 **HTTPS**, GitHub Desktop으로 푸시 |
 | 로컬 (회사 맥) | `~/Documents/GitHub/Tellmefolio` — 원격 **HTTPS**, GitHub Desktop으로 푸시 |
 | GitHub | `github.com/chaexove-ai/Tellmefolio` (Public) |
 | Vercel | `vercel.com/tellmefolio/tellmefolio-app` |
 | 배포 URL | `tellmefolio-app.vercel.app` |
 
-클론이 두 개이고 **원격 인증 방식이 서로 다릅니다.** 터미널에서 `git push`가
-안 되면 먼저 `git remote -v`로 어느 쪽 클론인지 확인하세요. HTTPS 쪽은
-GitHub Desktop의 "Push origin"을 씁니다.
+두 노트북 모두 **같은 경로, 같은 방식(HTTPS + GitHub Desktop)** 입니다.
+터미널 `git push` 가 인증에서 막히면 GitHub Desktop 의 "Push origin" 을 쓰세요.
+
+> 집 맥의 `~/Projects/tellmefolio-app`(원격 SSH)는 8월에 멈춘 **옛 사본**입니다.
+> 2026-09-25 에 집 맥도 위 경로로 옮겼습니다. 옛 사본에서 작업하면 버전이 다시
+> 갈라지니 열지 마세요.
 
 ### 배포 방식 — 중요
 
@@ -65,8 +69,11 @@ npx supabase login                                    # 노트북마다 1회
 npx supabase link --project-ref tswxxqqnzqexwxkgpajg  # 노트북마다 1회
 npx supabase functions deploy generate-draft
 npx supabase functions deploy translate-portfolio
+npx supabase functions deploy delete-account
+npx supabase functions deploy job-switch
+npx supabase functions deploy interview
 
-# 시크릿도 별도입니다 (함수 두 개 다 ANTHROPIC_API_KEY 하나만 필수)
+# 시크릿도 별도입니다 (AI 함수는 ANTHROPIC_API_KEY 하나만 필수)
 npx supabase secrets list
 npx supabase secrets set ANTHROPIC_API_KEY=...
 supabase secrets set MODEL=claude-haiku-...           # 없으면 haiku 기본값
@@ -100,6 +107,13 @@ if not exists`, `add column if not exists`, 정책은 `drop policy if exists`
 ### 노트북 두 대로 작업합니다
 
 오전엔 회사 노트북, 저녁엔 집 노트북. 시작할 때 `git pull`, 끝낼 때 `git push`.
+pull 로 `package.json` 이 바뀌었으면 `npm install` 도 다시 합니다.
+
+> **겪은 일 (2026-09-25)**: 집 맥 클론이 98커밋 뒤처진 채 커밋하지 않은 수정
+> (`TemplateStyle.tsx`)을 들고 있어서 pull 이 막혔습니다. 확인해 보니 그 수정은
+> 이미 회사 맥에서 커밋(`7ce608b`)됐고 파일은 나중에 삭제된 상태였습니다.
+> **작업을 끝낼 때 커밋하지 않은 변경을 남기지 마세요** — 애매하면 WIP 커밋이라도
+> 해서 올립니다.
 **패치 zip을 주고받는 방식은 쓰지 않습니다** — repo가 Public이니 clone 하면 됩니다.
 
 `.env.local` 은 git에 없으니 노트북마다 직접 만들어야 합니다
@@ -162,14 +176,35 @@ npm run tpl:check my-template
 
 ## 데이터 구조
 
-`supabase/migrations/` 에 SQL이 있습니다. RLS는 전부 `user_id = auth.uid()` 기준.
+`supabase/migrations/` 에 SQL이 있습니다. 쓰기 RLS는 전부 `user_id = auth.uid()` 기준이고,
+읽기는 예외가 있습니다 — 공개된 포트폴리오(`/p/:id`, 커뮤니티)와 `profiles` 는 남도 읽습니다.
 
 | 테이블 | 용도 |
 |---|---|
-| `portfolios` | 포트폴리오 1건. 제목·직무(`job`)·직무색(`job_color`)·공개범위·템플릿·색테마·폰트·레이아웃·커버이미지 경로·요약·`gaps[]` |
-| `portfolio_projects` | 그 안의 프로젝트들. `position` 순서, 케이스 스터디 6필드 + `stack[]` |
-| `draft_generations` | AI 호출 기록 (`input_tokens`/`output_tokens`) — **사용 횟수 제한의 토대인데 아직 화면과 연결 안 됨** |
-| Storage `portfolio-covers` | 커버 이미지 |
+| `portfolios` | 포트폴리오 1건. 제목·직무(`job`)·직무색(`job_color`)·공개범위·`listed`(커뮤니티 게시, 공개와 별개)·템플릿·색테마·폰트·레이아웃·`density`·커버이미지 경로·요약·`gaps[]`·`lead_field`(맨 앞에 둘 본문 필드, 직무 전환본만) |
+| `portfolio_projects` | 그 안의 프로젝트들. `position` 순서, 케이스 스터디 6필드 + `stack[]` + `depth`(보여줄 깊이) |
+| `portfolio_project_images` | 프로젝트별 이미지 (순서·삭제) |
+| `portfolio_blocks` | 자유 블록(글·구분선). 설계는 `docs/editor-freedom.md` |
+| `profiles` | 커뮤니티에 보이는 닉네임·사진. 읽기 전체 공개, 쓰기 본인만. 가입 트리거가 만들고 기본 닉네임은 소셜 실명 |
+| `portfolio_submissions` + Storage `submissions`(비공개) | 제출 기록. 어디에(회사·포지션) 무엇을(그때 결과물 HTML, 이미지 포함) 냈는지. 포트폴리오를 지워도 남음. 본인만 읽음 |
+| `interview_sessions` · `interview_messages` | 대화로 만들기. 세션은 칸 상태(`fields`)·지금 묻는 칸·질문 수·되묻기 수·토큰 합계, 메시지는 대화 한 줄씩(사용자 답은 `answer_no` 로 근거 id `a{n}:{i}` 의 앞부분) |
+| `job_switch_runs` · `job_switch_projects` | 직무 전환 재구성 결과. 공고 해부·근거 매칭·검증 경고·맨 앞 필드(`lead`)와 프로젝트별 재작성 문장. 원본은 안 바꾸고, "저장"을 눌러야 새 `portfolios` 행이 됩니다 |
+| `draft_generations` | AI 호출 기록 (`kind`: draft/translate/job_switch/interview, `input_tokens`/`output_tokens`). 하루 한도를 이걸로 셉니다(아래 "AI 사용량 한도"). 삭제·수정 정책이 없어 사용자가 기록을 지워 한도를 되돌릴 수 없습니다 |
+| Storage `portfolio-covers` | 커버·프로젝트 이미지 (`{userId}/{portfolioId}/...`) |
+| Storage `avatars` | 프로필 사진 (`{userId}/avatar.<ext>` 하나를 덮어씀). 위 버킷과 경로 구조가 달라 분리 |
+
+### AI 사용량 한도 (09-26)
+
+최근 24시간 기준, 사용자별. 넘으면 429 와 "…은 하루 N번까지예요. 3시간 뒤에 다시 쓸 수 있어요." 모델을 부르기 전에 막습니다.
+
+| 기능 | 기본값 | 세는 것 | 바꾸기 (재배포 불필요) |
+|---|---|---|---|
+| AI 초안 생성 | 20 | `draft_generations` kind=draft | `npx supabase secrets set AI_LIMIT_DRAFT=30` |
+| 영어 번역 | 20 | kind=translate | `AI_LIMIT_TRANSLATE` |
+| 직무 전환 | 5 | kind=job_switch (Sonnet 이라 가장 비쌈) | `AI_LIMIT_JOB_SWITCH` |
+| 대화 시작 | 10 | `interview_sessions` 수 (대화로 채우기 포함. 한 대화 안은 질문 12개로 이미 묶임) | `AI_LIMIT_INTERVIEW` |
+
+전체 비용의 마지막 방어선은 여전히 Anthropic 콘솔의 월 한도입니다.
 
 ### Edge Functions
 
@@ -177,6 +212,10 @@ npm run tpl:check my-template
 |---|---|
 | `generate-draft` | 저장소 README·언어 구성 + 메모 + **웹 링크 본문**을 받아 초안 JSON 생성. 링크는 서버가 직접 fetch(브라우저는 CORS에 막힘), `isSafeUrl`로 루프백·사설망·메타데이터 엔드포인트 차단(SSRF 방지), 최대 3개·4000자·타임아웃 8초 |
 | `translate-portfolio` | 포트폴리오를 영어로. title/summary/job + 프로젝트 서술형 6필드 + role/stack |
+| `job-switch` | 직무 전환 재구성 4단계(공고 해부 → 근거 매칭 → 재작성 → 기계 검증). 원본은 포트폴리오 id 로 서버가 직접 읽고 **본인 것인지 확인**합니다. 모델은 1단계 `JOB_SWITCH_LIGHT_MODEL`(기본 Haiku), 2·3단계 `JOB_SWITCH_STRONG_MODEL`(기본 `claude-sonnet-5`). 날조 방지 로직은 `_shared/evidence.ts` 에 있고 `interview` 와 같이 씁니다 — 고치면 두 함수 모두 다시 배포 |
+| `interview` | 대화로 만들기. `mode` 가 `start`/`answer`/`draft`. 질문은 `INTERVIEW_MODEL`(기본 Haiku), 초안은 `JOB_SWITCH_STRONG_MODEL`. 서버 규칙(근거 없는 칸 채움 거부, 되묻기 칸당 1회, 질문 12개)은 `rules.ts` |
+| `_shared/usage.ts` | 네 AI 함수 공용: **실제 로그인 확인**(anon 키도 JWT 라 Supabase 의 JWT 검증만으로는 통과함 — 09-26 전까지 generate-draft·translate 는 로그인 없이 불렸음)과 **하루 한도**. 고치면 네 함수 모두 다시 배포 |
+| `delete-account` | 계정 삭제. 대상은 JWT 의 본인뿐(id 를 받지 않음), 두 버킷의 파일까지 지웁니다. service_role 키는 이 함수 안에만 |
 
 제약: **첫 응답까지 150초.** AI 생성이 더 길어지면 큐로 빼거나 그 호출만 분리해야
 합니다. 키는 서버에만 두고 JWT는 자동 검증됩니다.
@@ -188,11 +227,9 @@ Export 화면에서 "영어 버전"을 **누른 시점에만** 번역을 호출�
 보여줍니다(번역 실패보다 원문 노출이 안전한 실패 방식).
 
 주의할 분리가 하나 있습니다. **데이터 텍스트는 `translate.ts`가 번역하지만,
-템플릿이 자체적으로 그리는 라벨("맥락 및 배경" 같은 섹션 제목)은 코드에 박힌
-문자열이라 번역 대상이 아닙니다.** 그래서 `PortfolioTemplateProps.lang` 으로
-따로 알려줍니다. 템플릿에 새 라벨을 추가하면 `lang` 분기도 같이 넣으세요.
-(예외: `ResearchTemplate` 의 Background/Problem 소제목은 학술 논문 관례를
-흉내 낸 디자인 의도라 ko/en 상관없이 항상 영어입니다.)
+섹션 라벨("맥락 및 배경" 같은 제목)은 번역 대상이 아닙니다.** 라벨은
+`buildTemplateData.ts` 가 `lang` 에 따라 ko/en 중 하나를 골라 템플릿에 넣습니다.
+새 라벨을 추가하면 ko/en 둘 다 적으세요.
 
 ---
 
@@ -202,7 +239,10 @@ Export 화면에서 "영어 버전"을 **누른 시점에만** 번역을 호출�
 
 ### 색 — 전부 CSS 변수입니다
 
-**다크가 기본이고, `:root.light` 클래스로 라이트로 전환됩니다.**
+**구조상 다크가 `:root` 기반이고, `:root.light` 가 라이트로 덮어씁니다.**
+다만 **화면은 라이트로 고정**했습니다(2026-09-21). OS 설정을 따라가지 않고 테마
+토글도 렌더하지 않습니다. 코드는 지우지 않았으니 되살리려면 `index.html` 의 테마
+스크립트 한 줄과 `ThemeToggle` 렌더를 되돌리면 됩니다.
 `neutral-50~950` 과 `brand` 유틸리티가 고정 hex가 아니라 CSS 변수(`--n50`~`--n950`,
 `--brand`)에 연결돼 있어서, 컴포넌트 className을 그대로 둔 채 테마가 바뀝니다.
 
@@ -260,9 +300,9 @@ text-xl    20px / 28px   페이지 제목
   쓰고 고치는 칸이라, 빽빽한 화면에 맞춘 기준을 여기까지 적용할 이유가
   없습니다.
 
-그리고 **`portfolio-templates/` 는 이 스케일을 따르지 않습니다.** 그쪽은
-PDF 로 나가는 문서라 `text-[12px]` 처럼 고정값으로 박아뒀습니다. 앱 화면
-쪽을 건드려도 지금까지 만든 PDF 와 줄바꿈이 달라지지 않게 하려는 것입니다.
+그리고 **템플릿(`public/templates/*.html`)은 이 스케일과 무관합니다.** 앱의
+Tailwind 설정이 아니라 파일 안에 인라인된 자체 CSS 를 씁니다. 앱 화면을
+건드려도 결과물(PDF·HTML)의 줄바꿈은 달라지지 않습니다.
 
 ### 아이콘
 
@@ -280,28 +320,51 @@ Gowun Batang의 가는 획과 무게를 맞추려고 얇게 갑니다.
 ## 주요 파일
 
 ```
+public/templates/                 HTML 템플릿 (devcore.html, minimal-serif.html) — 위 "템플릿" 절
+scripts/                          prepare-template.mjs, check-template.ts (npm run tpl:*)
 src/
 ├── index.css                     테마 변수 + @layer components (.btn-*, .sec-*, .step-*, .book*)
 ├── landingContent.ts             랜딩 문구를 한곳에. 카피만 고칠 땐 이 파일만 열면 됨
+├── mockData.ts                   남은 목업. AIRequestStatus 타입만 씀
 ├── lib/
 │   ├── supabase.ts               동적 import로 별도 청크 (메인 청크 유지)
-│   ├── portfolios.ts             포트폴리오·프로젝트 CRUD, 직무·직무색 수정
-│   ├── draft.ts                  generate-draft 호출
-│   ├── translate.ts              translate-portfolio 호출 + 결과 병합
-│   ├── github.ts                 공개 저장소 목록·README·언어 구성
-│   ├── exportPdf.ts              DOM → PDF
-│   └── templates.ts  portfolioTheme.ts  scrollRefresh.ts  formatRelativeTime.ts
+│   ├── portfolios.ts             포트폴리오·프로젝트 CRUD, 공개·게시, 직무·직무색·제목·연도
+│   ├── htmlTemplate.ts           템플릿 채우기 엔진 (data-tf 규칙은 이 파일 주석). 앱과 tpl:check 가 공유
+│   ├── htmlTemplates.ts          고를 수 있는 템플릿 목록 — 여기 적혀야 선택지에 뜹니다
+│   ├── buildTemplateData.ts      포트폴리오 → 템플릿 데이터 (ko/en 라벨 포함)
+│   ├── blocks.ts                 자유 블록 CRUD
+│   ├── images.ts                 이미지 업로드 전 축소 (shrinkImage)
+│   ├── profile.ts  account.ts    프로필, 계정 데이터 내보내기·삭제
+│   ├── draft.ts  translate.ts  github.ts
+│   └── portfolioTheme.ts  scrollRefresh.ts  formatRelativeTime.ts
 ├── pages/
 │   ├── Landing.tsx  Login.tsx  Dashboard.tsx(홈)  PortfolioList.tsx(내 서재)
-│   ├── wizard/       SourceInput → TemplateStyle → AIDraftGeneration → PortfolioEditor → Export
+│   ├── PublicPortfolio.tsx       공개 열람 /p/:id
+│   ├── wizard/       SourceInput → AIDraftGeneration → PortfolioEditor(스타일·미리보기 포함) → Export
 │   ├── gallery/      커뮤니티 (라우트는 /community, 폴더명은 gallery 유지)
-│   ├── account/  jobswitch/  VersionHistory.tsx
+│   ├── account/      AccountSettings · SocialAccountManage · DataManage
+│   ├── jobswitch/                직무 전환 요청·결과 (lib/jobSwitch.ts)
+│   ├── chat/ChatBuilder.tsx      대화로 만들기 /chat/:id (lib/interview.ts, 홈 입력창은 components/ChatStart.tsx)
+│   └── SubmissionHistory.tsx     제출 기록 /library/portfolios/:id/versions · /submissions (lib/submissions.ts)
 └── components/
-    ├── portfolio-templates/      PortfolioRenderer + Research/Live/Minimal/Magazine
-    ├── Bookshelf.tsx             책등 세로쓰기 서재 (hover로 펼쳐짐)
-    ├── Steps.tsx  PerspectiveScroller.tsx  BeforeAfterDemo.tsx  HeroRewrite.tsx
-    ├── BrandIcons.tsx  SocialLoginButtons.tsx  UserMenu.tsx  GrainCover.tsx
-    └── Faq.tsx  Reveal.tsx  RouteFallback.tsx  ScrollProgress.tsx  ScrollToTop.tsx  ThemeToggle.tsx
+    ├── TemplateFrame.tsx         템플릿 iframe (1280x800 고정 창 + 축소, 공개 링크는 실제 폭)
+    ├── EditorPreview.tsx  StylePanel.tsx  WizardLayout.tsx  DesktopOnly.tsx(1200px 게이트)
+    ├── Bookshelf.tsx             책등 세로쓰기 서재 (hover로 펼쳐짐, 이름·색·연도 인라인 수정)
+    ├── ProfileEditor.tsx  UserMenu.tsx  SocialLoginButtons.tsx  BrandIcons.tsx
+    ├── GrainCover.tsx            그라디언트+그레인 표지 (색조 = 직무 색)
+    ├── Steps.tsx  PerspectiveScroller.tsx  BeforeAfterDemo.tsx  HeroRewrite.tsx  MarqueeRail.tsx
+    └── Faq.tsx  Reveal.tsx  RouteFallback.tsx  ScrollProgress.tsx  ScrollToTop.tsx  ThemeToggle.tsx  AIRequestStatus.tsx
+supabase/
+├── functions/                    generate-draft · translate-portfolio · delete-account · job-switch · interview
+│   └── _shared/evidence.ts       날조 방지 공용 로직 (근거 쪼개기·검증)
+└── migrations/                   14자리 타임스탬프 규칙 (위 "마이그레이션 규칙")
+docs/
+├── checklist.md                  전체 점검 체크리스트 (단계별 할 일의 원본)
+├── editor-redesign.md  editor-freedom.md   편집 화면·자유 블록 설계
+├── job-switch-design.md          직무 전환 재구성 설계 (2026-09-25 구현)
+├── submission-history-design.md  제출 기록(버전 관리 대체) 설계 (2026-09-25 구현)
+├── chat-builder-design.md        대화로 만들기(겉은 챗봇, 속은 인터뷰) 설계 (2026-09-25 구현)
+└── mockups/chat-builder.html     위 설계의 눌러볼 수 있는 예시 화면
 ```
 
 `docs/archive/` 의 `적용방법-v*.md`, `랜딩재구성.md` 는 **이미 반영이 끝난 옛
@@ -324,38 +387,71 @@ FAQ           밝은 면   아코디언
 
 ---
 
-## 최근 작업 (2026-09-21)
+## 최근 작업 (2026-09-21 ~ 09-23)
 
-1. **웹 링크 자료를 초안 생성에 실제로 반영** — 고른 링크가 화면에만 있고
-   서버로 가지 않아 "링크만 선택"하면 400이 나던 문제. SSRF 가드 포함.
-2. **GitHub 저장소 목록 401을 재연결 안내로 구분** — provider 토큰은 메모리에만
-   있어 새로고침하면 사라집니다. "재로그인"이 아니라 "GitHub 연결 한 번 더"로
-   풀리는 문제라 일반 오류와 분리했습니다.
-3. **프로젝트 추가·삭제, 직무·직무색 편집** — 프로젝트 행이 AI 초안 경로로만
-   생기던 것, 직무 배지가 클릭해도 반응 없던 것, 색상 모달이 저장해도 남지
-   않던 것을 모두 실제 동작으로.
-4. **영문 내보내기** — 위 "영문 내보내기가 동작하는 방식" 참고.
-5. **홈 가독성·책장 확대** — 홈 카드마다 같은 brand 아이콘 원이 반복돼 구획이
-   안 보이던 것을 accent 색으로 분리. 책등 38→54px, 높이 164→224px.
+커밋 메시지 본문에 이유까지 적어뒀습니다. 자세한 건 `git log` 를 보세요.
 
-그 이전: DB 스키마 + 마법사/서재의 실제 테이블 연동, 에디터 재설계, 커버
-이미지 저장, PDF 내보내기, 라우트 코드 스플리팅, Supabase 인증 연동.
+**편집기**
+- 템플릿/스타일 설정 페이지(`/wizard/style/:id`)를 편집기에 합침 — 오른쪽에
+  스타일 패널 + 실시간 미리보기. 옛 주소는 편집기로 리다이렉트만 남김
+- 레이아웃을 '나열(1개씩/2개씩)'과 '여백(`density`)' 두 축으로
+- 프로젝트 깊이(`depth`)·프로젝트별 이미지·전체화면 미리보기
+- 툴·키워드(`stack`) 편집, 자유 블록 1단계(글·구분선), 미리보기에서 블록 바로 고치기
+- 동작하지 않는 섹션 3개(AI 문장 다듬기·근거 확인·이력서 대조)는 접어둠
+
+**템플릿 — React 컴포넌트 4종에서 HTML 파일로**
+- `public/templates/*.html` + iframe 미리보기. 현재 2종(DevCore, 미니멀 세리프)
+- `tpl:prepare` / `tpl:check` 파이프라인: 디자인 도구 껍데기 판별, 스타일시트
+  인라인, div 짝·확장 흔적 검사
+
+**내보내기**
+- PDF 를 html2canvas 캡처에서 브라우저 인쇄로 — 글자가 선택되는 PDF
+- HTML 파일 내보내기 구현(전에는 비활성 버튼), 영문 번역은 누를 때만 호출
+- 공개/비공개 전환 + 공개 열람 페이지 `/p/:id`
+
+**커뮤니티·계정**
+- 커뮤니티 게시(`listed`)를 공개와 분리, 갤러리를 실제 데이터로
+- 프로필(닉네임·사진) — 작성자 표시. 기본 닉네임이 실명이라 두 군데서 알림
+- 표지 색조를 직무 색에서 가져옴
+- 데이터 관리 버튼 3개(내보내기·전체 삭제·계정 삭제) 실제 구현
+- 소셜 계정 관리를 실제 `user.identities` 로 (연결·해제)
+- 가짜 AI 사용량 배지 제거, FAQ TODO 2개 채움
+
+**화면 전반**
+- 앱 화면은 데스크탑 전용(1200px 미만은 안내 화면), 랜딩·로그인은 모바일 허용
+- 라이트 고정·다크 감춤, 위저드 왼쪽 단계 레일, 로그인 전체 화면 분할
+- 랜딩: 반전 구역, 결과물 무한 가로 띠, 어두운 전체 폭 CTA, 푸터 확장
+
+**2026-09-26** — **화면 구조 정리**(예시 docs/mockups/navigation.html): 사이드바 홈 / 내 포트폴리오 / 직무 전환 / 커뮤니티 / 설정 + 맨 위 "＋ 새 포트폴리오"(모든 만들기 버튼이 같은 선택 창 `components/NewPortfolio.tsx` — 대화로 만들기 · 자료로 만들기 두 이름만). 편집기·내보내기·제출 기록에서도 "내 포트폴리오"에 불. 내 포트폴리오 = 포트폴리오 / 제출 기록 두 탭(`LibraryTabs`). 홈은 입력창 · 내 서재(책장 — 서비스의 얼굴이라 유지) · 이어서 할 일만(현황 띠·최근 작업·다음으로 할 일 제거). 위저드 자료함·초안을 sessionStorage 에 임시 저장(`lib/sessionState.ts`) — "원본 자료 수정"·새로고침에도 유지, 포트폴리오를 만들면 비움. 들어갈 곳 없던 목업 `/community/share`·`/community/stats` 삭제.
+편집기 **자동 저장**: 입력을 멈추고 1초 뒤 저장, 탭 전환·내보내기·대화로 채우기·화면을 떠날 때도 먼저 저장, 새로고침/탭 닫기 전 경고. 저장 버튼 두 개(본문·스타일)를 없애고 위쪽 고정 막대에 "저장됨 · 방금 전" 한 줄로. 템플릿·표지는 고르면 바로 저장. 편집기 뒤로가기는 "← 내 포트폴리오"(예전 "AI 초안 생성으로 돌아가기"는 늘 빈 화면이었음).
+배포판 점검: 함수는 올라갔지만 **마이그레이션 3개가 안 올라가 있었음**(db push 필요). generate-draft·translate-portfolio 가 **로그인 없이 호출되던 문제** 수정, 네 AI 함수에 하루 한도.
+
+**2026-09-25** — 집 맥을 `~/Documents/GitHub/Tellmefolio` 로 옮김,
+`package-lock.json` 에 남아 있던 `tsx` 항목 정리. 로그인 왼쪽 책장 그림, 임시 아바타.
+**직무 전환 재구성을 실제로 구현**(목업 → Edge Function `job-switch` + 테이블 2개).
+**제출 기록** — 목업 "버전 관리"를 대체. 내보낼 때 회사·포지션을 적으면 그 결과물을 남기고, `/library/portfolios/:id/versions`·`/submissions` 에서 다시 보기·다시 받기·이 버전으로 새로 만들기. 홈의 가짜 "최근 AI 요청 상태"는 "최근 제출"로.
+**대화로 채우기** — 편집기에서 프로젝트의 빈 칸만 묻는 대화(설계 문서 7-1절). 내 서재를 표지 카드 격자로, 카드에서 커뮤니티 올리기/내리기 토글.
+**대화로 만들기 구현** — 홈 맨 위 입력창 → `/chat/:id`(채팅 + 채워지는 칸 6개) → 초안. 홈의 "새 포트폴리오 만들기" 카드는 "자료로 만들기"(기존 위저드)로, 현황 띠의 직무 전환 수는 실제 값으로.
 
 ---
 
 ## 남은 할 일
 
+단계별 원본은 **`docs/checklist.md`** 입니다. 여기는 요약입니다.
+
 | 항목 | 메모 |
 |---|---|
-| **AI 사용 횟수 제한** | 화면의 "3/5회"가 아직 가짜입니다. `draft_generations` 테이블에 호출 기록은 이미 쌓이니, 이걸 세서 Edge Function에서 막으면 됩니다 |
-| **`/terms`, `/privacy`** | 푸터 링크는 주석으로 준비만 해둔 상태. 개인정보처리방침은 법적 의무입니다 |
-| **FAQ 답변** | `landingContent.ts` 의 데이터 정책·가격 답변이 `TODO` 로 비어 있습니다. 특히 "제 자료가 AI 학습에 사용되나요?"는 잘못 쓰면 문제가 됩니다 |
+| 배포판 동작 확인 | 실제 URL에서 초안 생성 1회, 여백 변경 1회 (checklist 0단계의 마지막 칸) |
+| 대화로 만들기 2차 | 깃허브 링크 감지, 같은 입력창에서 "PM 공고에 맞게"·"영어로" 같은 명령 — `docs/chat-builder-design.md` 9절 |
+| 직무 전환 검증 | 설계 문서 7절대로 실제 공고 3개로 돌려 ChatGPT 결과와 비교. 요약 문단은 아직 재작성 대상이 아닙니다 |
+| 자유 블록 2~6단계 | `docs/editor-freedom.md` 7절. 1단계(글·구분선)까지 끝남 |
+| 템플릿 추가 | 현재 2종. 이 제품의 품질은 템플릿 품질입니다 |
+| 목업 섹션 복구 | 에디터의 "AI 문장 다듬기"·"근거 확인"·"이력서 대조" — 접힌 채 예시 데이터 |
+| `mockData.ts` 정리 | 남은 사용처는 `AIRequestStatus` 타입뿐 — 타입을 옮기면 파일을 지울 수 있습니다 |
 | 랜딩 카피 | 개발자 관점으로 다시 쓰기 — 생성 파이프라인이 실제로 돈 뒤에 하기로 했고, 이제 돕니다 |
-| 목업 섹션 복구 | 에디터의 "AI 근거 확인"·"이력서 불일치 확인" 이 렌더링만 막힌 상태입니다(코드는 보존) |
-| AI 문장 다듬기 | 초안을 받은 뒤 문장 단위로 고쳐 쓰는 기능 |
 | 프리렌더 | CSR 전용이라 네이버·다음 색인이 안 됩니다. 전체 프리렌더보다 `index.html` 메타태그 + 랜딩 정적화 정도가 비용 대비 낫다고 판단 |
 | 스크롤 초기화 | `ScrollToTop` 을 넣었지만 완전히 해결되지 않았습니다. GSAP ScrollTrigger 충돌 의심 |
-| 웹 형식 내보내기 | Export의 "웹" 버튼은 `disabled` 이고 구현이 없습니다 |
+| **`/terms`, `/privacy`** | 🕓 맨 마지막(사업자 등록 후)으로 결정. 단 **외부 공개 전에는 반드시** — 개인정보처리방침은 법적 의무 |
 
 ### 건드리지 말 것
 

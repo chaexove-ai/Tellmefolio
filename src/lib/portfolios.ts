@@ -50,6 +50,10 @@ export interface PortfolioRow {
   cover_image_path: string | null;
   summary: string | null;
   gaps: string[];
+  /** 맨 앞에 둘 본문 필드(context/problem/execution/outcome). null 이면 기본 순서.
+   *  직무 전환 재구성으로 만든 포트폴리오에 들어갑니다(20260925100000_job_switch.sql).
+   *  마이그레이션 전 행에는 아예 없어서 optional 입니다. */
+  lead_field?: string | null;
   created_at: string;
   updated_at: string;
 }

@@ -787,3 +787,34 @@ summary::marker { content: ""; }
       font-heading text-sm shrink-0 tabular-nums;
   }
 }
+
+/* ── 로그인 왼쪽 면의 장식 책장 (ShelfIllustration.tsx) ──────────────
+   책이 아래에서 차례로 올라와 꽂힙니다. 한 번만 움직이고 멈춥니다 —
+   계속 움직이면 오른쪽에서 버튼을 고르는 동안 시선을 뺏습니다.
+   기댄 책은 transform 이 아니라 개별 속성 rotate 로 기울입니다.
+   애니메이션이 translate 를 쓰므로 둘이 서로 덮어쓰지 않습니다. */
+.shelf-illo-book {
+  animation: shelf-illo-rise 620ms cubic-bezier(0.2, 0.8, 0.25, 1) both;
+}
+
+.shelf-illo-lean {
+  rotate: 4deg;
+  transform-origin: 100% 100%;
+}
+
+@keyframes shelf-illo-rise {
+  from {
+    opacity: 0;
+    translate: 0 28px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shelf-illo-book {
+    animation: none;
+  }
+}

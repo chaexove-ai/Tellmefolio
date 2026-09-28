@@ -1,34 +1,64 @@
 import { Suspense, useEffect, useState } from "react";
-import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
+import { Link, Outlet, useLocation } from "react-router-dom";
 import DesktopOnly, { DESKTOP_MIN_WIDTH } from "./DesktopOnly";
-import { LibraryBig, Sparkles, Repeat, Users, Settings, Menu, X } from "lucide-react";
+import { Home, LibraryBig, Plus, Repeat, Users, Settings, Menu, X } from "lucide-react";
+import { NewPortfolioProvider, useNewPortfolio } from "./NewPortfolio";
 import RouteFallback from "./RouteFallback";
 import UserMenu from "./UserMenu";
 
-const navItems = [
-  { to: "/library", label: "홈", icon: LibraryBig },
-  { to: "/wizard", label: "생성", icon: Sparkles },
-  { to: "/job-switch", label: "직무 전환", icon: Repeat },
-  { to: "/community", label: "커뮤니티", icon: Users },
-  { to: "/settings", label: "설정", icon: Settings },
+/**
+ * [09-26] 사이드바 정리. "생성"을 빼고 맨 위 "＋ 새 포트폴리오" 버튼(선택 창)으로,
+ * "내 포트폴리오"를 새로 넣었습니다. 불은 주소 앞부분으로 켭니다 — 편집기·
+ * 내보내기·제출 기록에 있을 때도 "내 포트폴리오"가 켜져야 지금 어디인지 압니다
+ * (전에는 기존 포트폴리오를 고쳐도 "생성"에 불이 들어왔습니다).
+ */
+const navItems: Array<{ to: string; label: string; icon: typeof Home; match: (path: string) => boolean }> = [
+  { to: "/library", label: "홈", icon: Home, match: (p) => p === "/library" },
+  {
+    to: "/library/portfolios",
+    label: "내 포트폴리오",
+    icon: LibraryBig,
+    match: (p) =>
+      p.startsWith("/library/portfolios") ||
+      p.startsWith("/submissions") ||
+      p.startsWith("/wizard/editor") ||
+      p.startsWith("/wizard/export"),
+  },
+  { to: "/job-switch", label: "직무 전환", icon: Repeat, match: (p) => p.startsWith("/job-switch") },
+  { to: "/community", label: "커뮤니티", icon: Users, match: (p) => p.startsWith("/community") },
+  { to: "/settings", label: "설정", icon: Settings, match: (p) => p.startsWith("/settings") },
 ];
 
 function NavList({ onNavigate }: { onNavigate?: () => void }) {
+  const { pathname } = useLocation();
+  const openNew = useNewPortfolio();
   return (
     <nav className="flex-1 mt-8 space-y-1">
-      {navItems.map((item) => (
-        <NavLink
-          key={item.to}
-          to={item.to}
-          onClick={onNavigate}
-          className={({ isActive }) =>
-            `toc-link ${isActive ? "toc-link-active" : "toc-link-inactive"}`
-          }
-        >
-          <item.icon size={18} strokeWidth={2} />
-          {item.label}
-        </NavLink>
-      ))}
+      <button
+        type="button"
+        onClick={() => {
+          onNavigate?.();
+          openNew();
+        }}
+        className="btn-primary mb-5 flex w-full items-center justify-center gap-1.5"
+      >
+        <Plus size={16} strokeWidth={2.25} />새 포트폴리오
+      </button>
+      {navItems.map((item) => {
+        const active = item.match(pathname);
+        return (
+          <Link
+            key={item.to}
+            to={item.to}
+            onClick={onNavigate}
+            aria-current={active ? "page" : undefined}
+            className={`toc-link ${active ? "toc-link-active" : "toc-link-inactive"}`}
+          >
+            <item.icon size={18} strokeWidth={2} />
+            {item.label}
+          </Link>
+        );
+      })}
     </nav>
   );
 }
@@ -81,6 +111,7 @@ export default function AppLayout() {
   if (!isDesktop) return <DesktopOnly />;
 
   return (
+    <NewPortfolioProvider>
     <div className="min-h-screen flex bg-neutral-950">
       {/* 데스크톱 사이드바 */}
       <aside className="hidden md:flex w-60 shrink-0 border-r border-neutral-800 flex-col px-4 py-8">
@@ -152,5 +183,6 @@ export default function AppLayout() {
         </Suspense>
       </main>
     </div>
+    </NewPortfolioProvider>
   );
 }

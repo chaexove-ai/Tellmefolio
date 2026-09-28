@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNewPortfolio } from "./NewPortfolio";
 import { Link } from "react-router-dom";
 import { BookOpen, Globe, Lock, LoaderCircle, Plus } from "lucide-react";
 import GrainCover from "./GrainCover";
@@ -95,6 +96,7 @@ function spineParts(title: string): Array<{ text: string; combine: boolean }> {
 }
 
 export default function Bookshelf({ portfolios, onUpdated }: BookshelfProps) {
+  const openNew = useNewPortfolio();
   const [active, setActive] = useState<LibraryPortfolio | null>(null);
 
   // 수정 창은 책 옆이 아니라 화면 가운데 띄웁니다. 가로 스크롤 컨테이너는
@@ -373,16 +375,18 @@ export default function Bookshelf({ portfolios, onUpdated }: BookshelfProps) {
           </div>
         ))}
 
-        <Link
-          to="/wizard"
+        {/* 빈 칸 = 새 책. [09-26] 모든 만들기 입구처럼 선택 창을 엽니다. */}
+        <button
+          type="button"
+          onClick={openNew}
           className="shrink-0 w-[64px] h-[280px] ml-2 rounded-t-[3px]
             border-2 border-dashed border-neutral-700 border-b-0 text-neutral-600
             flex items-end justify-center pb-5 transition-colors duration-150
             hover:border-brand hover:text-brand focus-visible:border-brand focus-visible:text-brand"
         >
           <Plus size={20} aria-hidden="true" />
-          <span className="sr-only">새 포트폴리오 만들기</span>
-        </Link>
+          <span className="sr-only">새 포트폴리오</span>
+        </button>
       </div>
 
       <p className="text-sm text-neutral-500 mt-4">눌러서 포트폴리오를 열어보세요.</p>

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { NewPortfolioButton } from "../../components/NewPortfolio";
 import { Link } from "react-router-dom";
 import { Globe, Lock, SlidersHorizontal, Upload } from "lucide-react";
 import { useAuth } from "../../auth/AuthProvider";
@@ -11,6 +12,7 @@ import {
 } from "../../lib/portfolios";
 import type { LibraryPortfolio } from "../../lib/portfolios";
 import Reveal from "../../components/Reveal";
+import DefaultAvatar from "../../components/DefaultAvatar";
 import PortfolioThumb from "../../components/PortfolioThumb";
 import { getProfiles, getMyProfile, FALLBACK_NICKNAME } from "../../lib/profile";
 import type { Profile } from "../../lib/profile";
@@ -200,21 +202,15 @@ function Author({ profile }: { profile?: Profile }) {
   // 거의 안 보여서 그 사람만 줄이 비어 보였습니다. 이름 첫 글자를 넣으면
   // 비어 보이지 않으면서 사람끼리 구분도 됩니다 — 사진 없는 것이 기본
   // 상태인데 그게 결함처럼 보여서는 안 됩니다.
-  const initial = name ? [...name][0] : "";
 
   return (
     <div className="mt-3 pt-3 border-t border-neutral-800/70 flex items-center gap-2 h-[30px]">
       {profile?.avatarUrl ? (
         <img src={profile.avatarUrl} alt="" className="h-5 w-5 rounded-full object-cover shrink-0" />
       ) : (
-        name && (
-          <span
-            aria-hidden="true"
-            className="h-5 w-5 rounded-full bg-neutral-800 text-neutral-400 shrink-0
-              flex items-center justify-center text-[10px] font-medium leading-none"
-          >
-            {initial}
-          </span>
+        // [2026-09-25] 사진이 없으면 빈 회색 원 대신 임시 아바타(DefaultAvatar).
+        profile && (
+          <DefaultAvatar seed={profile.id} name={profile.nickname} className="h-5 w-5 text-[10px]" />
         )
       )}
       <span className="text-xs text-neutral-400 truncate">{name}</span>
@@ -326,9 +322,9 @@ function UploadPicker({
         {mine !== null && rows.length === 0 && (
           <div className="text-center py-6">
             <p className="text-sm text-neutral-400">아직 만든 포트폴리오가 없습니다.</p>
-            <Link to="/wizard" className="btn-secondary inline-flex mt-4">
-              포트폴리오 만들기
-            </Link>
+            <NewPortfolioButton className="btn-secondary inline-flex mt-4">
+              새 포트폴리오
+            </NewPortfolioButton>
           </div>
         )}
 

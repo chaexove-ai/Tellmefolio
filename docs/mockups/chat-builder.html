@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Tellmefolio 대화형 만들기 — 예시</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #faf7f1; --panel: #ffffff; --line: #e8e0d6; --line2: #f0e9e0;
+    --ink: #2a211b; --ink2: #5e5249; --ink3: #968a80;
+    --brand: #a05829; --brand-solid: #a85c30; --brand-tint: #f6ebe2;
+    --ok: #2f7d57; --ok-tint: #e8f2ec; --warn: #a8641c; --warn-tint: #fbf1e3;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: "Noto Sans KR", system-ui, sans-serif; font-size: 14px; }
+  h1, h2, .serif { font-family: "Gowun Batang", serif; font-weight: 400; }
+  .tabs { display: flex; gap: 8px; padding: 16px 24px 0; }
+  .tab { border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 7px 14px; font-size: 13px; color: var(--ink2); cursor: pointer; }
+  .tab.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .tag { font-size: 12px; color: var(--ink3); margin-left: auto; align-self: center; }
+
+  /* 화면 1 — 홈 */
+  .home { display: none; min-height: calc(100vh - 60px); padding: 64px 24px; }
+  .home.on { display: block; }
+  .home-inner { max-width: 760px; margin: 0 auto; text-align: center; }
+  .home h1 { font-size: 36px; margin: 0 0 10px; line-height: 1.35; }
+  .home p.sub { color: var(--ink2); margin: 0 0 32px; }
+  .ask { display: flex; align-items: center; gap: 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 10px 10px 10px 20px; box-shadow: 0 10px 30px rgb(90 60 30 / .08); }
+  .ask input { flex: 1; border: 0; outline: 0; font: inherit; font-size: 16px; background: transparent; color: var(--ink); padding: 10px 0; }
+  .ask button { border: 0; background: var(--brand-solid); color: #fff; border-radius: 14px; width: 44px; height: 44px; font-size: 18px; cursor: pointer; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 16px; }
+  .chip { border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 7px 13px; font-size: 13px; color: var(--ink2); cursor: pointer; }
+  .chip:hover { border-color: var(--brand); color: var(--brand); }
+  .shelf { margin: 56px auto 0; max-width: 760px; text-align: left; }
+  .shelf h3 { font-size: 12px; color: var(--ink3); font-weight: 500; margin: 0 0 10px; }
+  .books { display: flex; gap: 6px; align-items: flex-end; border-bottom: 2px solid var(--line); height: 150px; }
+  .book { width: 46px; border: 1px solid var(--line); border-bottom: 0; border-radius: 3px 3px 0 0; background: #fff; display: flex; flex-direction: column; align-items: center; }
+  .book span.band { width: 100%; height: 8px; }
+  .book span.t { writing-mode: vertical-rl; font-size: 12px; color: var(--ink2); padding: 10px 0; }
+
+  /* 화면 2 — 대화 */
+  .chat { display: none; height: calc(100vh - 60px); padding: 16px 24px 24px; gap: 20px; grid-template-columns: minmax(0, 1fr) 420px; }
+  .chat.on { display: grid; }
+  .pane { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; display: flex; flex-direction: column; min-height: 0; }
+  .pane-head { padding: 16px 20px; border-bottom: 1px solid var(--line2); display: flex; align-items: center; gap: 10px; }
+  .pane-head .title { font-family: "Gowun Batang", serif; font-size: 17px; }
+  .pane-head .meta { margin-left: auto; font-size: 12px; color: var(--ink3); }
+  .msgs { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+  .msg { max-width: 78%; line-height: 1.65; }
+  .msg.ai { align-self: flex-start; }
+  .msg.me { align-self: flex-end; background: var(--ink); color: #fff; border-radius: 16px 16px 4px 16px; padding: 10px 14px; }
+  .msg.ai .bubble { background: var(--bg); border: 1px solid var(--line2); border-radius: 16px 16px 16px 4px; padding: 10px 14px; }
+  .msg.ai .who { font-size: 11px; color: var(--brand); margin: 0 0 4px 2px; }
+  .saved { display: inline-flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 12px; color: var(--ok); background: var(--ok-tint); border-radius: 999px; padding: 3px 10px; }
+  .quick { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+  .quick button { border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 5px 11px; font-size: 12px; color: var(--ink2); cursor: pointer; }
+  .composer { border-top: 1px solid var(--line2); padding: 12px; display: flex; gap: 8px; align-items: center; }
+  .composer input { flex: 1; border: 1px solid var(--line); border-radius: 14px; padding: 11px 14px; font: inherit; background: var(--bg); outline: 0; }
+  .composer button { border: 0; background: var(--brand-solid); color: #fff; border-radius: 12px; padding: 11px 16px; font: inherit; font-weight: 500; cursor: pointer; }
+  .typing { color: var(--ink3); font-size: 13px; }
+
+  /* 오른쪽 — 채워지는 포트폴리오 */
+  .progress { padding: 16px 20px; border-bottom: 1px solid var(--line2); }
+  .progress .row { display: flex; justify-content: space-between; font-size: 12px; color: var(--ink3); margin-bottom: 8px; }
+  .progress .row b { color: var(--ink); font-weight: 600; }
+  .bar { height: 6px; background: var(--line2); border-radius: 999px; overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 0; background: var(--brand); transition: width .5s ease; }
+  .fields { flex: 1; overflow-y: auto; padding: 8px 20px 20px; }
+  .f { padding: 12px 0; border-bottom: 1px solid var(--line2); }
+  .f:last-child { border-bottom: 0; }
+  .f-head { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+  .dot { width: 18px; height: 18px; border-radius: 50%; border: 1.5px dashed var(--line); display: inline-flex; align-items: center; justify-content: center; font-size: 11px; color: #fff; flex-shrink: 0; }
+  .f.done .dot { border: 0; background: var(--ok); }
+  .f.skip .dot { border: 0; background: var(--ink3); }
+  .f.now .dot { border-color: var(--brand); border-style: solid; }
+  .f-name { color: var(--ink2); }
+  .f.now .f-name { color: var(--brand); font-weight: 600; }
+  .f-state { margin-left: auto; font-size: 11px; color: var(--ink3); }
+  .f-body { margin: 6px 0 0 26px; font-size: 13px; color: var(--ink); line-height: 1.6; }
+  .src { font-size: 11px; color: var(--ink3); margin-top: 2px; }
+  .flash { animation: flash 1.2s ease; }
+  @keyframes flash { from { background: var(--brand-tint); } to { background: transparent; } }
+  .done-cta { margin: 0 20px 20px; display: none; }
+  .done-cta.on { display: block; }
+  .done-cta button { width: 100%; border: 0; background: var(--brand-solid); color: #fff; border-radius: 14px; padding: 13px; font: inherit; font-weight: 600; cursor: pointer; }
+  .done-cta p { text-align: center; font-size: 12px; color: var(--ink3); margin: 8px 0 0; }
+  .note { position: fixed; right: 24px; bottom: 18px; font-size: 12px; color: var(--ink3); }
+</style>
+</head>
+<body>
+  <div class="tabs">
+    <button class="tab on" data-go="home">① 홈 — 입력창으로 시작</button>
+    <button class="tab" data-go="chat">② 대화하며 채우기</button>
+    <span class="tag">예시 화면 · ②에서 ‘보내기’를 누르면 대화가 이어집니다 · 대화 내용은 가상의 예시</span>
+  </div>
+
+  <!-- 화면 1 -->
+  <section class="home on" id="home">
+    <div class="home-inner">
+      <h1>어떤 프로젝트 이야기를 해볼까요?</h1>
+      <p class="sub">편하게 말해 주세요. 질문하면서 포트폴리오를 같이 채워 갈게요.</p>
+      <form class="ask" id="askForm">
+        <input id="askInput" value="작년에 한 미용실 예약 앱 리뉴얼 정리하고 싶어" aria-label="프로젝트 이야기" />
+        <button type="submit" aria-label="시작">↑</button>
+      </form>
+      <div class="chips">
+        <button class="chip" type="button">깃허브 링크로 시작</button>
+        <button class="chip" type="button">공고에 맞춰 다시 쓰기</button>
+        <button class="chip" type="button">지난 포트폴리오 이어서</button>
+      </div>
+    </div>
+    <div class="shelf">
+      <h3>내 서재</h3>
+      <div class="books">
+        <div class="book" style="height:130px"><span class="band" style="background:#c2703d"></span><span class="t">UX 포트폴리오</span></div>
+        <div class="book" style="height:112px"><span class="band" style="background:#7d7a4f"></span><span class="t">데이터 분석</span></div>
+        <div class="book" style="height:122px"><span class="band" style="background:#8f6a52"></span><span class="t">서비스 기획</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 화면 2 -->
+  <section class="chat" id="chat">
+    <div class="pane">
+      <div class="pane-head">
+        <span class="title">미용실 예약 앱 리뉴얼</span>
+        <span class="meta" id="turns">질문 0 / 8</span>
+      </div>
+      <div class="msgs" id="msgs"></div>
+      <form class="composer" id="composer">
+        <input id="reply" placeholder="답하기… (모르면 ‘넘어가기’)" autocomplete="off" />
+        <button type="submit">보내기</button>
+      </form>
+    </div>
+
+    <aside class="pane">
+      <div class="progress">
+        <div class="row"><span>포트폴리오 채우는 중</span><b id="pct">0%</b></div>
+        <div class="bar"><i id="barFill"></i></div>
+      </div>
+      <div class="fields" id="fields"></div>
+      <div class="done-cta" id="doneCta">
+        <button type="button">초안 만들기 →</button>
+        <p>답한 내용만으로 씁니다. 모든 문장에 어느 답에서 왔는지 표시돼요.</p>
+      </div>
+    </aside>
+  </section>
+
+
+<script>
+  // ── 탭 전환 ───────────────────────────────────────────
+  const show = (id) => {
+    document.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", t.dataset.go === id));
+    document.getElementById("home").classList.toggle("on", id === "home");
+    document.getElementById("chat").classList.toggle("on", id === "chat");
+  };
+  document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => show(t.dataset.go)));
+  document.getElementById("askForm").addEventListener("submit", e => { e.preventDefault(); show("chat"); });
+
+  // ── 오른쪽 칸 ─────────────────────────────────────────
+  const FIELDS = [
+    ["context", "맥락 및 배경"], ["role", "내 역할"], ["problem", "문제 정의"],
+    ["execution", "실행 내용"], ["outcome", "핵심 성과"], ["reflection", "배운 점"],
+  ];
+  const state = {};
+  const fieldsEl = document.getElementById("fields");
+  function renderFields(flashKey) {
+    fieldsEl.innerHTML = FIELDS.map(([k, name]) => {
+      const s = state[k];
+      const cls = s ? (s.skip ? "skip" : "done") : (current && current.field === k ? "now" : "");
+      const mark = s ? (s.skip ? "–" : "✓") : "";
+      const label = s ? (s.skip ? "건너뜀" : "채움") : (cls === "now" ? "지금 묻는 중" : "비어 있음");
+      const body = s && !s.skip ? `<div class="f-body">${s.text}<div class="src">↳ 답변 ${s.from}에서</div></div>` : "";
+      return `<div class="f ${cls} ${flashKey === k ? "flash" : ""}"><div class="f-head"><span class="dot">${mark}</span><span class="f-name">${name}</span><span class="f-state">${label}</span></div>${body}</div>`;
+    }).join("");
+    const filled = Object.keys(state).length;
+    const pct = Math.round((filled / FIELDS.length) * 100);
+    document.getElementById("pct").textContent = pct + "%";
+    document.getElementById("barFill").style.width = pct + "%";
+    document.getElementById("doneCta").classList.toggle("on", filled >= 4);
+  }
+
+  // ── 대화 대본 (예시) ──────────────────────────────────
+  // ai: 질문 / field: 이 질문이 채우는 칸 / me: 예시 답 / fill: 칸에 들어갈 요약 / quick: 빠른 답
+  const SCRIPT = [
+    { ai: "좋아요, 미용실 예약 앱이군요. 먼저 어떤 서비스였고 왜 리뉴얼하게 됐는지 편하게 말해 주세요.", field: "context",
+      me: "동네 미용실 세 곳이 같이 쓰는 예약 앱이었는데, 전화 예약이 계속 몰려서 앱을 다시 만들기로 했어요.",
+      fill: "동네 미용실 세 곳이 함께 쓰는 예약 앱. 전화 예약이 몰려 리뉴얼 결정." },
+    { ai: "그 프로젝트에서 직접 맡은 부분은 어디까지였어요?", field: "role",
+      me: "UX 디자인이랑 화면 설계, 프론트는 일부만 같이 했어요.",
+      fill: "UX 디자인·화면 설계 담당, 프론트엔드 일부 참여" },
+    { ai: "전화가 몰린 이유가 앱의 어떤 문제 때문이었는지 짚어볼 수 있을까요? 사용자가 어디서 막혔는지요.", field: "problem",
+      me: "예약하다가 중간에 많이 나갔어요. 특히 시간 고르는 화면에서요.",
+      fill: "예약 도중 이탈이 많았고, 특히 시간 선택 화면에서 집중됨" },
+    { ai: "그걸 어떻게 확인하셨어요? 데이터로 봤는지, 직접 물어봤는지에 따라 쓰는 방식이 달라져서요.", field: "execution",
+      me: "GA로 퍼널 봤고, 미용실 사장님들한테 손님 불만도 들었어요. 시간 선택을 달력에서 버튼 목록으로 바꿨어요.",
+      fill: "GA 퍼널 분석 + 매장 인터뷰로 원인 확인 → 시간 선택을 달력에서 버튼 목록으로 변경" },
+    { ai: "바꾼 뒤 달라진 게 있었나요? 숫자가 있으면 좋고, 없으면 체감한 변화도 괜찮아요.", field: "outcome",
+      me: "예약 완료율이 올랐어요.", followUp: true },
+    { ai: "얼마나 올랐는지 기억나세요? 대략이라도 숫자가 있으면 설득력이 확 달라져요. 정확하지 않으면 넘어가도 됩니다 — 지어서 쓰진 않을게요.", field: "outcome",
+      me: "12% 정도였어요.", fill: "리뉴얼 후 예약 완료율 약 12% 상승",
+      quick: ["정확한 숫자는 몰라요", "넘어가기"] },
+    { ai: "마지막으로, 이 프로젝트에서 배운 점이나 다시 한다면 바꿀 점이 있을까요?", field: "reflection",
+      me: "넘어가기", skip: true },
+    { ai: "좋아요, 여섯 칸 중 다섯 칸을 채웠어요. 오른쪽에서 확인하시고 ‘초안 만들기’를 누르면, 방금 답해 주신 내용만으로 케이스 스터디를 써 드릴게요.", end: true },
+  ];
+
+  const msgs = document.getElementById("msgs");
+  let i = 0, answers = 0, current = null;
+  function addMsg(who, html) {
+    const d = document.createElement("div");
+    d.className = "msg " + who;
+    d.innerHTML = who === "ai" ? `<div class="who">Tellmefolio</div><div class="bubble">${html}</div>` : html;
+    msgs.appendChild(d); msgs.scrollTop = msgs.scrollHeight; return d;
+  }
+  function ask() {
+    current = SCRIPT[i];
+    if (!current) return;
+    const typing = addMsg("ai", '<span class="typing">입력 중…</span>');
+    setTimeout(() => {
+      typing.querySelector(".bubble").innerHTML = current.ai +
+        (current.quick ? `<div class="quick">${current.quick.map(q => `<button type="button">${q}</button>`).join("")}</div>` : "");
+      document.getElementById("reply").value = current.end ? "" : current.me;
+      document.getElementById("turns").textContent = `질문 ${Math.min(i + 1, 8)} / 8`;
+      renderFields();
+    }, 500);
+  }
+  document.getElementById("composer").addEventListener("submit", e => {
+    e.preventDefault();
+    if (!current || current.end) return;
+    const text = document.getElementById("reply").value.trim() || current.me;
+    answers += 1;
+    const mine = addMsg("me", text);
+    if (current.skip) {
+      state[current.field] = { skip: true };
+    } else if (!current.followUp) {
+      state[current.field] = { text: current.fill, from: answers };
+      const tag = document.createElement("div");
+      tag.className = "saved"; tag.textContent = "✓ " + FIELDS.find(f => f[0] === current.field)[1] + "에 저장";
+      mine.after(tag); tag.style.alignSelf = "flex-end";
+    }
+    renderFields(current.field);
+    i += 1; ask();
+  });
+
+  renderFields(); ask();
+</script>
+</body>
+</html>

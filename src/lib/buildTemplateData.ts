@@ -14,6 +14,7 @@ import type { BlockMap } from "./blocks";
 import { blockHasContent } from "./blocks";
 
 import type { TemplateData } from "./htmlTemplate";
+import { orderedFields } from "./jobSwitch";
 
 const FIELD_LABELS: Array<{ key: keyof PortfolioProjectRow; ko: string; en: string }> = [
   { key: "context", ko: "맥락 및 배경", en: "BACKGROUND" },
@@ -44,6 +45,13 @@ export function buildTemplateData(input: {
     contact = {},
   } = input;
 
+  // [2026-09-25] 직무 전환으로 만든 포트폴리오는 공고가 가장 먼저 보고
+  // 싶어 하는 필드 하나를 맨 앞으로 올립니다. 순서만 바뀌고 내용은 같습니다.
+  // 템플릿은 fields 를 배열로 받으므로 템플릿 파일은 손대지 않아도 됩니다.
+  const fieldOrder = orderedFields(portfolio.lead_field).map(
+    (key) => FIELD_LABELS.find((f) => f.key === key)!
+  );
+
   const projectData = projects
     .map((p) => {
       const imgs = images[p.id] ?? [];
@@ -55,7 +63,7 @@ export function buildTemplateData(input: {
       const fields =
         p.depth === "brief"
           ? []
-          : FIELD_LABELS.map((f) => ({
+          : fieldOrder.map((f) => ({
               label: lang === "en" ? f.en : f.ko,
               value: String(p[f.key] ?? "").trim(),
             })).filter((f) => f.value.length > 0);

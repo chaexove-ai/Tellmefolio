@@ -1,6 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { LoaderCircle } from "lucide-react";
+import { Check, LoaderCircle, Send } from "lucide-react";
+import { useAuth } from "../../auth/AuthProvider";
+import {
+  createSubmission,
+  suggestFromJobSwitch,
+  SubmissionError,
+  type SubmissionFormat,
+} from "../../lib/submissions";
 import {
   getPortfolioWithProjects,
   getCoverImageUrl,
@@ -15,27 +22,41 @@ import {
 import { htmlTemplateName } from "../../lib/htmlTemplates";
 import { translatePortfolioToEnglish, TranslateError } from "../../lib/translate";
 import TemplateFrame from "../../components/TemplateFrame";
-import { useAuth } from "../../auth/AuthProvider";
 
 import { listBlocks, type BlockMap } from "../../lib/blocks";
 
 /**
- * [2026-09] "적용 템플릿" 줄이 항상 "라이브에디터"로 고정돼 있던 걸 고친 게
- * 이 화면의 첫 개편이었습니다. 이번이 두 번째 개편입니다 — 그때는 텍스트로
- * "현재 편집 상태가 반영되는 것을 확인했습니다"라고 사용자가 믿어야 했는데,
- * 실제로 보여주는 건 없었습니다. 이제 아래 "미리보기"가 실제
- * PortfolioRenderer(4개 템플릿 중 실제 적용된 것)를 그대로 그리고, "PDF로
- * 내보내기"를 누르면 바로 그 DOM을 html2canvas로 캡처해 진짜 PDF 파일을
- * 만듭니다 — 미리보기와 실제 파일이 다르면 안 되니 같은 노드를 씁니다.
+ * 내보내기 화면.
  *
- * 웹 형식(HTML/Notion 호환) 내보내기는 이번 범위가 아니라 여전히 버튼만
- * 비활성 상태로 남겨뒀습니다 — 안 되는 걸 되는 것처럼 보여주지 않으려고
- * 일부러 눌러도 반응 없게 두지 않고 disabled 처리했습니다.
+ * 미리보기는 편집기와 같은 TemplateFrame(HTML 템플릿 + iframe)이 그립니다.
+ * 내보내기는 TemplateFrame 이 채워준 그 HTML(filledHtml) 하나를 씁니다 —
+ * 미리보기와 실제 파일이 다르면 안 되니 같은 결과물을 씁니다.
+ *
+ * · PDF  — 그 HTML 을 숨은 iframe 에 넣고 브라우저 인쇄(printPdf).
+ *          글자가 선택되는 PDF 가 나옵니다. 이유는 printPdf 주석.
+ * · HTML — 그 HTML 을 그대로 파일로 내려줍니다(downloadHtml).
+ *
+ * 영어를 고르면 그 시점에만 번역을 호출하고, 실패하면 원문을 보여줍니다.
+ *
+ * [지나온 길] 처음엔 "적용 템플릿"이 항상 "라이브에디터"로 고정돼 있었고,
+ * 그다음엔 React 템플릿 DOM 을 html2canvas 로 찍어 PDF 를 만들었습니다.
+ * 웹 형식 버튼은 한동안 disabled 였다가 HTML 내보내기로 구현됐습니다.
  */
 export default function Export() {
   const navigate = useNavigate();
   const { session } = useAuth();
   const { id } = useParams<{ id: string }>();
+
+  // [2026-09-25] 제출 기록 (docs/submission-history-design.md).
+  // 적으면 내보낼 때 그 결과물을 남기고, 비우면 아무것도 남기지 않습니다.
+  const [company, setCompany] = useState("");
+  const [position, setPosition] = useState("");
+  const [jdUrl, setJdUrl] = useState<string | null>(null);
+  const [runId, setRunId] = useState<string | null>(null);
+  const [recording, setRecording] = useState(false);
+  const [recordError, setRecordError] = useState<string | null>(null);
+  const [recorded, setRecorded] = useState<{ label: string; imagesInlined: boolean } | null>(null);
+  const wantsRecord = company.trim().length > 0 || position.trim().length > 0;
   /** TemplateFrame 이 완성해준 HTML. 파일로 내려주거나 인쇄 창에 씁니다. */
   const [filledHtml, setFilledHtml] = useState<string>("");
 
@@ -154,6 +175,19 @@ export default function Export() {
     return () => {
       alive = false;
     };
+  }, [id]);
+
+  // 직무 전환으로 만든 포트폴리오면 그 공고의 직무·링크를 미리 채웁니다.
+  useEffect(() => {
+    if (!id) return;
+    suggestFromJobSwitch(id)
+      .then((s) => {
+        if (!s) return;
+        setPosition((cur) => cur || s.position);
+        setJdUrl(s.jdUrl);
+        setRunId(s.runId);
+      })
+      .catch(() => {});
   }, [id]);
 
   // 영어 버전을 선택했는데 아직 번역해둔 게 없으면 그때 번역을 시작합니다.
@@ -332,11 +366,48 @@ export default function Export() {
     }
   };
 
+  /**
+   * 제출 기록 남기기. 내보낸 그 HTML 과, 화면에 보이던 그대로의 데이터
+   * (영어로 냈으면 영어본)를 남깁니다. 같은 걸 두 번 남기지 않도록 끝나면
+   * 입력칸을 비웁니다.
+   */
+  const saveRecord = async (kind: SubmissionFormat) => {
+    const uid = session?.user?.id;
+    if (!uid || !portfolio || !wantsRecord) return;
+    setRecording(true);
+    setRecordError(null);
+    try {
+      const { imagesInlined } = await createSubmission({
+        userId: uid,
+        snapshot: {
+          portfolio: displayPortfolio ?? portfolio,
+          projects: displayProjects,
+          blocks: displayBlocks,
+        },
+        html: filledHtml || null,
+        company,
+        position,
+        jdUrl,
+        jobSwitchRunId: runId,
+        format: kind,
+        lang: lang === "영어" && translated ? "en" : "ko",
+      });
+      setRecorded({ label: [company.trim(), position.trim()].filter(Boolean).join(" · "), imagesInlined });
+      setCompany("");
+      setPosition("");
+    } catch (e) {
+      setRecordError(e instanceof SubmissionError ? e.message : "제출 기록을 남기지 못했습니다.");
+    } finally {
+      setRecording(false);
+    }
+  };
+
   const startExport = () => {
     setConfirming(false);
     setExportError(null);
     if (format === "web") downloadHtml();
     else printPdf();
+    if (wantsRecord) void saveRecord(format === "web" ? "html" : "pdf");
   };
 
 
@@ -540,6 +611,67 @@ export default function Export() {
             </div>
           </div>
 
+          {/* 제출 기록 — 내보내기 버튼 바로 위 한 줄. 모달로 막지 않습니다:
+              그냥 파일만 뽑고 싶은 사람도 있습니다. */}
+          <div className="entry">
+            <h2 className="entry-title">
+              <Send size={16} strokeWidth={1.75} className="text-brand" />
+              어디에 제출하나요? <span className="text-xs text-neutral-500 font-sans">선택</span>
+            </h2>
+            <div className="grid grid-cols-2 gap-3">
+              <input
+                value={company}
+                onChange={(e) => setCompany(e.target.value)}
+                placeholder="회사 (예: 카카오)"
+                className="field"
+                maxLength={80}
+                aria-label="제출한 회사"
+              />
+              <input
+                value={position}
+                onChange={(e) => setPosition(e.target.value)}
+                placeholder="포지션 (예: 프로덕트 디자이너)"
+                className="field"
+                maxLength={80}
+                aria-label="지원 포지션"
+              />
+            </div>
+            <div className="mt-3 flex items-center justify-between gap-3">
+              <p className="text-xs text-neutral-500 break-keep">
+                적으면 내보낼 때 그 결과물을 <b className="text-neutral-300">제출 기록</b>에 남겨요. 비우면 남기지 않아요.
+              </p>
+              <button
+                type="button"
+                className="text-xs text-brand hover:underline shrink-0 disabled:opacity-40 disabled:no-underline"
+                disabled={!wantsRecord || recording}
+                onClick={() => void saveRecord("link")}
+              >
+                파일 없이 기록만 남기기
+              </button>
+            </div>
+            {recording && (
+              <p className="text-xs text-neutral-500 mt-2 inline-flex items-center gap-1.5">
+                <LoaderCircle size={12} className="animate-spin" /> 제출 기록을 남기는 중…
+              </p>
+            )}
+            {recordError && (
+              <p role="alert" className="text-xs text-brand mt-2">
+                {recordError}
+              </p>
+            )}
+            {recorded && !recording && (
+              <p className="text-xs text-emerald-600 mt-2 inline-flex items-center gap-1.5 flex-wrap">
+                <Check size={13} strokeWidth={2} /> {recorded.label} 제출 기록에 남겼어요.
+                <Link to={`/library/portfolios/${portfolio.id}/versions`} className="text-brand hover:underline">
+                  제출 기록 보기
+                </Link>
+                {!recorded.imagesInlined && (
+                  <span className="text-neutral-500">(용량이 커서 이미지는 주소로 남겼어요)</span>
+                )}
+              </p>
+            )}
+          </div>
+
           <p className="note border-neutral-700 text-xs text-neutral-500 space-y-1">
             <span className="block font-medium text-neutral-300 mb-1">내보내기 전 주의사항</span>
             <span className="block">· 외부 서비스(Notion, 개인 웹사이트)에 직접 게시되지 않으며, 자료를 복사해 사용할 수 있습니다.</span>
@@ -558,7 +690,8 @@ export default function Export() {
             disabled={lang === "영어" && translating}
             onClick={() => setConfirming(true)}
           >
-            {lang === "영어" && translating ? "번역 중…" : "PDF로 내보내기"}
+            {lang === "영어" && translating ? "번역 중…" : format === "pdf" ? "PDF로 내보내기" : "HTML로 내보내기"}
+            {wantsRecord && !(lang === "영어" && translating) && " + 제출 기록"}
           </button>
         </>
       )}
@@ -576,6 +709,11 @@ export default function Export() {
             <p className="text-sm text-neutral-200">
               형식: {format === "pdf" ? "PDF (.pdf)" : "HTML (.html)"}
             </p>
+            {wantsRecord && (
+              <p className="text-sm text-neutral-200">
+                제출 기록: {[company.trim(), position.trim()].filter(Boolean).join(" · ")}
+              </p>
+            )}
             {lang === "영어" && !translated && (
               <p className="text-xs text-brand mt-2">
                 영어 번역이 아직 준비되지 않아 이번에는 원문(한국어)으로 내보내집니다.
@@ -586,7 +724,7 @@ export default function Export() {
                 취소
               </button>
               <button className="btn-primary" onClick={() => void startExport()}>
-                PDF 내보내기 시작
+                {format === "pdf" ? "PDF 내보내기 시작" : "HTML 내려받기"}
               </button>
             </div>
           </div>

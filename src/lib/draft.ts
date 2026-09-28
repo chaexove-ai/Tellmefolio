@@ -72,9 +72,14 @@ export async function generateDraft(input: {
   });
 
   if (error) {
-    throw new DraftError(
-      "초안 생성 요청이 실패했습니다. 잠시 후 다시 시도해 주세요."
-    );
+    // 함수가 준 안내(하루 한도, 로그인 필요 등)가 있으면 그대로 보여 줍니다.
+    let detail: string | null = null;
+    const ctx = (error as { context?: unknown }).context;
+    if (ctx instanceof Response) {
+      const body = await ctx.clone().json().catch(() => null);
+      if (body && typeof body.error === "string") detail = body.error;
+    }
+    throw new DraftError(detail ?? "초안 생성 요청이 실패했습니다. 잠시 후 다시 시도해 주세요.");
   }
 
   if (data?.error) throw new DraftError(String(data.error));
