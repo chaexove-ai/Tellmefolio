@@ -374,6 +374,115 @@
   a { color: #111 !important; text-decoration: none; }
 }
 </style>
+<style>
+/* ── 프로젝트 영역 공통 구조 (2026-09-28) ─────────────────────
+   색·글꼴은 템플릿마다 위 :root 의 --tfw-* 로 정합니다. 구조는 같습니다.
+   Tailwind 를 미리 뽑아 둔 CSS 에 기대지 않고 여기서 직접 씁니다 —
+   없는 클래스를 쓰면 조용히 무시되어(여백·줄바꿈이 사라짐) 깨졌습니다. */
+/* 제목이 낱말 중간에서 끊기지 않게(예: "디자/인") — 템플릿 전체에 적용 */
+h1, h2, h3, h4 { word-break: keep-all; overflow-wrap: anywhere; }
+
+.tfw { padding: var(--tfw-section-pad, 8rem) 0; }
+.tfw-wrap { max-width: 72rem; margin: 0 auto; padding: 0 var(--tfw-gutter, 2rem); }
+.tfw-head { margin-bottom: 5rem; }
+
+.tfw-cases { display: flex; flex-direction: column; gap: var(--tfw-case-gap, 7rem); }
+.tfw-case { border-top: 1px solid var(--tfw-line); padding-top: 2.5rem; }
+.tfw-case-head { display: grid; grid-template-columns: 4.5rem minmax(0, 1fr); column-gap: 1.5rem; row-gap: 1rem; align-items: baseline; }
+.tfw-case-head .tfw-tags { grid-column: 2; }
+.tfw-no { font-family: var(--tfw-mono); font-size: .8rem; letter-spacing: .15em; color: var(--tfw-accent); }
+.tfw-title { font-family: var(--tfw-title-font); font-size: var(--tfw-title-size, 2.25rem); line-height: 1.2; font-weight: var(--tfw-title-weight, 500); color: var(--tfw-ink); letter-spacing: var(--tfw-title-tracking, -0.01em); }
+.tfw-role { margin-top: .6rem; font-size: .9rem; color: var(--tfw-muted); }
+
+.tfw-tags { display: flex; flex-wrap: wrap; gap: .4rem; list-style: none; margin: 0; padding: 0; }
+.tfw-tags li { font-family: var(--tfw-mono); font-size: .72rem; letter-spacing: .04em; line-height: 1; padding: .45rem .7rem; border: 1px solid var(--tfw-line-strong); border-radius: var(--tfw-tag-radius, 0); color: var(--tfw-soft); white-space: nowrap; }
+
+/* 이미지는 자르지 않습니다. 틀 안에서 원래 비율 그대로, 남는 자리는 바탕색. */
+.tfw-frame { display: flex; align-items: center; justify-content: center; background: var(--tfw-frame); border-radius: var(--tfw-radius, 0); overflow: hidden; }
+.tfw-frame img { display: block; max-width: 100%; height: auto; object-fit: contain; }
+.tfw-hero { margin: 2.5rem 0 0; }
+.tfw-hero .tfw-frame img { max-height: min(78vh, 760px); width: auto; }
+figcaption { margin-top: .7rem; font-size: .8rem; color: var(--tfw-muted); }
+
+/* 칸별 글: 왼쪽 제목, 오른쪽 본문(읽기 좋은 폭). */
+.tfw-fields { margin: 3rem 0 0; }
+.tfw-row { display: grid; grid-template-columns: 12rem minmax(0, 1fr); column-gap: 3rem; padding: 1.6rem 0; border-top: 1px solid var(--tfw-line); }
+.tfw-row:first-child { border-top: 0; padding-top: 0; }
+.tfw-row dt { font-family: var(--tfw-mono); font-size: .72rem; letter-spacing: .18em; text-transform: uppercase; color: var(--tfw-accent); padding-top: .3rem; }
+.tfw-row dd { margin: 0; max-width: 44rem; font-size: 1rem; line-height: 1.85; color: var(--tfw-body); }
+
+/* 줄바꿈은 살리고, 공백 없는 긴 글(주소 등)은 칸 안에서 접습니다.
+   한국어는 낱말 중간에서 끊지 않습니다(keep-all). */
+.tfw dd, .tfw-title, .tfw-card-title, .tfw-card-lead, .tfw-role, .tfw figcaption { white-space: pre-line; word-break: keep-all; overflow-wrap: anywhere; }
+
+.tfw-gallery { margin-top: 3rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); gap: 1.25rem; align-items: start; }
+.tfw-gallery figure { margin: 0; }
+.tfw-gallery .tfw-frame { aspect-ratio: 4 / 3; }
+.tfw-gallery .tfw-frame img { max-height: 100%; }
+
+/* 짧은 작업 */
+.tfw-others { margin-top: var(--tfw-case-gap, 7rem); }
+.tfw-subhead { font-family: var(--tfw-mono); font-size: .75rem; letter-spacing: .25em; text-transform: uppercase; color: var(--tfw-muted); margin-bottom: 2rem; padding-top: 2.5rem; border-top: 1px solid var(--tfw-line); }
+.tfw-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr)); gap: 2.5rem 2rem; align-items: start; }
+.tfw-card { display: flex; flex-direction: column; gap: .55rem; }
+.tfw-thumb { aspect-ratio: 4 / 3; margin-bottom: .6rem; }
+.tfw-thumb img { max-height: 100%; }
+.tfw-thumb-empty span { font-family: var(--tfw-title-font); font-size: 3.5rem; line-height: 1; color: var(--tfw-line-strong); }
+@media print { .tfw-thumb-empty { display: none !important; } }
+.tfw-card-title { font-family: var(--tfw-title-font); font-size: 1.2rem; line-height: 1.35; font-weight: var(--tfw-title-weight, 500); color: var(--tfw-ink); }
+.tfw-card-lead { font-size: .9rem; line-height: 1.7; color: var(--tfw-body); }
+.tfw-card .tfw-tags { margin-top: .35rem; }
+
+@media (max-width: 760px) {
+  .tfw { padding: 5rem 0; }
+  .tfw-wrap { padding: 0 1.25rem; }
+  .tfw-case-head { grid-template-columns: minmax(0, 1fr); }
+  .tfw-case-head .tfw-tags { grid-column: 1; }
+  .tfw-title { font-size: 1.7rem; }
+  .tfw-row { grid-template-columns: minmax(0, 1fr); row-gap: .6rem; }
+}
+
+@media print {
+  #work { break-inside: auto !important; padding: 12pt 0 !important; }
+  .tfw-case { break-before: auto; padding-top: 10pt; }
+  .tfw-case-head, .tfw-row, .tfw-hero, .tfw-gallery figure, .tfw-card { break-inside: avoid; }
+  .tfw-case-head, .tfw-subhead { break-after: avoid; }
+  .tfw-frame { background: #f4f4f4 !important; }
+  .tfw-hero .tfw-frame img { max-height: 95mm !important; }
+  .tfw-gallery .tfw-frame img, .tfw-thumb img { max-height: 100% !important; }
+  .tfw img { object-fit: contain !important; }
+  .tfw-row dt, .tfw-no { color: #555 !important; }
+  .tfw-tags li { color: #444 !important; border-color: #ccc !important; }
+  .tfw-gallery { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* ── 이 템플릿의 색·글꼴 ── */
+:root {
+  --tfw-ink: #ffffff; --tfw-body: rgba(255,255,255,.64); --tfw-soft: rgba(255,255,255,.58); --tfw-muted: rgba(255,255,255,.4);
+  --tfw-accent: #00FFFF; --tfw-line: rgba(255,255,255,.08); --tfw-line-strong: rgba(255,255,255,.16); --tfw-frame: #0d0d0d;
+  --tfw-title-font: 'Playfair Display', 'Noto Serif KR', serif; --tfw-mono: ui-monospace, 'JetBrains Mono', monospace;
+  --tfw-title-weight: 500; --tfw-radius: 0; --tfw-tag-radius: 0; --tfw-section-pad: 10rem; --tfw-gutter: 2rem;
+}
+.tfw-eyebrow { display: block; font-size: 10px; font-weight: 700; letter-spacing: .4em; text-transform: uppercase; color: rgba(255,255,255,.3); margin-bottom: 1.5rem; }
+.tfw-h2 { font-family: var(--tfw-title-font); font-size: clamp(2.25rem, 4vw, 3rem); font-weight: 500; line-height: 1.1; }
+@media print { .tfw-title, .tfw-card-title, .tfw-h2 { color: #111 !important; } }
+/* 이 템플릿의 미리 뽑아 둔 CSS 에 빠져 있던 유틸리티(소개·연락처 영역).
+   없어서 소개 칸이 "함께 일해요" 위로 겹치고 기술 목록이 한 줄로 붙었습니다. */
+.flex-wrap{flex-wrap:wrap}.gap-10{gap:2.5rem}.gap-3{gap:.75rem}.gap-x-6{column-gap:1.5rem}.gap-y-2{row-gap:.5rem}
+.mb-10{margin-bottom:2.5rem}.mb-5{margin-bottom:1.25rem}.mt-16{margin-top:4rem}.pt-10{padding-top:2.5rem}
+.py-40{padding-top:10rem;padding-bottom:10rem}
+@media (min-width:768px){.md\:text-4xl{font-size:2.25rem;line-height:2.5rem}}
+
+/* 인쇄(PDF)는 흰 종이입니다 — 어두운 화면용 색을 그대로 쓰면 글자가 안 보입니다. */
+@media print {
+  :root {
+    --tfw-ink: #111; --tfw-body: #333; --tfw-soft: #444; --tfw-muted: #666;
+    --tfw-accent: #555; --tfw-line: #e2e2e2; --tfw-line-strong: #ccc; --tfw-frame: #f4f4f4;
+  }
+  .tfw dd, .tfw dt, .tfw figcaption, .tfw-card-lead, .tfw-role { color: var(--tfw-body) !important; }
+  .tfw-row dt, .tfw-no { color: var(--tfw-accent) !important; }
+}
+</style>
 </head>
 <body class="sd-ready">
     <div class="min-h-screen relative overflow-x-hidden">
@@ -408,47 +517,69 @@
             </div>
         </section>
 
-        <!-- Work Section -->
-        <section id="work" class="py-48 px-8 md:px-20">
-            <div class="max-w-7xl mx-auto">
-                <div class="mb-32">
-                    <span class="text-[10px] font-bold uppercase tracking-[0.4em] text-white/30 block mb-6">Portfolio Selection</span>
-                    <h2 class="text-4xl md:text-5xl font-display font-medium">Selected Works</h2>
+        <!-- [2026-09-28] 프로젝트 영역 — 어떤 프로젝트가 와도 정리되게.
+             · 케이스 스터디(칸을 채운 것): 한 건씩 전체 폭. 번호·제목·역할·태그 →
+               대표 이미지(원래 비율 그대로) → 칸별 글(왼쪽 제목 / 오른쪽 본문) → 갤러리
+             · 짧은 작업(한 줄 설명): 아래 작은 카드 격자
+             두 종류를 한 격자에 섞으면 긴 글 옆에 한 줄 카드가 서서 큰 빈칸이 생깁니다.
+             이미지는 자르지 않습니다(세로 스크린숏·가로 파노라마 모두 전체가 보이게). -->
+        <section id="work" class="tfw" data-tf-if="projects">
+          <div class="tfw-wrap">
+            <header class="tfw-head">
+              <span class="tfw-eyebrow" data-tf-en="Portfolio Selection">Portfolio Selection</span>
+              <h2 class="tfw-h2" data-tf-en="Selected Works">Selected Works</h2>
+            </header>
+
+            <div data-tf-if="caseStudies" class="tfw-cases">
+              <article data-tf-repeat="caseStudies" class="tfw-case">
+                <div class="tfw-case-head">
+                  <span data-tf="no" class="tfw-no">01</span>
+                  <div class="tfw-case-titles">
+                    <h3 data-tf="title" class="tfw-title">프로젝트 이름</h3>
+                    <p data-tf-if="role" data-tf="role" class="tfw-role">역할</p>
+                  </div>
+                  <ul data-tf-if="stack" class="tfw-tags"><li data-tf-repeat="stack" data-tf=".">Figma</li></ul>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-20 gap-y-40">
-                    <!-- 프로젝트 한 건. 이 덩어리가 프로젝트 수만큼 복제됩니다. -->
-                    <div data-tf-repeat="projects" class="group project-card">
-                        <div data-tf-if="image" class="block overflow-hidden bg-[#0d0d0d] mb-8">
-                            <img data-tf="image" src="" alt="" class="w-full aspect-[4/5] object-cover grayscale opacity-60 transition-all duration-700 group-hover:opacity-100 group-hover:scale-105">
-                        </div>
-                        <div>
-                            <h3 data-tf="name" class="text-2xl font-display mb-2"></h3>
-                            <p data-tf-if="lead" data-tf="lead" class="text-xs text-white/30 font-semibold uppercase tracking-widest"></p>
-                        </div>
+                <figure data-tf-if="hero" class="tfw-hero">
+                  <div class="tfw-frame"><img data-tf="hero" src="" alt=""></div>
+                  <figcaption data-tf-if="heroCaption" data-tf="heroCaption"></figcaption>
+                </figure>
 
-                        <div data-tf-if="stack" class="flex flex-wrap gap-2 mt-5">
-                            <span data-tf-repeat="stack" data-tf="." class="text-[10px] uppercase tracking-widest text-white/40 border border-white/10 px-3 py-1"></span>
-                        </div>
+                <dl class="tfw-fields">
+                  <div data-tf-repeat="fields" class="tfw-row">
+                    <dt data-tf="label">맥락 및 배경</dt>
+                    <dd data-tf="value">본문</dd>
+                  </div>
+                  <div data-tf-repeat="blocks" class="tfw-row">
+                    <dt data-tf="label"></dt>
+                    <dd data-tf-if="text" data-tf="text"></dd>
+                  </div>
+                </dl>
 
-                        <!-- 케이스 스터디로 쓴 프로젝트에만 나옵니다. -->
-                        <div data-tf-if="fields" class="mt-10 space-y-7 border-t border-white/5 pt-8">
-                            <div data-tf-repeat="fields">
-                                <p data-tf="label" class="text-[10px] font-bold uppercase tracking-[0.4em] text-[#00FFFF] mb-3"></p>
-                                <p data-tf="value" class="text-white/50 font-light leading-relaxed whitespace-pre-wrap"></p>
-                            </div>
-                        </div>
-
-                        <!-- 직접 추가한 블록 -->
-                        <div data-tf-if="blocks" class="mt-8 space-y-6">
-                            <div data-tf-repeat="blocks">
-                                <p data-tf-if="label" data-tf="label" class="text-[10px] font-bold uppercase tracking-[0.4em] text-white/25 mb-3"></p>
-                                <p data-tf-if="text" data-tf="text" class="text-white/50 font-light leading-relaxed whitespace-pre-wrap"></p>
-                            </div>
-                        </div>
-                    </div>
+                <div data-tf-if="gallery" class="tfw-gallery">
+                  <figure data-tf-repeat="gallery">
+                    <div class="tfw-frame"><img data-tf="url" src="" alt=""></div>
+                    <figcaption data-tf-if="caption" data-tf="caption"></figcaption>
+                  </figure>
                 </div>
+              </article>
             </div>
+
+            <div data-tf-if="otherWorks" class="tfw-others">
+              <h3 data-tf-if="caseStudies" class="tfw-subhead" data-tf-en="Other work">그 밖의 작업</h3>
+              <div class="tfw-grid">
+                <article data-tf-repeat="otherWorks" class="tfw-card">
+                  <div data-tf-if="hero" class="tfw-frame tfw-thumb"><img data-tf="hero" src="" alt=""></div>
+                  <!-- 이미지가 없으면 첫 글자 자리표시 — 이미지 있는 카드 옆에서 줄이 어긋나지 않게 -->
+                  <div data-tf-if="!hero" class="tfw-frame tfw-thumb tfw-thumb-empty" aria-hidden="true"><span data-tf="initial"></span></div>
+                  <h4 data-tf="title" class="tfw-card-title">작업 이름</h4>
+                  <p data-tf-if="lead" data-tf="lead" class="tfw-card-lead">한 줄 설명</p>
+                  <ul data-tf-if="stack" class="tfw-tags"><li data-tf-repeat="stack" data-tf=".">Figma</li></ul>
+                </article>
+              </div>
+            </div>
+          </div>
         </section>
 
         <!-- About Section -->

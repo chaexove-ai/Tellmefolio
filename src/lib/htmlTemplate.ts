@@ -159,8 +159,15 @@ function fillScope(root: Element | DocumentFragment, data: TemplateData | string
     for (const item of items) {
       const clone = tpl.cloneNode(true) as Element;
       clone.removeAttribute(REPEAT);
-      fillScope(clone, item as TemplateData | string);
-      frag.appendChild(clone);
+      // [2026-09-28] 복제본을 조각(fragment)에 담아서 채웁니다.
+      // querySelectorAll 은 "자손"만 찾아서, 반복 요소 자신에 붙은
+      // data-tf(예: <li data-tf-repeat="stack" data-tf=".">)는 한 번도
+      // 채워지지 않았습니다 — 기술 태그가 빈 동그라미로 나오던 원인입니다.
+      // 조각에 넣으면 복제본 자신도 검색 대상이 됩니다.
+      const holder = tpl.ownerDocument.createDocumentFragment();
+      holder.appendChild(clone);
+      fillScope(holder, item as TemplateData | string);
+      frag.appendChild(holder);
     }
     parent.replaceChild(frag, tpl);
   }
