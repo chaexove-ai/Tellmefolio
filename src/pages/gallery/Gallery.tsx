@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { NewPortfolioButton } from "../../components/NewPortfolio";
 import { Link, useSearchParams } from "react-router-dom";
-import { Globe, Lock, SlidersHorizontal, Upload, Bookmark, BookmarkCheck, Search, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Globe, Lock, SlidersHorizontal, Upload, Bookmark, BookmarkCheck, Search, X, ChevronLeft, ChevronRight, UserRound } from "lucide-react";
 import { useAuth } from "../../auth/AuthProvider";
 import {
   listMyPortfolios,
@@ -395,6 +395,12 @@ export default function Gallery() {
                     못 그리면 그라디언트가 그대로 남습니다(PortfolioThumb). */}
                 <div className="relative">
                   <PortfolioThumb portfolio={g} className="aspect-[4/3] rounded-xl mb-3" />
+                  {/* [09-28] 내 카드는 책갈피 대신 "내 포트폴리오" — 빈 자리가 버그처럼 보이지 않게 */}
+                  {userId && g.userId === userId && (
+                    <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-medium text-[#2a211b] shadow-sm">
+                      <UserRound size={12} strokeWidth={2} aria-hidden="true" /> 내 포트폴리오
+                    </span>
+                  )}
                   {userId && g.userId !== userId && (
                     <button
                       type="button"

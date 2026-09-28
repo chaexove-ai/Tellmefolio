@@ -1,12 +1,18 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { getCoverImageUrl, getPublicPortfolio, listProjectImages, updatePortfolioVisibility } from "../lib/portfolios";
+import {
+  getCoverImageUrl,
+  getPublicPortfolio,
+  listProjectImages,
+  updatePortfolioListed,
+  updatePortfolioVisibility,
+} from "../lib/portfolios";
 import { getSupabase } from "../lib/supabase";
 import type { PortfolioProjectRow, PortfolioRow, ProjectImageMap } from "../lib/portfolios";
 import TemplateFrame from "../components/TemplateFrame";
 import { useAuth } from "../auth/AuthProvider";
 import { getMyBookmarkIds, recordView, setBookmark } from "../lib/engagement";
-import { Bookmark, BookmarkCheck } from "lucide-react";
+import { Bookmark, BookmarkCheck, PenLine, UserRound } from "lucide-react";
 
 import { listBlocks, type BlockMap } from "../lib/blocks";
 /** 프로젝트 이미지를 템플릿이 쓰는 모양으로 읽습니다.
@@ -122,6 +128,27 @@ export default function PublicPortfolio() {
       .catch(() => setBookmarked(false));
   }, [me, portfolio]);
 
+  // [09-28] 주인이 자기 공개 페이지를 볼 때 — 편집하기 · 커뮤니티 올리기/내리기
+  const isOwner = Boolean(me && portfolio && portfolio.user_id === me);
+  const [confirmUnlist, setConfirmUnlist] = useState(false);
+  const [listBusy, setListBusy] = useState(false);
+  const [listError, setListError] = useState<string | null>(null);
+
+  const setListed = async (listed: boolean) => {
+    if (!portfolio) return;
+    setListBusy(true);
+    setListError(null);
+    try {
+      await updatePortfolioListed(portfolio.id, listed);
+      setPortfolio({ ...portfolio, listed });
+      setConfirmUnlist(false);
+    } catch {
+      setListError(listed ? "올리지 못했어요" : "내리지 못했어요");
+    } finally {
+      setListBusy(false);
+    }
+  };
+
   const toggleBookmark = async () => {
     if (!portfolio || bookmarked === null) return;
     const next = !bookmarked;
@@ -234,6 +261,63 @@ export default function PublicPortfolio() {
           {bookmarked ? <BookmarkCheck size={16} strokeWidth={2} /> : <Bookmark size={16} strokeWidth={2} />}
           {bookmarked ? "북마크됨" : "북마크"}
         </button>
+      )}
+
+      {isOwner && portfolio && (
+        <div className="fixed bottom-5 right-5 z-20 flex items-center gap-1 rounded-full border border-[#d9cfc4] bg-white p-1 pl-4 text-sm text-[#2a211b] shadow-lg">
+          <span className="inline-flex items-center gap-1.5 pr-2 text-xs text-[#7a6a5c]">
+            <UserRound size={14} strokeWidth={2} aria-hidden="true" /> 내 포트폴리오
+          </span>
+          {confirmUnlist ? (
+            <>
+              <span className="px-2 text-xs text-[#7a6a5c]">커뮤니티에서 내릴까요? 링크는 그대로 열려요</span>
+              <button
+                type="button"
+                onClick={() => void setListed(false)}
+                disabled={listBusy}
+                className="rounded-full bg-[#a05829] px-3.5 py-1.5 text-xs font-medium text-white hover:bg-[#8a4a22] disabled:opacity-60"
+              >
+                내리기
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmUnlist(false)}
+                className="rounded-full px-3 py-1.5 text-xs text-[#7a6a5c] hover:bg-[#f3ede6]"
+              >
+                취소
+              </button>
+            </>
+          ) : (
+            <>
+              {listError && <span className="px-2 text-xs text-[#b42318]">{listError}</span>}
+              {portfolio.listed ? (
+                <button
+                  type="button"
+                  onClick={() => setConfirmUnlist(true)}
+                  className="rounded-full px-3.5 py-1.5 text-xs hover:bg-[#f3ede6]"
+                >
+                  커뮤니티에서 내리기
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => void setListed(true)}
+                  disabled={listBusy}
+                  title="공개 링크는 이미 열려 있어요. 커뮤니티 목록에도 보이게 합니다."
+                  className="rounded-full px-3.5 py-1.5 text-xs hover:bg-[#f3ede6] disabled:opacity-60"
+                >
+                  커뮤니티에 올리기
+                </button>
+              )}
+              <Link
+                to={`/wizard/editor/${portfolio.id}`}
+                className="inline-flex items-center gap-1.5 rounded-full bg-[#a05829] px-3.5 py-1.5 text-xs font-medium text-white hover:bg-[#8a4a22]"
+              >
+                <PenLine size={13} strokeWidth={2} /> 편집하기
+              </Link>
+            </>
+          )}
+        </div>
       )}
 
       <footer className="py-10 text-center">
