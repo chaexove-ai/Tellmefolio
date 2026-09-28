@@ -1,5 +1,6 @@
 import { getSupabase } from "./supabase";
 import type { ProjectDisplay } from "./templateRules";
+import { normalizeTheme, type PortfolioTheme } from "./themeRules";
 import type { Draft } from "./draft";
 
 /**
@@ -58,6 +59,8 @@ export interface PortfolioRow {
   /** [2026-09-28] 사용자가 고친 템플릿 고정 문구. { ko: { contactTitle: "..." }, en: {...} }.
    *  마이그레이션 전 행은 undefined. 키 목록은 템플릿의 data-tf-text 와 FIELD_LABELS.copyKey. */
   copy?: PortfolioCopy;
+  /** [2026-09-28] 분위기(themeRules.ts). 마이그레이션 전 행은 undefined. */
+  theme?: PortfolioTheme;
   created_at: string;
   updated_at: string;
 }
@@ -270,6 +273,15 @@ export async function deletePortfolioProject(id: string): Promise<void> {
   }
 }
 
+/** [2026-09-28] 분위기 저장. 값은 한 번 더 걸러서 넣습니다. */
+export async function updatePortfolioTheme(id: string, theme: PortfolioTheme): Promise<PortfolioTheme> {
+  const clean = normalizeTheme(theme);
+  const sb = await requireClient();
+  const { error } = await sb.from("portfolios").update({ theme: clean }).eq("id", id);
+  if (error) throw new PortfolioError("분위기를 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+  return clean;
+}
+
 /** [2026-09-28] 템플릿 고정 문구 바꾸기. 빈 값은 지워서 템플릿 기본 문구로 돌아가게 합니다. */
 export async function updatePortfolioCopy(id: string, copy: PortfolioCopy): Promise<PortfolioCopy> {
   const clean: PortfolioCopy = {};
@@ -394,6 +406,8 @@ export interface LibraryPortfolio {
   templateId: string;
   /** 첫 화면의 소개 문장. 썸네일에 들어갑니다. */
   summary: string;
+  theme?: PortfolioTheme;
+  copy?: PortfolioCopy;
 }
 
 export function toLibraryPortfolio(p: PortfolioRow): LibraryPortfolio {
@@ -413,6 +427,9 @@ export function toLibraryPortfolio(p: PortfolioRow): LibraryPortfolio {
     jobColor: p.job_color,
     templateId: p.template_id,
     summary: (p.summary ?? "").trim(),
+    // [2026-09-28] 썸네일이 고른 분위기·문구로 그려지게
+    theme: p.theme,
+    copy: p.copy,
   };
 }
 

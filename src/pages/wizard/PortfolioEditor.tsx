@@ -7,6 +7,7 @@ import {
   updatePortfolioProject,
   updatePortfolioTitle,
   updatePortfolioCopy,
+  updatePortfolioTheme,
   createPortfolioProject,
   deletePortfolioProject,
   getCoverImageUrl,
@@ -30,6 +31,7 @@ import EditorPreview from "../../components/EditorPreview";
 import StylePanel from "../../components/StylePanel";
 import DeletePortfolioDialog from "../../components/DeletePortfolioDialog";
 import CopyEditor from "../../components/CopyEditor";
+import ThemeControls from "../../components/ThemeControls";
 import TemplateFrame from "../../components/TemplateFrame";
 
 import { shrinkImage } from "../../lib/images";
@@ -132,6 +134,8 @@ export default function PortfolioEditor() {
   const navigate = useNavigate();
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [copyOpen, setCopyOpen] = useState(false);
+  // 분위기 자동 저장: 마지막으로 저장된 값과 다르면 0.8초 뒤 저장
+  const savedThemeRef = useRef<string | null>(null);
   const deletedRef = useRef(false);
   const { id } = useParams<{ id: string }>();
   // [2026-09-25] ?project=… 이면 그 프로젝트 탭으로 엽니다. "대화로 채우기"를
@@ -808,6 +812,27 @@ export default function PortfolioEditor() {
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
   }, [inflight]);
 
+  // [2026-09-28] 분위기 저장 — 처음 불러온 값은 저장된 것으로 칩니다.
+  const themeKey = portfolio?.theme !== undefined ? JSON.stringify(portfolio.theme) : null;
+  useEffect(() => {
+    if (themeKey === null || !portfolio) return;
+    if (savedThemeRef.current === null) {
+      savedThemeRef.current = themeKey;
+      return;
+    }
+    if (themeKey === savedThemeRef.current) return;
+    const id = portfolio.id;
+    const theme = portfolio.theme ?? {};
+    const t = window.setTimeout(() => {
+      void track(async () => {
+        await updatePortfolioTheme(id, theme);
+        savedThemeRef.current = themeKey;
+      });
+    }, 800);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [themeKey]);
+
   // "n분 전"이 오래 열어 둬도 맞게
   useEffect(() => {
     const t = window.setInterval(() => forceTick((n) => n + 1), 30_000);
@@ -834,6 +859,15 @@ export default function PortfolioEditor() {
 
   /** 저장이 모두 끝난 뒤 이동합니다. 실패하면 머뭅니다(오류는 위쪽에 보임). */
   const saveThenGo = async (to: string) => {
+    // 분위기를 방금 바꿨으면(0.8초 저장 대기 중) 먼저 저장 — 내보내기 화면은 DB 에서 다시 읽습니다
+    if (portfolio && themeKey !== null && themeKey !== savedThemeRef.current) {
+      const theme = portfolio.theme ?? {};
+      const key = themeKey;
+      await track(async () => {
+        await updatePortfolioTheme(portfolio.id, theme);
+        savedThemeRef.current = key;
+      });
+    }
     const ok = await flushProject();
     await chainRef.current.catch(() => undefined);
     if (ok) navigate(to);
@@ -951,6 +985,16 @@ export default function PortfolioEditor() {
       }}
       // [2026-09-28] 문구 바꾸기 — DB 에 copy 컬럼이 생긴 뒤(값이 undefined 가 아님)에만
       onEditCopy={portfolio.copy !== undefined ? () => setCopyOpen(true) : undefined}
+      // [2026-09-28] 분위기 — 바꾸는 즉시 미리보기, 저장은 아래 효과가 잠시 뒤에
+      themeSlot={
+        portfolio.theme !== undefined ? (
+          <ThemeControls
+            value={portfolio.theme}
+            job={portfolio.job}
+            onChange={(theme) => setPortfolio((prev) => (prev ? { ...prev, theme } : prev))}
+          />
+        ) : undefined
+      }
     />
   );
 

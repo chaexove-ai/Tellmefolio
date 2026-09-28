@@ -80,6 +80,8 @@ interface Props {
   track: (work: () => Promise<void>) => Promise<boolean>;
   /** [2026-09-28] "문구 바꾸기" 창을 엽니다. 없으면(DB 에 copy 컬럼 전) 버튼을 숨깁니다. */
   onEditCopy?: () => void;
+  /** [2026-09-28] 분위기 조절(ThemeControls). 없으면(DB 에 theme 컬럼 전) 줄을 숨깁니다. */
+  themeSlot?: React.ReactNode;
 }
 
 export default function StylePanel({
@@ -91,6 +93,7 @@ export default function StylePanel({
   onCoverSaved,
   track,
   onEditCopy,
+  themeSlot,
 }: Props) {
   const { session } = useAuth();
   // [2026-09-22] 기본을 접힘으로 바꿨습니다.
@@ -249,6 +252,13 @@ export default function StylePanel({
                 ))}
               </div>
             </Group>
+
+            {themeSlot && (
+              <div className="flex w-full items-start gap-2">
+                <span className="shrink-0 pt-1.5 text-xs text-neutral-600">분위기</span>
+                {themeSlot}
+              </div>
+            )}
 
             {onEditCopy && (
               <Group label="문구">

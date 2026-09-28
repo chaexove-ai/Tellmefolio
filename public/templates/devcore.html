@@ -1454,6 +1454,67 @@ figcaption { margin-top: .7rem; font-size: .8rem; color: var(--tfw-muted); }
   .tfw-row dt, .tfw-no { color: var(--tfw-accent) !important; }
 }
 </style>
+<style data-tf-layer="theme">
+/* ── 분위기 층 (2026-09-28) ─────────────────────────────────
+   편집기 "분위기"에서 바탕·강조색·서체·모서리를 바꾸면 엔진이
+   :root 에 --tf-* 변수를 넣고 <html data-tf-theme="colors title-font …"> 를
+   답니다. 아래 규칙은 그 표시가 있을 때만 켜집니다 — 테마가 없으면 이
+   템플릿 원래 모습 그대로입니다. 색 규칙은 화면(screen)에만 겁니다:
+   인쇄(PDF)는 흰 종이용 색을 따로 씁니다. */
+@media screen {
+  html[data-tf-theme~="colors"] {
+    --tfw-ink: var(--tf-ink); --tfw-body: var(--tf-body); --tfw-soft: var(--tf-body); --tfw-muted: var(--tf-muted);
+    --tfw-accent: var(--tf-accent); --tfw-line: var(--tf-line); --tfw-line-strong: var(--tf-line-strong); --tfw-frame: var(--tf-surface-2);
+  }
+  html[data-tf-theme~="colors"] body { background-color: var(--tf-bg) !important; color: var(--tf-ink) !important; }
+  html[data-tf-theme~="colors"] ::selection { background: color-mix(in srgb, var(--tf-accent) 35%, transparent); color: var(--tf-ink); }
+  html[data-tf-theme~="colors"] .tfw-compare-after { background: var(--tf-accent) !important; color: var(--tf-accent-ink) !important; }
+  html[data-tf-theme~="colors"] .tfw-eyebrow { color: var(--tf-muted) !important; }
+}
+html[data-tf-theme~="title-font"] { --tfw-title-font: var(--tf-title-font); }
+html[data-tf-theme~="title-font"] h1, html[data-tf-theme~="title-font"] h2, html[data-tf-theme~="title-font"] h3,
+html[data-tf-theme~="title-font"] .tfw-title, html[data-tf-theme~="title-font"] .tfw-card-title,
+html[data-tf-theme~="title-font"] .tfw-h2, html[data-tf-theme~="title-font"] .tfw-metric strong,
+html[data-tf-theme~="title-font"] .font-display { font-family: var(--tf-title-font) !important; }
+html[data-tf-theme~="body-font"] body, html[data-tf-theme~="body-font"] p, html[data-tf-theme~="body-font"] dd,
+html[data-tf-theme~="body-font"] li, html[data-tf-theme~="body-font"] a { font-family: var(--tf-body-font) !important; }
+html[data-tf-theme~="radius"] { --tfw-radius: var(--tf-radius); --tfw-tag-radius: var(--tf-radius-tag); }
+
+/* ── 이 템플릿의 분위기 연결 ── */
+@media screen {
+  html[data-tf-theme~="colors"] { --bg-primary: var(--tf-bg); --accent-main: var(--tf-accent); --accent-secondary: var(--tf-accent-2); }
+  html[data-tf-theme~="colors"] .bg-\[\#0a0a0a\] { background-color: var(--tf-bg) !important; }
+  html[data-tf-theme~="colors"] .bg-\[\#0a0a0a\]\/80 { background-color: color-mix(in srgb, var(--tf-bg) 85%, transparent) !important; }
+  html[data-tf-theme~="colors"] .bg-\[\#0f0f0f\], html[data-tf-theme~="colors"] .bg-white\/5,
+  html[data-tf-theme~="colors"] .hover\:bg-white\/5:hover { background-color: var(--tf-surface) !important; }
+  html[data-tf-theme~="colors"] .bg-slate-900 { background-color: var(--tf-surface-2) !important; }
+  html[data-tf-theme~="colors"] .bg-white { background-color: var(--tf-ink) !important; color: var(--tf-bg) !important; }
+  html[data-tf-theme~="colors"] .bg-cyan-400, html[data-tf-theme~="colors"] .hover\:bg-cyan-400:hover { background-color: var(--tf-accent) !important; color: var(--tf-accent-ink) !important; }
+  html[data-tf-theme~="colors"] .bg-cyan-400\/10, html[data-tf-theme~="colors"] .bg-cyan-500\/10 { background-color: color-mix(in srgb, var(--tf-accent) 12%, transparent) !important; }
+  html[data-tf-theme~="colors"] .bg-cyan-400\/50 { background-color: color-mix(in srgb, var(--tf-accent) 50%, transparent) !important; }
+  html[data-tf-theme~="colors"] .bg-indigo-500\/10 { background-color: color-mix(in srgb, var(--tf-accent-2) 12%, transparent) !important; }
+  html[data-tf-theme~="colors"] .text-white, html[data-tf-theme~="colors"] .text-slate-100,
+  html[data-tf-theme~="colors"] .text-slate-200 { color: var(--tf-ink) !important; }
+  html[data-tf-theme~="colors"] .text-slate-300, html[data-tf-theme~="colors"] .text-slate-400 { color: var(--tf-body) !important; }
+  html[data-tf-theme~="colors"] .text-slate-500, html[data-tf-theme~="colors"] .text-slate-600 { color: var(--tf-muted) !important; }
+  html[data-tf-theme~="colors"] .text-cyan-400, html[data-tf-theme~="colors"] .hover\:text-cyan-400:hover { color: var(--tf-accent) !important; }
+  html[data-tf-theme~="colors"] .border-white\/5, html[data-tf-theme~="colors"] .border-white\/10 { border-color: var(--tf-line) !important; }
+  html[data-tf-theme~="colors"] .border-white\/15, html[data-tf-theme~="colors"] .border-white\/20 { border-color: var(--tf-line-strong) !important; }
+  html[data-tf-theme~="colors"] .border-cyan-400, html[data-tf-theme~="colors"] .hover\:border-cyan-400:hover,
+  html[data-tf-theme~="colors"] .hover\:border-cyan-400\/50:hover { border-color: var(--tf-accent) !important; }
+  html[data-tf-theme~="colors"] .from-cyan-400.to-indigo-500 { background-image: linear-gradient(135deg, var(--tf-accent), var(--tf-accent-2)) !important; }
+  html[data-tf-theme~="colors"] .tfw-grad { background-image: linear-gradient(to right, var(--tf-accent), var(--tf-accent-2)) !important; }
+  html[data-tf-theme~="colors"] .geometric-bg { background-image: radial-gradient(circle at 2px 2px, color-mix(in srgb, var(--tf-ink) 7%, transparent) 1px, transparent 0) !important; }
+  html[data-tf-theme~="colors"] .hover-glow:hover { box-shadow: 0 0 25px color-mix(in srgb, var(--tf-accent) 25%, transparent) !important; }
+  html[data-tf-theme~="colors"] .tfw-case, html[data-tf-theme~="colors"] .tfw-card { background: var(--tf-surface) !important; }
+  html[data-tf-theme~="colors"] .tfw-case .tfw-tags li { background: var(--tf-surface-2) !important; }
+}
+html[data-tf-theme~="body-font"] .mono { font-family: var(--tf-body-font) !important; }
+html[data-tf-theme~="radius"] .rounded-lg, html[data-tf-theme~="radius"] .rounded-xl, html[data-tf-theme~="radius"] .rounded-2xl,
+html[data-tf-theme~="radius"] .rounded-3xl, html[data-tf-theme~="radius"] .rounded-\[3rem\] { border-radius: var(--tf-radius) !important; }
+html[data-tf-theme~="radius"] .tfw-case { border-radius: calc(var(--tf-radius) * 1.4) !important; }
+html[data-tf-theme~="radius"] .tfw-card { border-radius: var(--tf-radius) !important; }
+</style>
 </head>
 <body>
   <div class="min-h-screen bg-[#0a0a0a] text-slate-100 selection:bg-cyan-500/30 selection:text-cyan-200">

@@ -21,6 +21,7 @@ import {
   resolveDisplay,
   type ImageSize,
 } from "./templateRules.ts";
+import { themeToCss, type PortfolioTheme } from "./themeRules.ts";
 
 import type { TemplateData } from "./htmlTemplate";
 
@@ -64,6 +65,7 @@ export function buildTemplateData(input: {
   // [2026-09-28] 사용자가 고친 고정 문구(portfolios.copy). 템플릿 문구는 엔진이
   // data-tf-text 로 바꾸고, 칸 이름은 여기서 바꿉니다.
   const copy = portfolio.copy ?? {};
+  const themeCss = portfolio.theme ? themeToCss(portfolio.theme) : null;
   const copyTable: Record<string, string> = (lang === "en" ? copy.en : copy.ko) ?? {};
 
   const fieldOrder = orderedFields(portfolio.lead_field).map(
@@ -220,6 +222,8 @@ export function buildTemplateData(input: {
     // 로고 자리 같은 곳에 쓰는 제목 첫 글자
     initial: Array.from(portfolio.title.trim())[0] ?? "",
     copy: { ko: { ...(copy.ko ?? {}) }, en: { ...(copy.en ?? {}) } },
+    // 분위기(테마) — 엔진이 <style> 로 넣습니다. 없으면 템플릿 원래 모습.
+    ...(themeCss ? { theme: { css: themeCss.css, fontHref: themeCss.fontHref, flags: themeCss.flags } } : {}),
     summary: (portfolio.summary ?? "").trim(),
     job: portfolio.job?.trim() || "",
     year: portfolio.year?.trim() || String(new Date(portfolio.created_at).getFullYear()),
@@ -264,8 +268,14 @@ export function buildThumbData(p: {
   job: string;
   year: string;
   lang?: "ko" | "en";
+  /** 썸네일도 고른 분위기로(첫 화면이 곧 표지라서) */
+  theme?: PortfolioTheme;
+  copy?: { ko?: Record<string, string>; en?: Record<string, string> };
 }): TemplateData {
+  const themeCss = p.theme ? themeToCss(p.theme) : null;
   return {
+    ...(themeCss ? { theme: { css: themeCss.css, fontHref: themeCss.fontHref, flags: themeCss.flags } } : {}),
+    copy: { ko: { ...(p.copy?.ko ?? {}) }, en: { ...(p.copy?.en ?? {}) } },
     lang: p.lang ?? "ko",
     title: p.title.trim(),
     initial: Array.from(p.title.trim())[0] ?? "",

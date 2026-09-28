@@ -425,6 +425,10 @@ FAQ           밝은 면   아코디언
 - 라이트 고정·다크 감춤, 위저드 왼쪽 단계 레일, 로그인 전체 화면 분할
 - 랜딩: 반전 구역, 결과물 무한 가로 띠, 어두운 전체 폭 CTA, 푸터 확장
 
+**2026-09-28** — **분위기 바꾸기(말로 테마 바꾸기, v0 방향 1단계)**: 편집기 템플릿·표지 패널 "분위기" — ① 말로 적고 "AI로 바꾸기"(theme 함수, Haiku) ② 예시 6개(흑백 신문·따뜻한 베이지·딥 네이비·비비드 라임·파스텔 라벤더·숲)·"템플릿 기본" ③ 직접 고르기(바탕·강조색, 제목·본문 서체, 모서리). 바꾸는 즉시 미리보기, 0.8초 뒤 자동 저장(내보내기 전엔 바로 저장). 마이그레이션 `20260928180000_portfolio_theme.sql`(portfolios.theme jsonb + 사용량 kind 'theme', 하루 30회 AI_LIMIT_THEME). 함수 배포 필요: `npx supabase functions deploy theme`.
+  - 값은 다섯 개뿐(bg·accent·titleFont·bodyFont·radius). 글자·선·면 색은 `lib/themeRules.ts` derivePalette 가 대비를 계산해 만듦(강조색이 바탕과 대비 3 미만이면 당김) — AI 에게 색을 다 고르게 하면 안 읽히는 조합이 나와서. 서체는 한글 되는 Google Fonts 11종 목록 안에서만(목록은 화면이 함수에 보냄 — 한 곳에만 둠). AI 에는 포트폴리오 글을 보내지 않음.
+  - 엔진: `data.theme` 가 있으면 <style>:root{--tf-*}</style> + 서체 <link> 를 넣고 <html data-tf-theme="colors title-font body-font radius">. 템플릿마다 "분위기 층"(`<style data-tf-layer="theme">`)이 그 표시가 있을 때만 자기 클래스(.text-cyan-400 등)를 변수로 돌림 — 테마가 없으면 원래 모습 그대로. 색 규칙은 @media screen 에만(PDF 는 흰 종이 색 유지). 템플릿 검사기가 분위기 층이 없으면 경고.
+  - 썸네일(커뮤니티·내 포트폴리오 카드)도 고른 분위기·문구로 그려짐(LibraryPortfolio 에 theme·copy).
 **2026-09-28** — **템플릿 고정 문구 바꾸기**: "함께 일해요", 메뉴, "사용한 도구 · 기술", "그 밖의 작업", 이전/이후 표시, 연락 한 줄, 케이스 스터디 칸 이름(맥락 및 배경 등)을 포트폴리오마다 바꿈. 마이그레이션 `20260928160000_portfolio_copy.sql`(portfolios.copy jsonb `{ko:{키:글}, en:{키:글}}`).
   - 엔진(`htmlTemplate.ts`): `data-tf-text="키"`(+`data-tf-label` 편집기 이름) — copy[lang][키] 가 있으면 그 글자(textContent), 없으면 템플릿 글자/`data-tf-en`. 사용자가 쓴 줄은 data-tf-if 로 사라지지 않게 조건을 풂. `data-tf-accent-last="클래스"` 는 마지막 낱말을 강조색 span 으로(미니멀 세리프 "함께 <분홍>일해요.</분홍>" 를 바꾼 문구에서도 유지). `listEditableTexts(html)` 가 템플릿에서 바꿀 수 있는 자리를 뽑아 줌 — 템플릿을 추가해도 편집기 코드는 그대로.
   - 키는 템플릿끼리 맞춤(navWork·navAbout·navContact·heroCta·workEyebrow·workTitle·aboutEyebrow·aboutTitle·toolsTitle·statProjects·statUpdated·otherTitle·compareBefore·compareAfter·contactTitle·contactLine) — 템플릿을 바꿔도 고친 문구가 따라감. 칸 이름은 fieldContext 등(`FIELD_LABELS.copyKey`, buildTemplateData 에서 적용).

@@ -179,6 +179,11 @@ function check(id: string): Result {
     }
   }
 
+  // [2026-09-28] 분위기 층 — 없으면 편집기에서 분위기를 바꿔도 이 템플릿은 그대로입니다.
+  if (!/data-tf-theme~="colors"/.test(html)) {
+    warns.push('분위기 층(html[data-tf-theme~="colors"] 규칙)이 없습니다 — 분위기 바꾸기가 이 템플릿에 안 먹힙니다');
+  }
+
   // ── 4. 인쇄 ──
   if (!/@media\s+print/.test(html)) errors.push("@media print 가 없습니다 — PDF 가 웹 화면 그대로 찍힙니다");
   else if (!/@media\s+print[\s\S]{0,600}background:\s*#fff/i.test(html)) {

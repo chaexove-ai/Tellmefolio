@@ -289,6 +289,26 @@ export function fillTemplate(templateHtml: string, data: TemplateData): string {
     el.removeAttribute(TEXT_LABEL);
     el.removeAttribute(ACCENT);
   }
+  // [2026-09-28] 분위기(테마). buildTemplateData 가 themeRules.themeToCss 로 만든
+  // CSS 변수와 서체 주소를 넘깁니다(값은 거기서 이미 검사). 템플릿의 "분위기 층"
+  // 규칙은 html[data-tf-theme~="colors"] 같은 표시가 있을 때만 켜집니다 —
+  // 테마가 없으면 템플릿 원래 모습 그대로입니다.
+  const theme = data.theme as unknown as { css?: unknown; fontHref?: unknown; flags?: unknown } | undefined;
+  if (theme && typeof theme.css === "string" && theme.css) {
+    const head = doc.head ?? doc.documentElement;
+    if (typeof theme.fontHref === "string" && theme.fontHref.startsWith("https://fonts.googleapis.com/")) {
+      const link = doc.createElement("link");
+      link.rel = "stylesheet";
+      link.href = theme.fontHref;
+      head.appendChild(link);
+    }
+    const style = doc.createElement("style");
+    style.textContent = theme.css;
+    head.appendChild(style);
+    const flags = Array.isArray(theme.flags) ? theme.flags.filter((f): f is string => typeof f === "string") : [];
+    doc.documentElement.setAttribute("data-tf-theme", flags.join(" "));
+  }
+
   return `<!DOCTYPE html>\n${doc.documentElement.outerHTML}`;
 }
 

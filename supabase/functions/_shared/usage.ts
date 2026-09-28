@@ -18,7 +18,7 @@
 
 import { createClient, type SupabaseClient, type User } from "npm:@supabase/supabase-js@2";
 
-export type UsageKind = "draft" | "translate" | "job_switch" | "interview" | "refine";
+export type UsageKind = "draft" | "translate" | "job_switch" | "interview" | "refine" | "theme";
 
 const DEFAULT_LIMIT: Record<UsageKind, number> = {
   draft: 20,
@@ -26,6 +26,7 @@ const DEFAULT_LIMIT: Record<UsageKind, number> = {
   job_switch: 5,
   interview: 10,
   refine: 60,
+  theme: 30,
 };
 
 const ENV_NAME: Record<UsageKind, string> = {
@@ -34,6 +35,7 @@ const ENV_NAME: Record<UsageKind, string> = {
   job_switch: "AI_LIMIT_JOB_SWITCH",
   interview: "AI_LIMIT_INTERVIEW",
   refine: "AI_LIMIT_REFINE",
+  theme: "AI_LIMIT_THEME",
 };
 
 const WHAT: Record<UsageKind, string> = {
@@ -42,6 +44,7 @@ const WHAT: Record<UsageKind, string> = {
   job_switch: "직무 전환 재구성",
   interview: "새 대화 시작",
   refine: "AI 문장 다듬기",
+  theme: "분위기 바꾸기",
 };
 
 /** 받침이 있으면 "은", 없으면 "는" (한글이 아니면 "은") */
