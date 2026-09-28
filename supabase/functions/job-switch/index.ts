@@ -186,6 +186,8 @@ function analyzePrompt(targetJob: string, jd: string) {
     "- requirements 는 공고가 실제로 요구하는 역량·경험만. 8~12개. 중복은 합치세요.",
     '- kind 는 필수 자격이면 "must", 우대 사항이면 "nice".',
     "- keywords 는 그 요구사항을 가리키는 공고 속 표현 2~5개.",
+    "- label 은 그 요구사항의 짧은 이름. 12자 안팎 명사구(예: 사용자 흐름 설계, 디자인 시스템, 영어).",
+    '- scope 는 프로젝트 경험으로 보여 줄 수 있으면 "project", 어학·학위·전공·자격증·경력 연수·해외 거주·서류(포트폴리오 제출 등)처럼 이력서로 확인하는 요건이면 "profile".',
     "- vocabulary 는 이 공고와 업계가 실제로 쓰는 어휘 10개 안팎(예: 그로스, 리텐션).",
     "- lead 는 이 공고가 포트폴리오에서 가장 먼저 보고 싶어 할 것 하나:",
     '  "outcome"(지표·성과·임팩트), "execution"(특정 기술·구현 역량), "problem"(문제 정의·기획·가설), "context"(도메인 이해·협업·조직 맥락)',
@@ -193,7 +195,7 @@ function analyzePrompt(targetJob: string, jd: string) {
     "",
     "## 출력",
     "설명 없이 JSON 만. 코드펜스 없이.",
-    '{ "role": "공고의 직무명", "requirements": [{ "text": "...", "kind": "must", "keywords": ["..."] }], "vocabulary": ["..."], "lead": "outcome", "leadReason": "..." }',
+    '{ "role": "공고의 직무명", "requirements": [{ "text": "...", "label": "...", "kind": "must", "scope": "project", "keywords": ["..."] }], "vocabulary": ["..."], "lead": "outcome", "leadReason": "..." }',
   ].join("\n");
 }
 
@@ -206,7 +208,10 @@ function matchPrompt(analysis: Analysis, evidence: Evidence[], projects: SourceP
     "채용 공고의 요구사항마다, 지원자 포트폴리오에서 그것을 뒷받침하는 근거 문장을 찾아 주세요.",
     "",
     "## 요구사항",
-    analysis.requirements.map((r) => `${r.id} [${r.kind}] ${r.text}`).join("\n"),
+    analysis.requirements
+      .filter((r) => r.scope !== "profile")
+      .map((r) => `${r.id} [${r.kind}] ${r.text}`)
+      .join("\n"),
     "",
     "## 포트폴리오 근거 문장 (id: 문장)",
     `프로젝트: ${projects.map((p, i) => `p${i}=${p.name || "(이름 없음)"}`).join(", ")}`,
@@ -366,7 +371,12 @@ Deno.serve(async (req) => {
     // ── 2단계 ────────────────────────────────────────────────────
     const step2 = await callModel(STRONG_MODEL, matchPrompt(analysis, evidence, projects), 6000, "2단계 근거 매칭");
     add(step2.usage);
-    const matches = normalizeMatches(step2.data, analysis.requirements, evidence);
+    // 이력서 요건(profile)은 프로젝트에서 찾지 않습니다 — 매칭 결과에도 넣지 않고, 화면이 따로 보여 줍니다.
+    const matches = normalizeMatches(
+      step2.data,
+      analysis.requirements.filter((r) => r.scope !== "profile"),
+      evidence
+    );
 
     // ── 3단계 (프로젝트별 병렬) ──────────────────────────────────
     const reqIds = analysis.requirements.map((r) => r.id);

@@ -13,6 +13,7 @@ import {
   LoaderCircle,
   Lock,
   XCircle,
+  FileText,
 } from "lucide-react";
 import { useAuth } from "../../auth/AuthProvider";
 import {
@@ -99,6 +100,9 @@ export default function JobSwitchResult() {
 
   const evidenceById = useMemo(() => new Map((run?.evidence ?? []).map((e) => [e.id, e])), [run]);
   const reqById = useMemo(() => new Map((run?.requirements ?? []).map((r) => [r.id, r])), [run]);
+  // [09-26] 어학·학위·경력 연수 같은 이력서 요건은 프로젝트에서 근거를 찾지 않고 따로 보여 줍니다.
+  const projectReqs = useMemo(() => (run?.requirements ?? []).filter((r) => r.scope !== "profile"), [run]);
+  const profileReqs = useMemo(() => (run?.requirements ?? []).filter((r) => r.scope === "profile"), [run]);
   const counts = useMemo(() => {
     const c = { full: 0, partial: 0, none: 0 };
     for (const m of run?.matches ?? []) c[m.level] += 1;
@@ -167,7 +171,7 @@ export default function JobSwitchResult() {
   const flagsFor = (pi: number, field: RewriteField, si: number) =>
     run.flags.filter((f) => f.projectIndex === pi && f.field === field && f.sentenceIndex === si);
 
-  const total = Math.max(1, run.requirements.length);
+  const total = Math.max(1, projectReqs.length);
   const stats = [
     { key: "full", label: "충족", value: counts.full, icon: CheckCircle2, ink: "#2f7d57", fill: "rgb(47 125 87 / 0.08)" },
     { key: "partial", label: "일부", value: counts.partial, icon: CircleDashed, ink: "#a8641c", fill: "rgb(168 100 28 / 0.08)" },
@@ -243,9 +247,9 @@ export default function JobSwitchResult() {
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px] items-start">
         {/* ── 요구사항 표 ─────────────────────────────────── */}
         <section className="entry">
-          <h2 className="entry-title">공고 요구사항 {run.requirements.length}</h2>
+          <h2 className="entry-title">프로젝트로 보여 줄 요구사항 {projectReqs.length}</h2>
           <ul>
-            {run.requirements.map((req) => {
+            {projectReqs.map((req) => {
               const m = run.matches.find((x) => x.requirementId === req.id);
               const level = m?.level ?? "none";
               const Icon = LEVEL_ICON[level];
@@ -298,6 +302,24 @@ export default function JobSwitchResult() {
               );
             })}
           </ul>
+
+          {profileReqs.length > 0 && (
+            <div className="mt-6 border-t border-neutral-800 pt-4">
+              <h3 className="text-sm font-medium text-neutral-300">이력서로 확인할 요건 {profileReqs.length}</h3>
+              <p className="mt-1 text-xs text-neutral-500 break-keep">
+                어학·학위·경력 연수처럼 프로젝트가 아니라 이력서·지원서에서 보여 주는 요건이에요. 프로젝트에서 억지로 근거를 찾지 않았어요.
+              </p>
+              <ul className="mt-2">
+                {profileReqs.map((req) => (
+                  <li key={req.id} className="row flex items-center gap-3">
+                    <FileText size={17} strokeWidth={1.75} className="shrink-0 text-neutral-500" aria-hidden="true" />
+                    <span className="flex-1 text-sm text-neutral-300 break-keep">{req.text}</span>
+                    {req.kind === "nice" && <span className="text-[11px] text-neutral-500 shrink-0">우대</span>}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </section>
 
         {/* ── 오른쪽: 맨 앞 항목 + 확인 필요 ─────────────────── */}
@@ -396,9 +418,9 @@ export default function JobSwitchResult() {
                             <span
                               key={rid}
                               title={reqById.get(rid)?.text}
-                              className="ml-1.5 align-middle badge bg-brand/10 text-brand"
+                              className="ml-1.5 align-middle badge bg-brand/10 text-brand whitespace-nowrap"
                             >
-                              {short(reqById.get(rid)?.text ?? rid)}
+                              {reqById.get(rid)?.label || short(reqById.get(rid)?.text ?? rid)}
                             </span>
                           ))}
                         </p>

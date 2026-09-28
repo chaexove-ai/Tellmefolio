@@ -42,6 +42,15 @@ export interface Requirement {
   text: string;
   kind: "must" | "nice";
   keywords: string[];
+  /** 결과 화면 태그용 짧은 이름(14자 안팎). 없으면 text 를 자릅니다 */
+  label?: string;
+  /**
+   * project: 프로젝트로 보여 줄 수 있는 역량 / profile: 어학·학위·자격증·경력 연수·
+   * 거주 경험·서류 제출처럼 이력서로 확인할 요건. profile 은 프로젝트에서 근거를
+   * 찾지 않습니다 — 찾게 하면 "영어·중국어로 페이지를 만들었다"를 어학 능력의
+   * 근거로 삼는 식의 억지 매칭이 나왔습니다(09-26 실사용).
+   */
+  scope?: "project" | "profile";
 }
 
 export interface Analysis {
@@ -164,6 +173,8 @@ export function normalizeAnalysis(raw: unknown, fallbackRole: string): Analysis 
       text: str(x.text, 200),
       kind: (x.kind === "nice" ? "nice" : "must") as "must" | "nice",
       keywords: strList(x.keywords, 8, 40),
+      label: str(x.label, 20),
+      scope: (x.scope === "profile" ? "profile" : "project") as "project" | "profile",
     }))
     .filter((x) => x.text)
     .slice(0, MAX_REQUIREMENTS)

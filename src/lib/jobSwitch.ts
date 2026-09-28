@@ -66,6 +66,10 @@ export interface Requirement {
   text: string;
   kind: "must" | "nice";
   keywords: string[];
+  /** 태그용 짧은 이름 (09-26 이후 결과에만) */
+  label?: string;
+  /** profile = 어학·학위·경력 연수처럼 이력서로 확인하는 요건. 프로젝트 근거를 찾지 않습니다 */
+  scope?: "project" | "profile";
 }
 
 export interface Match {
