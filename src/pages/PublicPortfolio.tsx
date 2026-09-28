@@ -3,6 +3,9 @@ import { Link, useParams } from "react-router-dom";
 import { getCoverImageUrl, getPublicPortfolio, listProjectImages } from "../lib/portfolios";
 import type { PortfolioProjectRow, PortfolioRow, ProjectImageMap } from "../lib/portfolios";
 import TemplateFrame from "../components/TemplateFrame";
+import { useAuth } from "../auth/AuthProvider";
+import { getMyBookmarkIds, recordView, setBookmark } from "../lib/engagement";
+import { Bookmark, BookmarkCheck } from "lucide-react";
 
 import { listBlocks, type BlockMap } from "../lib/blocks";
 /** 프로젝트 이미지를 템플릿이 쓰는 모양으로 읽습니다.
@@ -48,6 +51,10 @@ export default function PublicPortfolio() {
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const [images, setImages] = useState<ProjectImageMap>({});
   const [blocks, setBlocks] = useState<BlockMap>({});
+  const { session } = useAuth();
+  const me = session?.user?.id ?? null;
+  const [bookmarked, setBookmarked] = useState<boolean | null>(null);
+  const [bookmarkBusy, setBookmarkBusy] = useState(false);
 
   useEffect(() => {
     if (!id) {
@@ -66,6 +73,8 @@ export default function PublicPortfolio() {
         setPortfolio(result.portfolio);
         setProjects(result.projects);
         setState("ok");
+        // [09-28] 조회 1회 — 같은 사람은 하루 한 번, 주인 본인은 세지 않음(서버에서 거름)
+        void recordView(result.portfolio.id);
 
         // 이미지는 본문이 뜬 뒤에 붙습니다. 이미지를 기다리느라 글까지
         // 늦게 보이면, 링크를 연 사람에게 빈 화면이 더 길어집니다.
@@ -92,6 +101,28 @@ export default function PublicPortfolio() {
       alive = false;
     };
   }, [id]);
+
+  // 로그인한 남이 보고 있을 때만 "참고할게요"를 띄웁니다.
+  useEffect(() => {
+    if (!me || !portfolio || portfolio.user_id === me) return;
+    getMyBookmarkIds()
+      .then((ids) => setBookmarked(ids.has(portfolio.id)))
+      .catch(() => setBookmarked(false));
+  }, [me, portfolio]);
+
+  const toggleBookmark = async () => {
+    if (!portfolio || bookmarked === null) return;
+    const next = !bookmarked;
+    setBookmarkBusy(true);
+    setBookmarked(next);
+    try {
+      await setBookmark(portfolio.id, next);
+    } catch {
+      setBookmarked(!next);
+    } finally {
+      setBookmarkBusy(false);
+    }
+  };
 
   // 공유 링크는 미리보기 카드로 먼저 읽힙니다. 이 앱은 CSR 이라 크롤러가
   // 보는 건 여전히 index.html 이지만, 최소한 브라우저 탭과 방문 기록에는
@@ -141,6 +172,21 @@ export default function PublicPortfolio() {
         coverUrl={coverUrl}
         fullWidth
       />
+
+      {bookmarked !== null && (
+        <button
+          type="button"
+          onClick={() => void toggleBookmark()}
+          disabled={bookmarkBusy}
+          title="참고한 포트폴리오에 모아 둬요. 작성자에게는 누가 눌렀는지 없이 수만 보여요."
+          className={`fixed bottom-5 right-5 z-20 inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-medium shadow-lg transition-colors ${
+            bookmarked ? "bg-brand-solid text-white" : "bg-white text-[#2a211b] border border-[#d9cfc4] hover:border-[#a05829]"
+          }`}
+        >
+          {bookmarked ? <BookmarkCheck size={16} strokeWidth={2} /> : <Bookmark size={16} strokeWidth={2} />}
+          {bookmarked ? "참고함" : "참고할게요"}
+        </button>
+      )}
 
       <footer className="py-10 text-center">
         <Link

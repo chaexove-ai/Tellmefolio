@@ -42,6 +42,8 @@ export interface ExportedData {
   /** [2026-09-25] 제출 기록(어디에 무엇을 냈는지). 결과물 HTML 파일은
    *  빼고 행만 담습니다 — 파일은 제출 기록 화면에서 하나씩 받을 수 있습니다. */
   submissions: unknown[];
+  /** [2026-09-28] 내가 "참고할게요"를 누른 포트폴리오 id 와 시각 */
+  bookmarks: unknown[];
 }
 
 /**
@@ -58,13 +60,14 @@ export interface ExportedData {
 export async function exportMyData(userId: string): Promise<ExportedData> {
   const sb = await requireClient();
 
-  const [{ data: user }, portfolioRes, projectRes, draftRes, profileRes, submissionRes] = await Promise.all([
+  const [{ data: user }, portfolioRes, projectRes, draftRes, profileRes, submissionRes, bookmarkRes] = await Promise.all([
     sb.auth.getUser(),
     sb.from("portfolios").select().eq("user_id", userId).order("created_at"),
     sb.from("portfolio_projects").select().order("position"),
     sb.from("draft_generations").select().eq("user_id", userId).order("created_at"),
     sb.from("profiles").select().eq("id", userId).maybeSingle(),
     sb.from("portfolio_submissions").select().eq("user_id", userId).order("submitted_on"),
+    sb.from("portfolio_bookmarks").select("portfolio_id, created_at").eq("user_id", userId).order("created_at"),
   ]);
 
   if (portfolioRes.error || projectRes.error) {
@@ -93,6 +96,7 @@ export async function exportMyData(userId: string): Promise<ExportedData> {
     draftGenerations: draftRes.error ? [] : (draftRes.data ?? []),
     profile: profileRes.error ? null : (profileRes.data ?? null),
     submissions: submissionRes.error ? [] : (submissionRes.data ?? []),
+    bookmarks: bookmarkRes.error ? [] : (bookmarkRes.data ?? []),
   };
 }
 

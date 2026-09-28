@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { SlidersHorizontal, LoaderCircle, Palette, Pencil, Share, Send } from "lucide-react";
+import { SlidersHorizontal, LoaderCircle, Palette, Pencil, Share, Send, Eye, Bookmark, Lock } from "lucide-react";
 import { useAuth } from "../auth/AuthProvider";
 import {
   listMyPortfolios,
@@ -17,6 +17,7 @@ import LibraryTabs from "../components/LibraryTabs";
 import { NewPortfolioButton } from "../components/NewPortfolio";
 import { getMyProfile, FALLBACK_NICKNAME } from "../lib/profile";
 import { countSubmissionsByPortfolio } from "../lib/submissions";
+import { getMyStats, type PortfolioStats } from "../lib/engagement";
 
 /**
  * [2026-09] mockData.portfolios(고정 4건, 직무·연도가 미리 정해져 있던
@@ -63,10 +64,13 @@ export default function PortfolioList() {
   const [nickname, setNickname] = useState<string>("");
   /** 포트폴리오 id → 제출 기록 수 (카드의 "제출 기록 N") */
   const [submissionCounts, setSubmissionCounts] = useState<Record<string, number>>({});
+  // [09-28] 조회·참고 수 — 주인에게만 보입니다(서버 함수 my_portfolio_stats 가 내 것만 돌려줌)
+  const [stats, setStats] = useState<Record<string, PortfolioStats>>({});
 
   useEffect(() => {
     if (!configured) return;
     countSubmissionsByPortfolio().then(setSubmissionCounts).catch(() => setSubmissionCounts({}));
+    getMyStats().then(setStats).catch(() => setStats({}));
   }, [configured]);
 
   useEffect(() => {
@@ -344,6 +348,23 @@ export default function PortfolioList() {
                       <p className="text-xs text-neutral-500 mt-1.5">
                         {p.year} · 마지막 수정 {p.updatedAt.slice(0, 10)}
                       </p>
+                      {p.visibility === "공개" && stats[p.id] && (
+                        <p
+                          className="mt-2 flex items-center gap-3 text-xs text-neutral-400"
+                          title="나만 보는 숫자예요. 공개 링크(/p/…)가 열린 횟수(같은 사람은 하루 한 번)와 참고할게요 수."
+                        >
+                          <span className="inline-flex items-center gap-1">
+                            <Eye size={13} strokeWidth={1.75} /> 조회 {stats[p.id].views}
+                            {stats[p.id].views7d > 0 && (
+                              <span className="text-neutral-500">(7일 {stats[p.id].views7d})</span>
+                            )}
+                          </span>
+                          <span className="inline-flex items-center gap-1">
+                            <Bookmark size={13} strokeWidth={1.75} /> 참고 {stats[p.id].bookmarks}
+                          </span>
+                          <Lock size={11} strokeWidth={2} className="text-neutral-600" aria-label="나만 봄" />
+                        </p>
+                      )}
 
                       <div className="-mx-2 mt-auto pt-3 flex items-center text-xs">
                         <Link to={`/wizard/editor/${p.id}`} className="btn-ghost text-xs px-2">

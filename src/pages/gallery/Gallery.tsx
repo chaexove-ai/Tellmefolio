@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { NewPortfolioButton } from "../../components/NewPortfolio";
 import { Link } from "react-router-dom";
-import { Globe, Lock, SlidersHorizontal, Upload } from "lucide-react";
+import { Globe, Lock, SlidersHorizontal, Upload, Bookmark, BookmarkCheck } from "lucide-react";
 import { useAuth } from "../../auth/AuthProvider";
 import {
   listMyPortfolios,
@@ -14,6 +14,7 @@ import type { LibraryPortfolio } from "../../lib/portfolios";
 import Reveal from "../../components/Reveal";
 import DefaultAvatar from "../../components/DefaultAvatar";
 import PortfolioThumb from "../../components/PortfolioThumb";
+import { getMyBookmarkIds, listBookmarkedPortfolios, setBookmark } from "../../lib/engagement";
 import { getProfiles, getMyProfile, FALLBACK_NICKNAME } from "../../lib/profile";
 import type { Profile } from "../../lib/profile";
 
@@ -58,6 +59,11 @@ export default function Gallery() {
   const [job, setJob] = useState("전체 직무");
   const [year, setYear] = useState("전체 연도");
 
+  // [09-28] 참고할게요 — 내가 누른 것만 알고, 남의 수는 모릅니다(주인에게만 보임)
+  const [tab, setTab] = useState<"all" | "saved">("all");
+  const [bookmarks, setBookmarks] = useState<Set<string>>(new Set());
+  const [saved, setSaved] = useState<LibraryPortfolio[] | null>(null);
+
   const [pickerOpen, setPickerOpen] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -74,6 +80,35 @@ export default function Gallery() {
 
   useEffect(load, []);
 
+  useEffect(() => {
+    if (!userId) return;
+    getMyBookmarkIds().then(setBookmarks).catch(() => {});
+  }, [userId]);
+
+  useEffect(() => {
+    if (tab !== "saved") return;
+    setSaved(null);
+    listBookmarkedPortfolios()
+      .then((rows) => {
+        setSaved(rows);
+        void getProfiles(rows.map((r) => r.userId)).then((m) => setAuthors((prev) => new Map([...prev, ...m])));
+      })
+      .catch(() => setSaved([]));
+  }, [tab]);
+
+  const toggleBookmark = async (id: string) => {
+    const on = !bookmarks.has(id);
+    const next = new Set(bookmarks);
+    if (on) next.add(id);
+    else next.delete(id);
+    setBookmarks(next);
+    try {
+      await setBookmark(id, on);
+    } catch {
+      setBookmarks(bookmarks);
+    }
+  };
+
   const jobs = useMemo(
     () => ["전체 직무", ...Array.from(new Set((items ?? []).map((g) => g.job)))],
     [items]
@@ -83,7 +118,8 @@ export default function Gallery() {
     [items]
   );
 
-  const filtered = (items ?? []).filter(
+  const source = tab === "saved" ? saved ?? [] : items ?? [];
+  const filtered = source.filter(
     (g) =>
       (job === "전체 직무" || g.job === job) &&
       (year === "전체 연도" || g.year === year)
@@ -110,6 +146,37 @@ export default function Gallery() {
         )}
       </div>
 
+      {userId && (
+        <nav className="flex gap-6 border-b border-neutral-800">
+          {([
+            ["all", "전체"],
+            ["saved", `참고한 포트폴리오${bookmarks.size ? ` ${bookmarks.size}` : ""}`],
+          ] as const).map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setTab(key)}
+              aria-current={tab === key ? "page" : undefined}
+              className={`-mb-px border-b-2 py-2.5 text-sm transition-colors ${
+                tab === key ? "border-neutral-100 font-medium text-neutral-100" : "border-transparent text-neutral-500 hover:text-neutral-200"
+              }`}
+            >
+              {key === "saved" && <Bookmark size={13} strokeWidth={2} className="mr-1 inline -mt-0.5" />}
+              {label}
+            </button>
+          ))}
+        </nav>
+      )}
+
+      {tab === "saved" && saved !== null && saved.length === 0 && (
+        <div className="entry p-8 text-center">
+          <p className="text-sm text-neutral-300">아직 참고한 포트폴리오가 없어요.</p>
+          <p className="mt-2 text-xs text-neutral-500">
+            카드 오른쪽 위 책갈피나, 열어 본 포트폴리오의 "참고할게요"를 누르면 여기 모여요.
+          </p>
+        </div>
+      )}
+
       {notice && (
         <p className="entry py-3 text-sm text-neutral-200 border-l-2 border-l-brand">
           {notice}
@@ -132,10 +199,12 @@ export default function Gallery() {
         </div>
       )}
 
-      {items === null && !loadError && <p className="text-sm text-neutral-500">불러오는 중…</p>}
+      {((tab === "all" && items === null) || (tab === "saved" && saved === null)) && !loadError && (
+        <p className="text-sm text-neutral-500">불러오는 중…</p>
+      )}
       {loadError && <p className="text-sm text-red-400">목록을 불러오지 못했습니다.</p>}
 
-      {items !== null && items.length === 0 && (
+      {tab === "all" && items !== null && items.length === 0 && (
         <div className="entry p-8 text-center">
           <p className="text-sm text-neutral-300">아직 올라온 포트폴리오가 없습니다.</p>
           <p className="text-xs text-neutral-500 mt-2">
@@ -156,7 +225,27 @@ export default function Gallery() {
               >
                 {/* [2026-09-23] 그 포트폴리오의 실제 첫 화면입니다.
                     못 그리면 그라디언트가 그대로 남습니다(PortfolioThumb). */}
-                <PortfolioThumb portfolio={g} className="aspect-[4/3] rounded-xl mb-3" />
+                <div className="relative">
+                  <PortfolioThumb portfolio={g} className="aspect-[4/3] rounded-xl mb-3" />
+                  {userId && g.userId !== userId && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        void toggleBookmark(g.id);
+                      }}
+                      aria-pressed={bookmarks.has(g.id)}
+                      aria-label={bookmarks.has(g.id) ? "참고 표시 지우기" : "참고할게요"}
+                      title={bookmarks.has(g.id) ? "참고함 — 누르면 지워요" : "참고할게요 — 작성자에게는 수만 보여요"}
+                      className={`absolute right-2 top-2 grid size-8 place-items-center rounded-full shadow-sm transition-colors ${
+                        bookmarks.has(g.id) ? "bg-brand-solid text-white" : "bg-white/95 text-[#2a211b] hover:bg-white"
+                      }`}
+                    >
+                      {bookmarks.has(g.id) ? <BookmarkCheck size={15} strokeWidth={2} /> : <Bookmark size={15} strokeWidth={2} />}
+                    </button>
+                  )}
+                </div>
                 <p className="font-medium text-neutral-100">{g.title}</p>
                 <p className="text-xs text-neutral-500 mt-1">
                   {g.job} · {g.year}
@@ -168,7 +257,7 @@ export default function Gallery() {
         </div>
       )}
 
-      {items !== null && items.length > 0 && filtered.length === 0 && (
+      {source.length > 0 && filtered.length === 0 && (
         <p className="text-sm text-neutral-500">조건에 맞는 포트폴리오가 없습니다.</p>
       )}
 

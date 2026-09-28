@@ -367,7 +367,7 @@ export interface LibraryPortfolio {
   summary: string;
 }
 
-function toLibraryPortfolio(p: PortfolioRow): LibraryPortfolio {
+export function toLibraryPortfolio(p: PortfolioRow): LibraryPortfolio {
   return {
     id: p.id,
     userId: p.user_id,
