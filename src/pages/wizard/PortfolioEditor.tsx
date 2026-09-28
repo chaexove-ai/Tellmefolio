@@ -22,6 +22,8 @@ import {
   type ProjectDepth,
   type ProjectImageRow,
 } from "../../lib/portfolios";
+import { DISPLAY_OPTIONS, displayLabel, resolveDisplay, type ProjectDisplay } from "../../lib/templateRules";
+import { useImageSizes } from "../../lib/imageSizes";
 import { formatRelativeTime } from "../../lib/formatRelativeTime";
 import EditorPreview from "../../components/EditorPreview";
 import StylePanel from "../../components/StylePanel";
@@ -117,6 +119,9 @@ function fieldsKeyOf(p: PortfolioProjectRow): string {
     reflection: p.reflection ?? "",
     stack: p.stack ?? [],
     depth: p.depth ?? "full",
+    // 마이그레이션(display 컬럼) 전 행에는 값이 없습니다 — 그때는 키에서도 빼서
+    // 없는 컬럼을 저장하려다 실패하지 않게 합니다.
+    ...(p.display !== undefined ? { display: p.display } : {}),
   });
 }
 
@@ -171,6 +176,9 @@ export default function PortfolioEditor() {
    *  docs/editor-redesign.md 3절. 바꿔도 다른 칸의 값은 지우지 않습니다 —
    *  화면에서 접힐 뿐이라 되돌리면 쓰던 글이 그대로 돌아옵니다. */
   const [depth, setDepth] = useState<ProjectDepth>("full");
+  /** [2026-09-28] 보여주기 방식(templateRules.ts). displaySupported 는 DB 에 컬럼이 있는지. */
+  const [display, setDisplay] = useState<ProjectDisplay>("auto");
+  const [displaySupported, setDisplaySupported] = useState(false);
 
   /* ── 자동 저장 (09-26) ────────────────────────────────────────────
    * 전에는 본문은 맨 아래 "저장" 버튼, 스타일은 오른쪽 패널의 또 다른
@@ -252,6 +260,8 @@ export default function PortfolioEditor() {
     // depth 컬럼이 없던 시절 행은 undefined 로 옵니다 — 프런트는 자동
     // 배포되고 마이그레이션은 손으로 돌리니, 그 틈에 죽지 않게 full 로 봅니다.
     setDepth(p?.depth ?? "full");
+    setDisplay(p?.display ?? "auto");
+    setDisplaySupported(p?.display !== undefined);
     setImageError(null);
   };
 
@@ -579,6 +589,50 @@ export default function PortfolioEditor() {
   }, [id]);
 
   const currentProject = projects[projectIndex];
+
+  // [2026-09-28] 보여주기 방식 — 지금 탭의 자료로 실제 어떻게 보일지 계산해 알려 줍니다.
+  const currentImageUrls = useMemo(
+    () => (currentProjectId ? (projectImages[currentProjectId] ?? []).map((i) => i.url) : []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [projectImages, projects, projectIndex]
+  );
+  const currentImageSizes = useImageSizes(currentImageUrls);
+  const storyText =
+    depth === "brief" ? "" : [context, problem, execution, outcome, reflection].join("");
+  const blockText = currentBlocks
+    .map((b) => (b.content.kind === "text" ? b.content.text.trim() + b.content.label.trim() : ""))
+    .join("");
+  const displayImages = (currentProjectId ? (projectImages[currentProjectId] ?? []) : []).map((i) => ({
+    url: i.url,
+    caption: i.caption ?? "",
+  }));
+  const resolvedAuto = resolveDisplay({
+    display: "auto",
+    hasText: storyText.trim().length > 0 || blockText.length > 0,
+    textLength: storyText.length + blockText.length + (depth === "brief" ? context.length : 0),
+    images: displayImages,
+    sizes: currentImageSizes,
+    outcome: depth === "brief" ? "" : outcome,
+  });
+  const resolvedChosen = resolveDisplay({
+    display,
+    hasText: storyText.trim().length > 0 || blockText.length > 0,
+    textLength: storyText.length + blockText.length,
+    images: displayImages,
+    sizes: currentImageSizes,
+    outcome: depth === "brief" ? "" : outcome,
+  });
+  const resolvedDisplay = display === "auto" ? resolvedAuto : resolvedChosen;
+  const displayNote =
+    display !== "auto" && resolvedChosen !== display
+      ? display === "compare"
+        ? "이미지가 2장 이상 있어야 전후 비교로 보여요 — 지금은 기본 배치로 보여요"
+        : display === "metrics"
+          ? "핵심 성과 칸에 단위가 붙은 숫자(예: 32%, 1,200명)가 있어야 해요 — 지금은 기본 배치로 보여요"
+          : "이미지를 올리면 이 방식으로 보여요 — 지금은 기본 배치로 보여요"
+      : display === "auto"
+        ? "이미지 설명에 '이전'·'이후'를 적으면 전후 비교, 세로 스크린숏이 많으면 모바일 화면이 돼요"
+        : DISPLAY_OPTIONS.find((o) => o.id === display)?.hint ?? "";
   /** 대화로 채울 수 있는 빈 칸 수(역할 포함 6칸). 입력 중인 값 기준입니다. */
   const emptyStoryCount = [context, role, problem, execution, outcome, reflection].filter((v) => !v.trim()).length;
 
@@ -591,7 +645,7 @@ export default function PortfolioEditor() {
     () =>
       projects.map((p, i) =>
         i === projectIndex
-          ? { ...p, name: titleField, context, role, problem, execution, outcome, reflection, stack, depth }
+          ? { ...p, name: titleField, context, role, problem, execution, outcome, reflection, stack, depth, ...(displaySupported ? { display } : {}) }
           : p
       ),
     [
@@ -606,6 +660,8 @@ export default function PortfolioEditor() {
       reflection,
       stack,
       depth,
+      display,
+      displaySupported,
     ]
   );
 
@@ -719,7 +775,10 @@ export default function PortfolioEditor() {
     return next;
   }, [track]);
 
-  const fieldsPatch = { name: titleField, context, role, problem, execution, outcome, reflection, stack, depth };
+  const fieldsPatch = {
+    name: titleField, context, role, problem, execution, outcome, reflection, stack, depth,
+    ...(displaySupported ? { display } : {}),
+  };
   const fieldsKey = JSON.stringify(fieldsPatch);
   latestRef.current = { id: currentIdRef.current, key: fieldsKey, patch: fieldsPatch };
   const dirty = Boolean(currentIdRef.current) && fieldsKey !== savedKeyRef.current;
@@ -1150,6 +1209,30 @@ export default function PortfolioEditor() {
                     : "다섯 단계를 모두 써서 깊게 보여줍니다"}
                 </span>
               </div>
+
+              {/* [2026-09-28] 보여주기 방식 — 프로젝트마다 배치를 고릅니다 */}
+              {displaySupported && (
+                <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+                  <span className="text-xs font-medium text-neutral-200">보여주는 방식</span>
+                  <div className="inline-flex flex-wrap rounded-md border border-neutral-800 p-0.5">
+                    {DISPLAY_OPTIONS.map((o) => (
+                      <button
+                        key={o.id}
+                        type="button"
+                        onClick={() => setDisplay(o.id)}
+                        aria-pressed={display === o.id}
+                        title={o.hint}
+                        className={`rounded px-2.5 py-1 text-xs transition-colors ${
+                          display === o.id ? "bg-brand/15 text-brand" : "text-neutral-500 hover:text-neutral-300"
+                        }`}
+                      >
+                        {o.id === "auto" ? `자동 · ${displayLabel(resolvedDisplay)}` : o.label}
+                      </button>
+                    ))}
+                  </div>
+                  <span className="text-xs text-neutral-600 break-keep">{displayNote}</span>
+                </div>
+              )}
             </div>
           )}
 

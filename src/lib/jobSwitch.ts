@@ -47,12 +47,8 @@ export const LEAD_NAMES: Record<LeadField, string> = {
   outcome: "성과",
 };
 
-/** 본문 5필드의 순서. lead 하나만 맨 앞으로, 나머지는 기본 순서 그대로. */
-export function orderedFields(lead: string | null | undefined): Exclude<RewriteField, "role">[] {
-  const base = ["context", "problem", "execution", "outcome", "reflection"] as const;
-  if (!lead || !(base as readonly string[]).includes(lead)) return [...base];
-  return [lead as (typeof base)[number], ...base.filter((f) => f !== lead)];
-}
+/** 본문 5필드의 순서. 규칙은 templateRules 한 곳에 둡니다(템플릿 데이터와 같은 순서). */
+export { orderedFields } from "./templateRules";
 
 export interface Evidence {
   id: string;
@@ -382,6 +378,10 @@ export async function saveRunAsPortfolio(input: {
       portfolio_id: target.id,
       position: i,
       depth: (p.source_project_id && srcProjects.get(p.source_project_id)?.depth) || "full",
+      // 보여주기 방식도 원본을 따릅니다. 마이그레이션 전이면 원본에 값이 없어 넣지 않습니다.
+      ...(p.source_project_id && srcProjects.get(p.source_project_id)?.display
+        ? { display: srcProjects.get(p.source_project_id)!.display }
+        : {}),
       name: p.name,
       stack: p.stack,
       context: p.context,

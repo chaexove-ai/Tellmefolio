@@ -1,4 +1,5 @@
 import { getSupabase } from "./supabase";
+import type { ProjectDisplay } from "./templateRules";
 import type { Draft } from "./draft";
 
 /**
@@ -68,6 +69,8 @@ export interface PortfolioProjectRow {
   portfolio_id: string;
   position: number;
   depth: ProjectDepth;
+  /** [2026-09-28] 보여주기 방식(templateRules.ts). 마이그레이션 전 행은 undefined → 자동. */
+  display?: ProjectDisplay;
   name: string;
   context: string;
   role: string;
@@ -188,6 +191,7 @@ export async function updatePortfolioProject(
       | "reflection"
       | "stack"
       | "depth"
+      | "display"
     >
   >
 ): Promise<void> {

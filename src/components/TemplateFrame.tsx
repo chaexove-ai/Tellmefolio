@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { fillTemplate } from "../lib/htmlTemplate";
 import { getTemplate } from "../lib/templateCache";
 import { buildTemplateData } from "../lib/buildTemplateData";
+import { useImageSizes } from "../lib/imageSizes";
 import type { PortfolioProjectRow, PortfolioRow, ProjectImageMap } from "../lib/portfolios";
 import type { BlockMap } from "../lib/blocks";
 
@@ -82,11 +83,18 @@ export default function TemplateFrame({
     };
   }, [portfolio.template_id]);
 
+  // [2026-09-28] 모바일 화면 자동 판단에 이미지 원래 크기가 필요합니다.
+  const imageUrls = useMemo(
+    () => Object.values(images).flatMap((list) => list.map((i) => i.url)),
+    [images]
+  );
+  const imageSizes = useImageSizes(imageUrls);
+
   const html = useMemo(() => {
     if (!template) return null;
-    const data = buildTemplateData({ portfolio, projects, images, blocks, coverUrl, contact, lang });
+    const data = buildTemplateData({ portfolio, projects, images, blocks, coverUrl, contact, lang, imageSizes });
     return fillTemplate(template, data);
-  }, [template, portfolio, projects, images, blocks, coverUrl, contact, lang]);
+  }, [template, portfolio, projects, images, blocks, coverUrl, contact, lang, imageSizes]);
 
   useEffect(() => {
     if (html && onHtml) onHtml(html);

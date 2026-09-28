@@ -35,38 +35,46 @@ const REQUIRED = ["title", "summary", "projects"];
 /** 반복 안에 있어야 하는 키들. */
 const REQUIRED_IN_PROJECT = ["name"];
 
-/** 실제로 나올 법한 데이터. 빈 값·긴 글·특수문자를 일부러 섞었습니다. */
-const SAMPLE = {
-  title: "올리브영 UX/UI 디자인 포트폴리오",
-  summary:
-    "QUT 인터랙션 디자인 전공자로, 3년간 제주와 호주에서 브랜드·웹·마케팅을 주도하며 사용자 경험을 실제 성과로 연결해온 올라운더입니다.",
-  job: "UX/UI 디자이너",
-  year: "2026",
-  cover: "https://example.com/cover.jpg",
-  projectCount: "3",
-  stack: ["Figma", "Illustrator", "Wix", "React"],
-  email: "test@example.com",
-  emailHref: "mailto:test@example.com",
-  github: "https://github.com/example",
-  site: "",
+// [2026-09-28] 샘플을 손으로 만든 템플릿 데이터가 아니라 실제 데이터 변환
+// (buildTemplateData)을 거쳐 만듭니다. 손으로 만들면 변환 쪽 계약이 바뀌었을 때
+// 검사는 통과하는데 실제 화면은 비는 일이 생깁니다 — 한 번 겪었습니다.
+const { buildTemplateData } = await import("../src/lib/buildTemplateData.ts");
+
+const img = (name: string) => `https://example.com/${name}.jpg`;
+const row = (o: Record<string, unknown>) => ({
+  portfolio_id: "p", position: 0, depth: "full", display: "auto", name: "", context: "", role: "",
+  problem: "", execution: "", outcome: "", reflection: "", stack: [], created_at: "", updated_at: "", ...o,
+});
+/** 실제로 나올 법한 데이터. 보여주기 방식 다섯 가지와 짧은 작업, 빈 값·긴 글·특수문자를 섞었습니다. */
+const SAMPLE = buildTemplateData({
+  portfolio: {
+    id: "p", user_id: "u", title: "올리브영 UX/UI 디자인 포트폴리오",
+    summary: "QUT 인터랙션 디자인 전공자로, 3년간 제주와 호주에서 브랜드·웹·마케팅을 주도하며 사용자 경험을 실제 성과로 연결해온 올라운더입니다.",
+    job: "UX/UI 디자이너", year: "2026", visibility: "public", listed: false, template_id: "x",
+    color_theme: "dark", font: "", layout: "1col", density: "normal", cover_image_path: null, gaps: [],
+    created_at: "2026-09-01", updated_at: "2026-09-01", job_color: "#000", lead_field: null,
+  } as never,
   projects: [
-    {
-      name: "도틀왓제주",
-      lead: "제주 풀빌라 브랜드 전 채널 총괄",
-      stack: ["Figma", "Illustrator"],
-      image: "https://example.com/a.jpg",
-      images: [{ url: "https://example.com/a.jpg", caption: "메인 화면" }],
-      fields: [
-        { label: "맥락 및 배경", value: "제주 풀빌라 브랜드 전 채널 총괄" },
-        { label: "핵심 성과", value: "3년 장기 운영으로 브랜드 아이덴티티 지속 관리\n웹·SNS 단독 주도" },
-      ],
-      blocks: [{ label: "수상", text: "QUT Visualization Award" }],
-    },
-    // 이미지도 케이스 스터디도 없는 프로젝트 — 템플릿이 빈 자리를 남기지
-    // 않는지 보기 위한 것입니다.
-    { name: "Lumoji", lead: "", stack: [], image: "", images: [], fields: [], blocks: [] },
-  ],
-};
+    row({ id: "a", name: "도틀왓제주", role: "브랜드 총괄", context: "제주 풀빌라 브랜드 전 채널 총괄",
+      outcome: "3년 장기 운영으로 브랜드 아이덴티티 지속 관리\n웹·SNS 단독 주도", stack: ["Figma", "Illustrator"] }),
+    row({ id: "b", name: "식단 앱", display: "mobile", context: "식단 기록 앱", execution: "홈·기록 화면" }),
+    row({ id: "c", name: "상세페이지 리디자인", context: "스크롤이 길었음", execution: "버튼 위치 변경" }),
+    row({ id: "d", name: "축제 캠페인", context: "SNS 광고 운영", outcome: "방문객 32% 증가\n팔로워 1,200명 늘림" }),
+    row({ id: "e", name: "비건 패키지", depth: "brief", display: "visual", context: "재생지 패키지 시리즈" }),
+    row({ id: "f", name: "Lumoji", depth: "brief" }),
+  ] as never,
+  images: {
+    a: [{ id: "1", url: img("a"), caption: "메인 화면" }],
+    b: [{ id: "2", url: img("phone1"), caption: "" }, { id: "3", url: img("phone2"), caption: "" }],
+    c: [{ id: "4", url: img("before"), caption: "기존 화면" }, { id: "5", url: img("after"), caption: "개선안" }],
+    e: [{ id: "6", url: img("pack1"), caption: "라인업" }, { id: "7", url: img("pack2"), caption: "" }],
+  },
+  blocks: {
+    a: [{ id: "k", portfolio_id: "p", project_id: "a", position: 0, span: "full",
+      content: { kind: "text", label: "수상", text: "QUT Visualization Award", style: "body" } }],
+  } as never,
+  contact: { email: "test@example.com", github: "https://github.com/example" },
+});
 
 interface Result {
   id: string;
@@ -189,7 +197,7 @@ function check(id: string): Result {
   // ── 6. 실제로 채워보기 ──
   let filled = "";
   try {
-    filled = fillTemplate(html, SAMPLE as never);
+    filled = fillTemplate(html, SAMPLE);
   } catch (e) {
     errors.push(`채우기 실패: ${e instanceof Error ? e.message : String(e)}`);
     return { id, errors, warns };
@@ -197,9 +205,17 @@ function check(id: string): Result {
 
   // 사용자 내용이 실제로 들어갔는지
   const mustAppear: Array<[string, string]> = [
-    [SAMPLE.title, "제목"],
-    [SAMPLE.summary.slice(0, 20), "요약"],
+    [String(SAMPLE.title), "제목"],
+    [String(SAMPLE.summary).slice(0, 20), "요약"],
     ["도틀왓제주", "프로젝트 이름"],
+    // 보여주기 방식마다 그 자리가 실제로 그려지는지
+    [img("phone2"), "모바일 화면 이미지"],
+    [img("before"), "전후 비교 — 이전 이미지"],
+    [img("after"), "전후 비교 — 이후 이미지"],
+    ["1,200명", "성과 지표 숫자"],
+    [img("pack2"), "비주얼 이미지"],
+    ["재생지 패키지 시리즈", "비주얼 한 줄 설명"],
+    ["Lumoji", "짧은 작업 카드"],
   ];
   for (const [needle, label] of mustAppear) {
     if (!filled.includes(needle)) errors.push(`채운 뒤 ${label}이(가) 결과물에 없습니다`);

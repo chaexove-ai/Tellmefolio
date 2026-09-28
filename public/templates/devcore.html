@@ -1342,6 +1342,32 @@ figcaption { margin-top: .7rem; font-size: .8rem; color: var(--tfw-muted); }
    한국어는 낱말 중간에서 끊지 않습니다(keep-all). */
 .tfw dd, .tfw-title, .tfw-card-title, .tfw-card-lead, .tfw-role, .tfw figcaption { white-space: pre-line; word-break: keep-all; overflow-wrap: anywhere; }
 
+/* ── 보여주기 방식별 ── */
+.tfw-intro { margin-top: 1.5rem; max-width: 44rem; font-size: 1rem; line-height: 1.8; color: var(--tfw-body); white-space: pre-line; word-break: keep-all; overflow-wrap: anywhere; }
+
+.tfw-metrics { margin-top: 2.5rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: 1.5rem 2rem; }
+.tfw-metric { display: flex; flex-direction: column; gap: .6rem; padding-top: 1.25rem; border-top: 2px solid var(--tfw-accent); }
+.tfw-metric strong { font-family: var(--tfw-title-font); font-size: clamp(2.25rem, 4vw, 3.25rem); line-height: 1; font-weight: var(--tfw-title-weight, 500); color: var(--tfw-ink); letter-spacing: -0.02em; }
+.tfw-metric span { font-size: .85rem; line-height: 1.6; color: var(--tfw-muted); word-break: keep-all; overflow-wrap: anywhere; }
+
+.tfw-compare { margin-top: 2.5rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; align-items: start; }
+.tfw-compare figure { margin: 0; position: relative; }
+.tfw-compare .tfw-frame { aspect-ratio: 4 / 3; }
+.tfw-compare .tfw-frame img { max-height: 100%; }
+.tfw-compare-tag { position: absolute; top: .75rem; left: .75rem; z-index: 1; font-family: var(--tfw-mono); font-size: .7rem; letter-spacing: .15em; text-transform: uppercase; padding: .35rem .6rem; background: rgba(0,0,0,.65); color: #fff; border-radius: var(--tfw-tag-radius, 0); }
+.tfw-compare-after { background: var(--tfw-accent); color: #000; }
+
+.tfw-phones { margin-top: 2.5rem; display: flex; flex-wrap: wrap; justify-content: center; gap: 2rem 1.75rem; }
+.tfw-phones figure { margin: 0; width: clamp(9.5rem, 21%, 15rem); }
+.tfw-phone { border: .55rem solid #1c1c1e; border-radius: 2rem; overflow: hidden; background: #000; box-shadow: 0 1.5rem 3rem -1.5rem rgba(0,0,0,.6), 0 0 0 1px var(--tfw-line-strong); }
+.tfw-phone img { display: block; width: 100%; height: auto; }
+.tfw-phones figcaption { text-align: center; }
+
+.tfw-visuals { margin-top: 2.5rem; columns: 2; column-gap: 1.25rem; }
+.tfw-visuals figure { margin: 0 0 1.25rem; break-inside: avoid; }
+.tfw-visuals figure:first-child { column-span: all; }
+.tfw-visuals img { display: block; width: 100%; height: auto; border-radius: var(--tfw-radius, 0); }
+
 .tfw-gallery { margin-top: 3rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); gap: 1.25rem; align-items: start; }
 .tfw-gallery figure { margin: 0; }
 .tfw-gallery .tfw-frame { aspect-ratio: 4 / 3; }
@@ -1360,7 +1386,10 @@ figcaption { margin-top: .7rem; font-size: .8rem; color: var(--tfw-muted); }
 .tfw-card-lead { font-size: .9rem; line-height: 1.7; color: var(--tfw-body); }
 .tfw-card .tfw-tags { margin-top: .35rem; }
 
-@media (max-width: 760px) {
+@media screen and (max-width: 760px) {
+  .tfw-compare { grid-template-columns: minmax(0, 1fr); }
+  .tfw-visuals { columns: 1; }
+  .tfw-phones figure { width: calc(50% - 1rem); }
   .tfw { padding: 5rem 0; }
   .tfw-wrap { padding: 0 1.25rem; }
   .tfw-case-head { grid-template-columns: minmax(0, 1fr); }
@@ -1373,7 +1402,7 @@ figcaption { margin-top: .7rem; font-size: .8rem; color: var(--tfw-muted); }
   #work { break-inside: auto !important; padding: 12pt 0 !important; }
   .tfw-case { break-before: auto; padding-top: 10pt; }
   .tfw-case-head, .tfw-row, .tfw-hero, .tfw-gallery figure, .tfw-card { break-inside: avoid; }
-  .tfw-case-head, .tfw-subhead { break-after: avoid; }
+  .tfw-head, .tfw-case-head, .tfw-subhead { break-after: avoid; }
   .tfw-frame { background: #f4f4f4 !important; }
   .tfw-hero .tfw-frame img { max-height: 95mm !important; }
   .tfw-gallery .tfw-frame img, .tfw-thumb img { max-height: 100% !important; }
@@ -1381,6 +1410,13 @@ figcaption { margin-top: .7rem; font-size: .8rem; color: var(--tfw-muted); }
   .tfw-row dt, .tfw-no { color: #555 !important; }
   .tfw-tags li { color: #444 !important; border-color: #ccc !important; }
   .tfw-gallery { grid-template-columns: repeat(3, 1fr); }
+  .tfw-metric, .tfw-compare, .tfw-phones figure, .tfw-visuals figure { break-inside: avoid; }
+  .tfw-compare .tfw-frame img { max-height: 100% !important; }
+  .tfw-phone { border-width: 3px !important; box-shadow: none !important; }
+  .tfw-phones figure { width: 32mm !important; }
+  .tfw-visuals img { max-height: 110mm; width: auto; max-width: 100%; }
+  .tfw-compare-tag { background: #fff !important; color: #111 !important; border: 1px solid #999; }
+  .tfw-metric strong { color: #111 !important; }
 }
 
 /* ── 이 템플릿의 색·글꼴 ── */
@@ -1401,7 +1437,7 @@ figcaption { margin-top: .7rem; font-size: .8rem; color: var(--tfw-muted); }
 .tfw-subhead { border-top: 0; padding-top: 0; }
 .tfw-card { padding: 1.25rem; border: 1px solid var(--tfw-line); border-radius: 1.25rem; background: rgba(255,255,255,.02); }
 .tfw-thumb { border-radius: .75rem; }
-@media (max-width: 760px) { .tfw-case { padding: 1.5rem; } }
+@media screen and (max-width: 760px) { .tfw-case { padding: 1.5rem; } }
 @media print {
   .tfw-grad { -webkit-text-fill-color: #111 !important; color: #111 !important; background: none !important; }
   .tfw-case, .tfw-card { background: none !important; border-color: #ddd !important; }
@@ -1526,10 +1562,51 @@ figcaption { margin-top: .7rem; font-size: .8rem; color: var(--tfw-muted); }
                   <ul data-tf-if="stack" class="tfw-tags"><li data-tf-repeat="stack" data-tf=".">Figma</li></ul>
                 </div>
 
+                <p data-tf-if="intro" data-tf="intro" class="tfw-intro"></p>
+
+                <!-- 성과 지표 — 사용자가 성과 칸에 쓴 줄에서 찾은 숫자. 줄 전체를 함께 보여 줍니다. -->
+                <div data-tf-if="isMetrics" class="tfw-metrics">
+                  <div data-tf-repeat="metrics" class="tfw-metric">
+                    <strong data-tf="value">18%p</strong>
+                    <span data-tf="label">가입 완료율 18%p 상승</span>
+                  </div>
+                </div>
+
+                <!-- 케이스 스터디·성과 지표: 대표 이미지 -->
                 <figure data-tf-if="hero" class="tfw-hero">
                   <div class="tfw-frame"><img data-tf="hero" src="" alt=""></div>
                   <figcaption data-tf-if="heroCaption" data-tf="heroCaption"></figcaption>
                 </figure>
+
+                <!-- 전후 비교 -->
+                <div data-tf-if="isCompare" class="tfw-compare">
+                  <figure data-tf-if="before">
+                    <span class="tfw-compare-tag" data-tf-en="Before">이전</span>
+                    <div class="tfw-frame"><img data-tf="before.url" src="" alt=""></div>
+                    <figcaption data-tf-if="before.caption" data-tf="before.caption"></figcaption>
+                  </figure>
+                  <figure data-tf-if="after">
+                    <span class="tfw-compare-tag tfw-compare-after" data-tf-en="After">이후</span>
+                    <div class="tfw-frame"><img data-tf="after.url" src="" alt=""></div>
+                    <figcaption data-tf-if="after.caption" data-tf="after.caption"></figcaption>
+                  </figure>
+                </div>
+
+                <!-- 모바일 화면 — 세로 스크린숏을 폰 틀에 나란히 -->
+                <div data-tf-if="phones" class="tfw-phones">
+                  <figure data-tf-repeat="phones">
+                    <div class="tfw-phone"><img data-tf="url" src="" alt=""></div>
+                    <figcaption data-tf-if="caption" data-tf="caption"></figcaption>
+                  </figure>
+                </div>
+
+                <!-- 비주얼 — 첫 장은 전체 폭, 나머지는 두 단(자르지 않음) -->
+                <div data-tf-if="visuals" class="tfw-visuals">
+                  <figure data-tf-repeat="visuals">
+                    <img data-tf="url" src="" alt="">
+                    <figcaption data-tf-if="caption" data-tf="caption"></figcaption>
+                  </figure>
+                </div>
 
                 <dl class="tfw-fields">
                   <div data-tf-repeat="fields" class="tfw-row">

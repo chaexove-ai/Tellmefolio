@@ -11,10 +11,18 @@
 
 import type { PortfolioProjectRow, PortfolioRow, ProjectImageMap } from "./portfolios";
 import type { BlockMap } from "./blocks";
-import { blockHasContent } from "./blocks";
+// 값으로 가져오는 건 순수 모듈 하나뿐입니다 — 템플릿 검사기(Node)도 이 파일을 씁니다.
+import {
+  blockHasContent,
+  extractMetrics,
+  findComparePair,
+  isPhoneShot,
+  orderedFields,
+  resolveDisplay,
+  type ImageSize,
+} from "./templateRules.ts";
 
 import type { TemplateData } from "./htmlTemplate";
-import { orderedFields } from "./jobSwitch";
 
 const FIELD_LABELS: Array<{ key: keyof PortfolioProjectRow; ko: string; en: string }> = [
   { key: "context", ko: "맥락 및 배경", en: "BACKGROUND" },
@@ -34,6 +42,9 @@ export function buildTemplateData(input: {
   /** 연락처. 계정 이메일과 연결된 GitHub 에서 옵니다. 비면 템플릿의
    *  연락처 버튼이 data-tf-if 로 사라집니다. */
   contact?: { email?: string | null; github?: string | null; site?: string | null };
+  /** 이미지 url → 원래 크기. 모바일 화면(세로 스크린숏) 판단에 씁니다.
+   *  TemplateFrame 이 이미지를 읽어 채웁니다. 없으면 크기 없이 판단합니다. */
+  imageSizes?: Record<string, ImageSize>;
 }): TemplateData {
   const {
     portfolio,
@@ -43,6 +54,7 @@ export function buildTemplateData(input: {
     coverUrl = null,
     lang = "ko",
     contact = {},
+    imageSizes = {},
   } = input;
 
   // [2026-09-25] 직무 전환으로 만든 포트폴리오는 공고가 가장 먼저 보고
@@ -53,7 +65,7 @@ export function buildTemplateData(input: {
   );
 
   const projectData = projects
-    .map((p, index) => {
+    .map((p) => {
       const imgs = images[p.id] ?? [];
       const blk = (blocks[p.id] ?? []).filter(blockHasContent);
 
@@ -64,6 +76,7 @@ export function buildTemplateData(input: {
         p.depth === "brief"
           ? []
           : fieldOrder.map((f) => ({
+              key: f.key,
               label: lang === "en" ? f.en : f.ko,
               value: String(p[f.key] ?? "").trim(),
             })).filter((f) => f.value.length > 0);
@@ -75,27 +88,93 @@ export function buildTemplateData(input: {
           text: b.content.kind === "text" ? b.content.text.trim() : "",
         }));
       const imageList = imgs.map((i) => ({ url: i.url, caption: (i.caption ?? "").trim() }));
+      const lead = p.depth === "brief" ? p.context.trim() : p.role.trim();
+
+      // [2026-09-28] 보여주기 방식(templateRules.ts). 방식마다 이미지를
+      // 어느 자리에 둘지가 다르므로 여기서 나눠 넘깁니다 — 템플릿은
+      // 받은 자리만 그립니다(같은 이미지가 두 번 나오지 않게).
+      const outcome = p.depth === "brief" ? "" : p.outcome.trim();
+      const display = resolveDisplay({
+        display: p.display,
+        hasText: fields.length > 0 || textBlocks.length > 0,
+        textLength:
+          fields.reduce((n, f) => n + f.value.length, 0) +
+          textBlocks.reduce((n, b) => n + b.text.length, 0) +
+          (p.depth === "brief" ? lead.length : 0),
+        images: imageList,
+        sizes: imageSizes,
+        outcome,
+      });
+
+      // 성과 지표로 보여줄 때, 성과 칸의 모든 줄이 숫자 카드로 올라갔으면
+      // 아래 "핵심 성과" 칸은 뺍니다(같은 글이 두 번 나오지 않게). 숫자 없는
+      // 줄이 하나라도 있으면 칸을 그대로 둡니다 — 그 줄이 사라지면 안 됩니다.
+      const metrics = display === "metrics" ? extractMetrics(outcome) : [];
+      const outcomeLines = outcome.split(/\n+/).map((l) => l.trim()).filter(Boolean);
+      const shownFields =
+        display === "metrics" && metrics.length === outcomeLines.length
+          ? fields.filter((f) => f.key !== "outcome")
+          : fields;
+
+      let hero: { url: string; caption: string } | null = null;
+      let gallery = imageList.slice(1);
+      let before: { url: string; caption: string } | null = null;
+      let after: { url: string; caption: string } | null = null;
+      let phones: Array<{ url: string; caption: string }> = [];
+      let visuals: Array<{ url: string; caption: string }> = [];
+
+      if (display === "compare") {
+        // 설명에 이전/이후가 없으면(직접 고른 경우) 앞의 두 장을 씁니다.
+        const pair = findComparePair(imageList) ?? {
+          before: imageList[0],
+          after: imageList[1],
+          rest: imageList.slice(2),
+        };
+        before = pair.before;
+        after = pair.after;
+        gallery = pair.rest;
+      } else if (display === "mobile") {
+        // 크기를 아직 모르면(처음 그릴 때) 전부 폰 화면으로 봅니다.
+        const known = imageList.some((i) => imageSizes[i.url]);
+        phones = known ? imageList.filter((i) => isPhoneShot(imageSizes[i.url])) : imageList;
+        if (phones.length === 0) phones = imageList;
+        gallery = imageList.filter((i) => !phones.includes(i));
+      } else if (display === "visual") {
+        visuals = imageList;
+        gallery = [];
+      } else {
+        hero = imageList[0] ?? null;
+      }
 
       return {
         id: p.id,
         name: p.name.trim(),
-        // [2026-09-28] 이름을 비워 둔 프로젝트도 제목 자리가 비지 않게.
-        // 순번은 아래에서 내보낼 것만 남긴 뒤 다시 매깁니다.
-        title: p.name.trim(),
-        _index: index,
         role: p.role.trim(),
         // 간단히는 한 줄 설명(context)이 리드 문장입니다. 케이스 스터디는
         // 그 값이 아래 fields 에 이미 들어가므로 중복을 피해 역할만 씁니다.
-        lead: p.depth === "brief" ? p.context.trim() : p.role.trim(),
+        lead,
         stack: p.stack.filter((t) => t.trim()),
         image: imgs[0]?.url ?? "",
         images: imageList,
-        // [2026-09-28] 대표 이미지(첫 장)와 나머지. 템플릿은 대표를 크게,
-        // 나머지를 갤러리로 둡니다 — 전에는 첫 장만 쓰고 나머지는 버렸습니다.
-        hero: imageList[0]?.url ?? "",
-        heroCaption: imageList[0]?.caption ?? "",
-        gallery: imageList.slice(1),
-        fields,
+        display,
+        // 템플릿의 data-tf-if 용 표시. 비어 있으면 그 덩어리가 빠집니다.
+        isMobile: display === "mobile" ? "1" : "",
+        isVisual: display === "visual" ? "1" : "",
+        isCompare: display === "compare" ? "1" : "",
+        isMetrics: display === "metrics" ? "1" : "",
+        // 성과 지표 — 사용자가 성과 칸에 쓴 줄에서 찾은 숫자만
+        metrics: metrics.map((m) => ({ value: m.value, label: m.label })),
+        hero: hero?.url ?? "",
+        heroCaption: hero?.caption ?? "",
+        gallery,
+        before: before ?? "",
+        after: after ?? "",
+        phones,
+        visuals,
+        // 칸을 안 쓴("간단히") 프로젝트를 모바일·비주얼·전후 비교로 보여줄 때
+        // 한 줄 설명이 들어갈 자리. 칸을 쓴 프로젝트는 그 설명이 fields 에 있습니다.
+        intro: display !== "brief" && fields.length === 0 && textBlocks.length === 0 ? lead : "",
+        fields: shownFields.map((f) => ({ label: f.label, value: f.value })),
         blocks: textBlocks,
       };
     })
@@ -103,16 +182,15 @@ export function buildTemplateData(input: {
     // 생기면 결과물이 미완성으로 보입니다.
     .filter((p) => p.name || p.lead || p.fields.length > 0 || p.images.length > 0 || p.blocks.length > 0)
     .map((p, i) => {
-      const { _index, ...rest } = p;
-      void _index;
       const no = String(i + 1).padStart(2, "0");
       return {
-        ...rest,
+        ...p,
         no,
+        // [2026-09-28] 이름을 비워 둔 프로젝트도 제목 자리가 비지 않게.
         title: p.name || (lang === "en" ? `Project ${no}` : `프로젝트 ${no}`),
-        // [2026-09-28] 케이스 스터디(쓴 칸이 있음)와 짧은 작업을 나눕니다.
-        // 한 격자에 섞으면 긴 글 옆에 한 줄짜리 카드가 서서 큰 빈칸이 생겼습니다.
-        kind: p.fields.length > 0 || p.blocks.length > 0 ? "case" : "brief",
+        // 케이스 스터디(전체 폭)와 짧은 작업(카드)을 나눕니다. 한 격자에
+        // 섞으면 긴 글 옆에 한 줄짜리 카드가 서서 큰 빈칸이 생겼습니다.
+        kind: p.display === "brief" ? "brief" : "case",
         // 이미지 없는 카드의 자리표시에 쓰는 첫 글자
         initial: Array.from(p.name || (lang === "en" ? "Project" : "프로젝트"))[0] ?? "",
       };
