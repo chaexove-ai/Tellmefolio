@@ -73,8 +73,13 @@ async function once(model: string, prompt: string, maxTokens: number, timeoutMs:
   }
 }
 
-export const JSON_ONLY_RETRY =
-  "\n\n[다시 요청] 방금 응답은 JSON 으로 읽을 수 없었습니다. 설명·코드 블록 없이 위에서 정한 모양의 JSON 객체 하나만 출력하세요. 문장은 짧게 써도 됩니다.";
+// 문장 앞뒤 줄바꿈은 join 으로 붙입니다. 문자열이 "\n\n[" 로 시작하면 supabase CLI 가
+// 가져올 파일 경로로 잘못 읽고 경고를 냈습니다(09-26).
+export const JSON_ONLY_RETRY = [
+  "",
+  "",
+  "[다시 요청] 방금 응답은 JSON 으로 읽을 수 없었습니다. 설명·코드 블록 없이 위에서 정한 모양의 JSON 객체 하나만 출력하세요. 문장은 짧게 써도 됩니다.",
+].join("\n");
 
 /**
  * 모델을 부르고 JSON 으로 돌려받습니다. 실패하면 한 번 더.

@@ -18,13 +18,14 @@
 
 import { createClient, type SupabaseClient, type User } from "npm:@supabase/supabase-js@2";
 
-export type UsageKind = "draft" | "translate" | "job_switch" | "interview";
+export type UsageKind = "draft" | "translate" | "job_switch" | "interview" | "refine";
 
 const DEFAULT_LIMIT: Record<UsageKind, number> = {
   draft: 20,
   translate: 20,
   job_switch: 5,
   interview: 10,
+  refine: 60,
 };
 
 const ENV_NAME: Record<UsageKind, string> = {
@@ -32,6 +33,7 @@ const ENV_NAME: Record<UsageKind, string> = {
   translate: "AI_LIMIT_TRANSLATE",
   job_switch: "AI_LIMIT_JOB_SWITCH",
   interview: "AI_LIMIT_INTERVIEW",
+  refine: "AI_LIMIT_REFINE",
 };
 
 const WHAT: Record<UsageKind, string> = {
@@ -39,7 +41,15 @@ const WHAT: Record<UsageKind, string> = {
   translate: "영어 번역",
   job_switch: "직무 전환 재구성",
   interview: "새 대화 시작",
+  refine: "AI 문장 다듬기",
 };
+
+/** 받침이 있으면 "은", 없으면 "는" (한글이 아니면 "은") */
+function topic(word: string): string {
+  const c = word.charCodeAt(word.length - 1);
+  if (c < 0xac00 || c > 0xd7a3) return "은";
+  return (c - 0xac00) % 28 === 0 ? "는" : "은";
+}
 
 const WINDOW_MS = 24 * 60 * 60 * 1000;
 
@@ -76,7 +86,7 @@ export function waitText(ms: number): string {
 
 /** 한도 안내 문장. 순수 함수라 따로 시험합니다. */
 export function quotaMessage(kind: UsageKind, limit: number, oldestAt: string | null, now = Date.now()): string {
-  const base = `${WHAT[kind]}은 하루 ${limit}번까지예요.`;
+  const base = `${WHAT[kind]}${topic(WHAT[kind])} 하루 ${limit}번까지예요.`;
   if (!oldestAt) return `${base} 잠시 후 다시 시도해 주세요.`;
   const left = new Date(oldestAt).getTime() + WINDOW_MS - now;
   return `${base} ${waitText(left)}에 다시 쓸 수 있어요.`;

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { ArrowDown, ArrowLeft, ArrowUp, Check, ChevronDown, CloudOff, Clock, GripVertical, ImagePlus, Info, LoaderCircle, MessagesSquare, Minus, Pencil, Plus, Trash2, Type, X } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowUp, Check, ChevronDown, CloudOff, Clock, GripVertical, ImagePlus, Info, LoaderCircle, MessagesSquare, Minus, Pencil, Plus, Sparkles, Trash2, Undo2, Type, X } from "lucide-react";
 import {
   getPortfolioWithProjects,
   updatePortfolioProject,
@@ -27,6 +27,7 @@ import StylePanel from "../../components/StylePanel";
 import TemplateFrame from "../../components/TemplateFrame";
 
 import { shrinkImage } from "../../lib/images";
+import { refineText, RefineError, DIRECTION_LABEL, type RefineDirection, type RefineResult } from "../../lib/refine";
 import {
   listBlocks,
   createBlock,
@@ -137,8 +138,17 @@ export default function PortfolioEditor() {
   const [titleSaving, setTitleSaving] = useState(false);
   const [titleError, setTitleError] = useState<string | null>(null);
 
-  const [sentence, setSentence] = useState("");
-  const [showRefine, setShowRefine] = useState(false);
+  /* ── AI 문장 다듬기 (09-26) ─────────────────────────────────────
+   * 칸마다 "다듬기". 한 번에 한 칸만 제안을 띄웁니다. 적용하면 바로 칸에
+   * 들어가고(자동 저장이 저장), 바로 아래 "되돌리기"로 원래 글을 돌려놓습니다. */
+  const [refine, setRefine] = useState<{
+    field: string;
+    loading: boolean;
+    direction: RefineDirection;
+    result: RefineResult | null;
+    error: string | null;
+  } | null>(null);
+  const [refineUndo, setRefineUndo] = useState<{ field: string; prev: string; applied: string } | null>(null);
 
   const [projectIndex, setProjectIndex] = useState(0);
   const [titleField, setTitleField] = useState("");
@@ -223,6 +233,8 @@ export default function PortfolioEditor() {
     const p = list[index];
     currentIdRef.current = p?.id ?? null;
     savedKeyRef.current = p ? fieldsKeyOf(p) : "";
+    setRefine(null);
+    setRefineUndo(null);
     setProjectIndex(index);
     setTitleField(p?.name ?? "");
     setContext(p?.context ?? "");
@@ -734,6 +746,24 @@ export default function PortfolioEditor() {
     const t = window.setInterval(() => forceTick((n) => n + 1), 30_000);
     return () => window.clearInterval(t);
   }, []);
+
+  const runRefine = async (field: string, text: string, direction: RefineDirection = "default") => {
+    const projectId = currentIdRef.current;
+    if (!projectId) return;
+    setRefine({ field, loading: true, direction, result: null, error: null });
+    try {
+      const result = await refineText({ projectId, field, text, direction });
+      // 기다리는 사이 다른 칸·프로젝트로 옮겼으면 버립니다
+      if (currentIdRef.current !== projectId) return;
+      setRefine((cur) => (cur && cur.field === field ? { ...cur, loading: false, result } : cur));
+    } catch (e) {
+      setRefine((cur) =>
+        cur && cur.field === field
+          ? { ...cur, loading: false, error: e instanceof RefineError ? e.message : "다듬지 못했어요." }
+          : cur
+      );
+    }
+  };
 
   /** 저장이 모두 끝난 뒤 이동합니다. 실패하면 머뭅니다(오류는 위쪽에 보임). */
   const saveThenGo = async (to: string) => {
@@ -1332,12 +1362,37 @@ export default function PortfolioEditor() {
                         )}
                       </div>
                       <div className="flex-1 space-y-1.5 pb-0.5">
-                        <label
-                          htmlFor={`proj-${f.key}`}
-                          className="text-xs font-medium text-neutral-200 inline-flex items-center gap-1.5"
-                        >
-                          {f.label}
-                        </label>
+                        <div className="flex items-center gap-2">
+                          <label
+                            htmlFor={`proj-${f.key}`}
+                            className="text-xs font-medium text-neutral-200 inline-flex items-center gap-1.5"
+                          >
+                            {f.label}
+                          </label>
+                          {refineUndo?.field === f.key && f.value === refineUndo.applied && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                f.onChange(refineUndo.prev);
+                                setRefineUndo(null);
+                              }}
+                              className="inline-flex items-center gap-1 text-xs text-neutral-500 hover:text-brand"
+                            >
+                              <Undo2 size={12} /> 되돌리기
+                            </button>
+                          )}
+                          {f.value.trim().length >= 5 && (
+                            <button
+                              type="button"
+                              disabled={refine?.loading}
+                              onClick={() => void runRefine(f.key, f.value)}
+                              className="ml-auto inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs text-brand hover:bg-brand/10 disabled:opacity-40"
+                              title="표현만 다듬어요. 없는 사실은 넣지 않아요."
+                            >
+                              <Sparkles size={12} strokeWidth={2} /> 다듬기
+                            </button>
+                          )}
+                        </div>
                         {/* 안내는 칸이 비어 있을 때만 보여줍니다. 6칸에
                             라벨·안내·예시가 늘 함께 쌓이면 화면이 안내문으로
                             덮입니다 — 처음엔 필요하지만 한 번 채우고 나면
@@ -1354,6 +1409,18 @@ export default function PortfolioEditor() {
                           // 맞춘 기준을 그대로 적용할 이유가 없습니다.
                           className="field-area text-base leading-relaxed"
                         />
+                        {refine?.field === f.key && (
+                          <RefineCard
+                            state={refine}
+                            onClose={() => setRefine(null)}
+                            onRetry={(d) => void runRefine(f.key, f.value, d)}
+                            onApply={(text) => {
+                              setRefineUndo({ field: f.key, prev: f.value, applied: text });
+                              f.onChange(text);
+                              setRefine(null);
+                            }}
+                          />
+                        )}
                       </div>
                     </div>
                   ))}
@@ -1515,13 +1582,13 @@ export default function PortfolioEditor() {
             </span>
             <span className="min-w-0 flex-1">
               <span className="flex items-center gap-2 text-sm font-medium text-neutral-100">
-                준비 중인 기능 3개
+                준비 중인 기능 2개
                 <span className="rounded-full border border-neutral-700 px-2 py-0.5 text-[11px] font-normal text-neutral-400">
                   아직 동작하지 않아요
                 </span>
               </span>
               <span className="mt-2 flex flex-wrap gap-1.5">
-                {["AI 문장 다듬기", "근거 확인", "이력서 대조"].map((name) => (
+                {["근거 확인", "이력서 대조"].map((name) => (
                   <span key={name} className="rounded-full bg-neutral-800 px-2.5 py-1 text-xs text-neutral-300">
                     {name}
                   </span>
@@ -1535,57 +1602,6 @@ export default function PortfolioEditor() {
             </span>
           </summary>
           <div className="space-y-6 border-t border-neutral-800 p-6">
-          <div className="entry space-y-3">
-            <h2 className="entry-title mb-0">AI 문장 다듬기</h2>
-            <p className="text-xs text-neutral-400">
-              다듬을 문장을 선택하거나 아래에 붙여넣어 목표 직무에 맞는 케이스 스터디
-              문장으로 개선할 수 있습니다.
-            </p>
-            <textarea
-              value={sentence}
-              onChange={(e) => setSentence(e.target.value)}
-              placeholder="다듬을 문장 입력"
-              rows={2}
-              className="field-area"
-            />
-            <button
-              className="btn-secondary disabled:opacity-40"
-              disabled={!sentence.trim()}
-              onClick={() => setShowRefine(true)}
-            >
-              AI 문장 다듬기 요청
-            </button>
-
-            {showRefine && (
-              <div className="border-t border-neutral-800 pt-3 mt-3">
-                <p className="text-xs text-neutral-500 mb-2">
-                  아래 개선안을 원문과 비교하고 적용 여부를 직접 결정하세요. AI는 사실이나
-                  의도를 임의로 변경하지 않습니다.
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 text-sm divide-y sm:divide-y-0 sm:divide-x divide-neutral-800">
-                  <div className="sm:pr-6 pb-4 sm:pb-0">
-                    <p className="text-xs text-neutral-500 mb-1">원문</p>
-                    {sentence}
-                  </div>
-                  <div className="sm:pl-6 pt-4 sm:pt-0">
-                    <p className="text-xs text-neutral-500 mb-1">AI 개선안</p>
-                    {sentence
-                      ? `${sentence} (핵심 성과와 역할을 강조한 케이스 스터디 문장으로 개선된 예시입니다.)`
-                      : ""}
-                  </div>
-                </div>
-                <div className="flex gap-2 mt-3">
-                  <button className="btn-secondary" onClick={() => setShowRefine(false)}>
-                    취소
-                  </button>
-                  <button className="btn-primary" onClick={() => setShowRefine(false)}>
-                    개선안 적용
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
           <div className="entry space-y-3">
             <div className="flex items-center justify-between">
               <h2 className="entry-title mb-0">AI 근거 및 사실 확인</h2>
@@ -1707,6 +1723,93 @@ export default function PortfolioEditor() {
               />
             </div>
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** 다듬기 제안 카드 — 칸 바로 아래. */
+function RefineCard({
+  state,
+  onClose,
+  onRetry,
+  onApply,
+}: {
+  state: { loading: boolean; direction: RefineDirection; result: RefineResult | null; error: string | null };
+  onClose: () => void;
+  onRetry: (d: RefineDirection) => void;
+  onApply: (text: string) => void;
+}) {
+  const { loading, result, error, direction } = state;
+  return (
+    <div className="rounded-xl border border-brand/30 bg-brand/[0.04] p-4" aria-live="polite">
+      <div className="flex items-center gap-2">
+        <Sparkles size={14} strokeWidth={2} className="text-brand" />
+        <span className="text-xs font-medium text-neutral-200">
+          AI 다듬기{direction !== "default" ? ` · ${DIRECTION_LABEL[direction]}` : ""}
+        </span>
+        <button type="button" onClick={onClose} aria-label="닫기" className="ml-auto p-0.5 text-neutral-500 hover:text-neutral-100">
+          <X size={14} />
+        </button>
+      </div>
+
+      {loading && (
+        <p className="mt-3 inline-flex items-center gap-2 text-sm text-neutral-500">
+          <LoaderCircle size={14} className="animate-spin" /> 다듬는 중…
+        </p>
+      )}
+      {error && !loading && (
+        <p role="alert" className="mt-3 text-sm text-brand">
+          {error}
+        </p>
+      )}
+
+      {result && !loading && (
+        <>
+          <p className="mt-3 whitespace-pre-line text-base leading-relaxed text-neutral-100">{result.text}</p>
+          {result.notes.length > 0 && (
+            <ul className="mt-2 space-y-0.5">
+              {result.notes.map((n) => (
+                <li key={n} className="text-xs text-neutral-500">
+                  · {n}
+                </li>
+              ))}
+            </ul>
+          )}
+          {result.flags.length > 0 && (
+            <p className="mt-3 rounded-lg bg-amber-500/10 px-3 py-2 text-xs leading-relaxed text-amber-700">
+              원문에 없던{" "}
+              {result.flags.map((fl, i) => (
+                <span key={fl.kind + fl.detail}>
+                  {i > 0 && ", "}
+                  {fl.kind === "number" ? "숫자" : "용어"} <b>"{fl.detail}"</b>
+                </span>
+              ))}
+              {result.flags.length > 0 && "이(가) 들어갔어요. 사실이 맞는지 확인하고 적용하세요."}
+            </p>
+          )}
+        </>
+      )}
+
+      {!loading && (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          {result && (
+            <button type="button" className="btn-primary py-1.5 text-sm" onClick={() => onApply(result.text)}>
+              이걸로 바꾸기
+            </button>
+          )}
+          <span className="text-xs text-neutral-500">{result ? "다시:" : ""}</span>
+          {(Object.keys(DIRECTION_LABEL) as Array<Exclude<RefineDirection, "default">>).map((d) => (
+            <button
+              key={d}
+              type="button"
+              onClick={() => onRetry(d)}
+              className="rounded-full border border-neutral-700 px-2.5 py-1 text-xs text-neutral-400 hover:border-brand/50 hover:text-brand"
+            >
+              {DIRECTION_LABEL[d]}
+            </button>
+          ))}
         </div>
       )}
     </div>

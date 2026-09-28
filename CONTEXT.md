@@ -72,6 +72,7 @@ npx supabase functions deploy translate-portfolio
 npx supabase functions deploy delete-account
 npx supabase functions deploy job-switch
 npx supabase functions deploy interview
+npx supabase functions deploy refine
 
 # 시크릿도 별도입니다 (AI 함수는 ANTHROPIC_API_KEY 하나만 필수)
 npx supabase secrets list
@@ -202,6 +203,7 @@ npm run tpl:check my-template
 | AI 초안 생성 | 20 | `draft_generations` kind=draft | `npx supabase secrets set AI_LIMIT_DRAFT=30` |
 | 영어 번역 | 20 | kind=translate | `AI_LIMIT_TRANSLATE` |
 | 직무 전환 | 5 | kind=job_switch (Sonnet 이라 가장 비쌈) | `AI_LIMIT_JOB_SWITCH` |
+| 문장 다듬기 | 60 | kind=refine | `AI_LIMIT_REFINE` |
 | 대화 시작 | 10 | `interview_sessions` 수 (대화로 채우기 포함. 한 대화 안은 질문 12개로 이미 묶임) | `AI_LIMIT_INTERVIEW` |
 
 전체 비용의 마지막 방어선은 여전히 Anthropic 콘솔의 월 한도입니다.
@@ -214,6 +216,7 @@ npm run tpl:check my-template
 | `translate-portfolio` | 포트폴리오를 영어로. title/summary/job + 프로젝트 서술형 6필드 + role/stack |
 | `job-switch` | 직무 전환 재구성 4단계(공고 해부 → 근거 매칭 → 재작성 → 기계 검증). 원본은 포트폴리오 id 로 서버가 직접 읽고 **본인 것인지 확인**합니다. 모델은 1단계 `JOB_SWITCH_LIGHT_MODEL`(기본 Haiku), 2·3단계 `JOB_SWITCH_STRONG_MODEL`(기본 `claude-sonnet-5`). 날조 방지 로직은 `_shared/evidence.ts` 에 있고 `interview` 와 같이 씁니다 — 고치면 두 함수 모두 다시 배포 |
 | `interview` | 대화로 만들기. `mode` 가 `start`/`answer`/`draft`. 질문은 `INTERVIEW_MODEL`(기본 Haiku), 초안은 `JOB_SWITCH_STRONG_MODEL`. 서버 규칙(근거 없는 칸 채움 거부, 되묻기 칸당 1회, 질문 12개)은 `rules.ts` |
+| `refine` | AI 문장 다듬기. 칸 하나의 글 + 방향(default/shorter/impact/plain)을 받아 표현만 다듬음. 원문에 없는 숫자·영문 용어는 `flags` 로 알려 줌. 모델 `REFINE_MODEL`(기본 Haiku) |
 | `_shared/usage.ts` | 네 AI 함수 공용: **실제 로그인 확인**(anon 키도 JWT 라 Supabase 의 JWT 검증만으로는 통과함 — 09-26 전까지 generate-draft·translate 는 로그인 없이 불렸음)과 **하루 한도**. 고치면 네 함수 모두 다시 배포 |
 | `delete-account` | 계정 삭제. 대상은 JWT 의 본인뿐(id 를 받지 않음), 두 버킷의 파일까지 지웁니다. service_role 키는 이 함수 안에만 |
 
@@ -422,7 +425,8 @@ FAQ           밝은 면   아코디언
 - 라이트 고정·다크 감춤, 위저드 왼쪽 단계 레일, 로그인 전체 화면 분할
 - 랜딩: 반전 구역, 결과물 무한 가로 띠, 어두운 전체 폭 CTA, 푸터 확장
 
-**2026-09-26** — **화면 구조 정리**(예시 docs/mockups/navigation.html): 사이드바 홈 / 내 포트폴리오 / 직무 전환 / 커뮤니티 / 설정 + 맨 위 "＋ 새 포트폴리오"(모든 만들기 버튼이 같은 선택 창 `components/NewPortfolio.tsx` — 대화로 만들기 · 자료로 만들기 두 이름만). 편집기·내보내기·제출 기록에서도 "내 포트폴리오"에 불. 내 포트폴리오 = 포트폴리오 / 제출 기록 두 탭(`LibraryTabs`). 홈은 입력창 · 내 서재(책장 — 서비스의 얼굴이라 유지) · 이어서 할 일만(현황 띠·최근 작업·다음으로 할 일 제거). 위저드 자료함·초안을 sessionStorage 에 임시 저장(`lib/sessionState.ts`) — "원본 자료 수정"·새로고침에도 유지, 포트폴리오를 만들면 비움. 들어갈 곳 없던 목업 `/community/share`·`/community/stats` 삭제.
+**2026-09-26** — **AI 문장 다듬기 구현**(Edge Function `refine`, Haiku, 하루 60번): 편집기 각 칸 라벨 옆 "다듬기" → 칸 아래 제안 카드(바뀐 점 최대 3줄, 다시: 더 짧게·성과 먼저·쉬운 말로) → "이걸로 바꾸기" 후 "되돌리기". 표현만 바꾸고, 원문(이 프로젝트의 모든 칸·스택)에 없는 숫자·영문 용어가 생기면 경고. 편집기 "준비 중인 기능"은 근거 확인·이력서 대조 2개로.
+**화면 구조 정리**(예시 docs/mockups/navigation.html): 사이드바 홈 / 내 포트폴리오 / 직무 전환 / 커뮤니티 / 설정 + 맨 위 "＋ 새 포트폴리오"(모든 만들기 버튼이 같은 선택 창 `components/NewPortfolio.tsx` — 대화로 만들기 · 자료로 만들기 두 이름만). 편집기·내보내기·제출 기록에서도 "내 포트폴리오"에 불. 내 포트폴리오 = 포트폴리오 / 제출 기록 두 탭(`LibraryTabs`). 홈은 입력창 · 내 서재(책장 — 서비스의 얼굴이라 유지) · 이어서 할 일만(현황 띠·최근 작업·다음으로 할 일 제거). 위저드 자료함·초안을 sessionStorage 에 임시 저장(`lib/sessionState.ts`) — "원본 자료 수정"·새로고침에도 유지, 포트폴리오를 만들면 비움. 들어갈 곳 없던 목업 `/community/share`·`/community/stats` 삭제.
 편집기 **자동 저장**: 입력을 멈추고 1초 뒤 저장, 탭 전환·내보내기·대화로 채우기·화면을 떠날 때도 먼저 저장, 새로고침/탭 닫기 전 경고. 저장 버튼 두 개(본문·스타일)를 없애고 위쪽 고정 막대에 "저장됨 · 방금 전" 한 줄로. 템플릿·표지는 고르면 바로 저장. 편집기 뒤로가기는 "← 내 포트폴리오"(예전 "AI 초안 생성으로 돌아가기"는 늘 빈 화면이었음).
 배포판 점검: 함수는 올라갔지만 **마이그레이션 3개가 안 올라가 있었음**(db push 필요). generate-draft·translate-portfolio 가 **로그인 없이 호출되던 문제** 수정, 네 AI 함수에 하루 한도.
 
