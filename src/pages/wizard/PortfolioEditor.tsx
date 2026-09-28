@@ -934,7 +934,7 @@ export default function PortfolioEditor() {
         </div>
         {saveError && (
           <p role="alert" className="-mt-3 text-xs text-brand">
-            {saveError} 입력한 내용은 화면에 그대로 있어요. 잠시 후 다시 시도해 주세요.
+            {saveError.replace(/\s*잠시 후 다시 시도해 주세요\.?$/, "")} 입력한 내용은 화면에 그대로 있어요. 잠시 후 다시 시도해 주세요.
           </p>
         )}
         <div>
