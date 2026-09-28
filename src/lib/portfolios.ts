@@ -719,12 +719,13 @@ export async function listPublicPortfolios(limit = 60): Promise<LibraryPortfolio
  * [2026-09-28] 커뮤니티 검색·페이지 나누기.
  *
  * 전에는 최근 60건을 한 번에 받아 화면에서 걸렀습니다. 커지면 61번째부터는
- * 아예 볼 방법이 없었습니다. 이제 서버에서 거르고 30건씩 나눕니다.
+ * 아예 볼 방법이 없었습니다. 이제 서버에서 거르고 20건(4×5)씩 나눕니다.
  *
  * 검색어는 제목·직무·소개와 작성자 닉네임에서 찾습니다. PostgREST 의 or()
  * 문법을 깨는 문자(쉼표·괄호·%·*)는 빼고 넣습니다.
  */
-export const COMMUNITY_PAGE_SIZE = 30;
+// 한 쪽 = 4열 × 5줄 (09-28, 처음엔 30)
+export const COMMUNITY_PAGE_SIZE = 20;
 
 export interface CommunityQuery {
   q?: string;

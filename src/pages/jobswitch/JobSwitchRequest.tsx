@@ -115,11 +115,15 @@ export default function JobSwitchRequest() {
   }
 
   return (
-    <div className="max-w-3xl space-y-6">
+    // [09-28] 데스크탑 폭을 씁니다 — 왼쪽은 입력, 오른쪽은 지난 재구성(없으면 진행 순서 안내).
+    <div className="space-y-6">
       <div>
         <h1 className="text-xl font-heading">직무 전환 재구성</h1>
         <p className="text-sm text-neutral-500 mt-1">같은 경험을 목표 직무의 언어로 옮깁니다.</p>
       </div>
+
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-start">
+      <div className="min-w-0 space-y-6">
 
       {/* 약속 세 가지 — 문단 대신 아이콘 칩 */}
       <ul className="grid grid-cols-3 gap-3">
@@ -184,7 +188,7 @@ export default function JobSwitchRequest() {
               value={jobPostingText}
               onChange={(e) => setJobPostingText(e.target.value)}
               placeholder="공고 내용 붙여넣기"
-              rows={6}
+              rows={10}
               className="field-area"
               maxLength={8000}
               disabled={running}
@@ -253,7 +257,10 @@ export default function JobSwitchRequest() {
         </button>
       )}
 
-      {runs.length > 0 && (
+      </div>
+
+      <aside className="space-y-3 xl:sticky xl:top-10">
+      {runs.length > 0 ? (
         <section>
           <h2 className="text-xs text-neutral-500 mb-2">지난 재구성</h2>
           <ul className="entry p-0 divide-y divide-neutral-800/70">
@@ -276,10 +283,32 @@ export default function JobSwitchRequest() {
             ))}
           </ul>
         </section>
+      ) : (
+        <section className="entry">
+          <h2 className="text-sm text-neutral-100">이렇게 진행돼요</h2>
+          <ol className="mt-3 space-y-2.5 text-sm">
+            {STAGES.map((st, i) => (
+              <li key={st.label} className="flex items-start gap-3">
+                <span className="grid size-5 shrink-0 place-items-center rounded-full bg-brand/10 text-[11px] text-brand">{i + 1}</span>
+                <span className="text-neutral-300">{st.label}<span className="block text-xs text-neutral-500">{STAGE_DESC[i]}</span></span>
+              </li>
+            ))}
+          </ol>
+          <p className="mt-4 text-xs text-neutral-500">보통 1분 안팎 걸려요. 결과는 확인한 뒤 새 포트폴리오로 저장합니다.</p>
+        </section>
       )}
+      </aside>
+      </div>
     </div>
   );
 }
+
+const STAGE_DESC = [
+  "공고에서 자격 요건·우대 사항을 뽑아요",
+  "내 포트폴리오에서 요건마다 근거를 찾아요",
+  "근거가 있는 문장만 목표 직무의 말로 옮겨요",
+  "원문에 없는 숫자·기술명이 들어갔는지 확인해요",
+];
 
 const PROMISES = [
   { icon: Quote, title: "문장마다 출처", sub: "어느 원문에서 왔는지 표시" },

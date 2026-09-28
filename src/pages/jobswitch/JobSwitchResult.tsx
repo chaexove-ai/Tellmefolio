@@ -112,7 +112,7 @@ export default function JobSwitchResult() {
 
   if (error) {
     return (
-      <div className="max-w-3xl space-y-4">
+      <div className="space-y-4">
         <BackLink to="/job-switch">직무 전환</BackLink>
         <p className="text-sm text-neutral-400">{error}</p>
       </div>
@@ -179,7 +179,7 @@ export default function JobSwitchResult() {
   ] as const;
 
   return (
-    <div className="max-w-6xl space-y-6">
+    <div className="space-y-6">
       {/* ── 머리: 무엇의 결과인지 + 할 일 ─────────────────────── */}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>

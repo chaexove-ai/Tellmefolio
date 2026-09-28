@@ -44,12 +44,12 @@ import type { Profile } from "../../lib/profile";
  * 해결됐고 뒤쪽은 설정 화면의 안내 문구와 아래 올리기 창의 안내로
  * 다룹니다 — 올리기 직전에 어떤 이름으로 뜨는지 보여줍니다.
  *
- * 프로필은 목록을 받은 뒤 한 번에 읽습니다. 30건을 한 건씩 조회하면
- * 요청이 30번 갑니다.
+ * 프로필은 목록을 받은 뒤 한 번에 읽습니다. 20건을 한 건씩 조회하면
+ * 요청이 20번 갑니다.
  *
  * [검색·쪽 나누기 — 2026-09-28]
  * 커뮤니티가 커질 것에 대비해, 최근 60건을 받아 화면에서 거르던 것을
- * 서버 검색(lib/portfolios searchPublicPortfolios)과 30건씩 쪽 나누기로
+ * 서버 검색(lib/portfolios searchPublicPortfolios)과 20건(데스크탑 4열×5줄)씩 쪽 나누기로
  * 바꿨습니다. 검색어·필터·쪽·탭은 주소(?q=&job=&year=&page=&tab=)에 둡니다.
  * "참고할게요 / 참고한 포트폴리오"는 "북마크"로 이름을 바꿨습니다.
  *
@@ -113,7 +113,7 @@ export default function Gallery() {
   const addAuthors = (rows: LibraryPortfolio[]) =>
     void getProfiles(rows.map((r) => r.userId)).then((m) => setAuthors((prev) => new Map([...prev, ...m])));
 
-  // 전체 탭: 서버에서 거르고 30건씩
+  // 전체 탭: 서버에서 거르고 20건씩
   useEffect(() => {
     if (tab !== "all") return;
     let alive = true;
@@ -175,7 +175,7 @@ export default function Gallery() {
     }
   };
 
-  // 북마크 탭: 많아야 수백 건이라 화면에서 거르고 나눕니다
+  // 북마크 탭: 많아야 수백 건이라 화면에서 거르고 나눕니다(같은 20건 단위)
   const savedFiltered = useMemo(() => {
     const needle = cleanSearch(q).toLowerCase();
     return (saved ?? []).filter((g) => {
@@ -207,7 +207,7 @@ export default function Gallery() {
   }, [ready, loading, page, pages]);
 
   return (
-    <div ref={topRef} className="max-w-4xl space-y-6 scroll-mt-6">
+    <div ref={topRef} className="space-y-6 scroll-mt-6">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-xl font-heading">커뮤니티</h1>
@@ -380,11 +380,11 @@ export default function Gallery() {
 
       {shown.length > 0 && (
         <div
-          className={`grid grid-cols-1 md:grid-cols-3 gap-4 transition-opacity ${loading ? "opacity-50" : ""}`}
+          className={`grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 transition-opacity ${loading ? "opacity-50" : ""}`}
           aria-busy={loading}
         >
           {shown.map((g, i) => (
-            <Reveal key={g.id} delay={(i % 3) * 0.08}>
+            <Reveal key={g.id} delay={(i % 4) * 0.06}>
               {/* 공개 열람 페이지로 바로 보냅니다 — 방문자가 보는 화면과
                   같은 것을 보여주는 편이 정직하고, 화면도 하나면 됩니다. */}
               <Link
