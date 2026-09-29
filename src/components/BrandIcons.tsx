@@ -108,9 +108,9 @@ export function FigmaIcon({ size = 18, className }: IconProps) {
  * (가장 많이 쓰는 것을 위에 두는 것이 일반적인 관행입니다)
  */
 export const socialProviders = [
-  { id: "google", label: "Google로 로그인", Icon: GoogleIcon },
-  { id: "github", label: "GitHub로 로그인", Icon: GitHubIcon },
-  { id: "figma", label: "Figma로 로그인", Icon: FigmaIcon },
+  { id: "google", label: "Google로 계속하기", Icon: GoogleIcon },
+  { id: "github", label: "GitHub로 계속하기", Icon: GitHubIcon },
+  { id: "figma", label: "Figma로 계속하기", Icon: FigmaIcon },
 ] as const;
 
 export type SocialProviderId = (typeof socialProviders)[number]["id"];

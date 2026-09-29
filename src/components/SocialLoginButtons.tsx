@@ -28,9 +28,34 @@ interface Props {
   /** 로그인 요청 중일 때 true — 세 버튼이 함께 잠깁니다 */
   busy?: boolean;
   className?: string;
+  /** [2026-09-29] 지난번에 고른 계정 — 그 버튼에 "최근 사용" 배지 */
+  lastUsed?: SocialProviderId | null;
 }
 
-export default function SocialLoginButtons({ onSelect, busy = false, className }: Props) {
+/* [2026-09-29] "최근 사용" — 이 기기에서 마지막으로 누른 계정을 기억합니다.
+   연동(GitHub 저장소·Figma 파일)이 계정마다 달라서, 다른 계정으로 새로
+   가입해 버리면 연결해 둔 것이 안 보입니다. 브라우저 저장소가 막혀 있으면
+   표시만 빠집니다. */
+const LAST_KEY = "tf-last-provider";
+
+export function readLastProvider(): SocialProviderId | null {
+  try {
+    const v = window.localStorage.getItem(LAST_KEY);
+    return socialProviders.some((p) => p.id === v) ? (v as SocialProviderId) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function rememberProvider(id: SocialProviderId) {
+  try {
+    window.localStorage.setItem(LAST_KEY, id);
+  } catch {
+    /* 저장이 막혀 있어도 로그인은 그대로 */
+  }
+}
+
+export default function SocialLoginButtons({ onSelect, busy = false, className, lastUsed = null }: Props) {
   return (
     <div className={className ? `space-y-3 ${className}` : "space-y-3"}>
       {socialProviders.map(({ id, label, Icon }) => (
@@ -39,12 +64,19 @@ export default function SocialLoginButtons({ onSelect, busy = false, className }
           type="button"
           onClick={() => onSelect(id)}
           disabled={busy}
-          className="btn-social disabled:opacity-60 disabled:pointer-events-none"
+          className={`btn-social disabled:opacity-60 disabled:pointer-events-none ${
+            lastUsed === id ? "border-neutral-500" : ""
+          }`}
         >
           <span className="btn-social-icon">
             <Icon size={18} />
           </span>
           {label}
+          {lastUsed === id && (
+            <span className="absolute -right-2 -top-2.5 rounded-full bg-brand-solid px-2 py-0.5 text-[11px] font-medium text-white shadow-sm">
+              최근 사용
+            </span>
+          )}
         </button>
       ))}
     </div>
