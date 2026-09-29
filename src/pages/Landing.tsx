@@ -134,6 +134,9 @@ export default function Landing() {
         <Logo to="/" className="text-neutral-100" />
         <nav className="flex items-center gap-2 sm:gap-6" aria-label="주요 메뉴">
           {/* 다크 테마를 감추면서 토글을 내렸습니다 — index.html 주석 참고 */}
+          <Link to="/templates" className="text-xs sm:text-sm text-neutral-400 hover:text-neutral-100">
+            템플릿
+          </Link>
           <Link to="/login" className="btn-primary text-xs sm:text-sm px-3 sm:px-4">
             지금 시작하기
           </Link>

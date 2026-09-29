@@ -53,6 +53,11 @@ export interface TemplateFrameProps {
   fullWidth?: boolean;
   /** 완성된 HTML 을 밖에서도 써야 할 때(내보내기·인쇄). */
   onHtml?: (html: string) => void;
+  /**
+   * [2026-09-29] 축소 창의 높이를 바깥 상자에 맞춥니다(템플릿 갤러리 미리보기).
+   * 기본은 1280×800 창을 폭에 맞춰 줄인 크기 그대로입니다.
+   */
+  fillHeight?: boolean;
 }
 
 export default function TemplateFrame({
@@ -66,11 +71,13 @@ export default function TemplateFrame({
   className = "",
   fullWidth = false,
   onHtml,
+  fillHeight = false,
 }: TemplateFrameProps) {
   const [template, setTemplate] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const boxRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
+  const [boxHeight, setBoxHeight] = useState(0);
 
   useEffect(() => {
     let alive = true;
@@ -115,6 +122,7 @@ export default function TemplateFrame({
     const measure = () => {
       const w = el.clientWidth;
       if (w > 0) setScale(Math.min(1, w / BASE_WIDTH));
+      setBoxHeight(el.clientHeight);
     };
     measure();
     const ro = new ResizeObserver(measure);
@@ -141,17 +149,20 @@ export default function TemplateFrame({
     );
   }
 
+  // 높이를 바깥에 맞출 때: 줄인 뒤 상자를 꽉 채우는 창 높이
+  const frameHeight = fillHeight && boxHeight > 0 && scale > 0 ? Math.max(BASE_HEIGHT, boxHeight / scale) : BASE_HEIGHT;
+
   return (
     <div ref={boxRef} className={`w-full overflow-hidden ${className}`}>
       <div
         style={{
           width: BASE_WIDTH,
-          height: BASE_HEIGHT,
+          height: frameHeight,
           transform: `scale(${scale})`,
           transformOrigin: "top left",
           // transform 은 레이아웃 크기를 줄이지 않습니다. 줄어든 만큼
           // 아래에 빈 공간이 남으므로 바깥 높이를 직접 지정합니다.
-          marginBottom: -(BASE_HEIGHT * (1 - scale)),
+          marginBottom: -(frameHeight * (1 - scale)),
         }}
       >
         <iframe
@@ -159,7 +170,7 @@ export default function TemplateFrame({
           srcDoc={html}
           sandbox="allow-same-origin"
           className="block border-0"
-          style={{ width: BASE_WIDTH, height: BASE_HEIGHT }}
+          style={{ width: BASE_WIDTH, height: frameHeight }}
         />
       </div>
     </div>

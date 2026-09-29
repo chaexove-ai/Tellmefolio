@@ -1,7 +1,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import DesktopOnly, { DESKTOP_MIN_WIDTH } from "./DesktopOnly";
-import { Home, LibraryBig, Plus, Repeat, Users, Settings, Menu, X } from "lucide-react";
+import { Home, LibraryBig, Plus, Repeat, Users, Settings, Menu, X, LayoutTemplate } from "lucide-react";
 import { NewPortfolioProvider, useNewPortfolio } from "./NewPortfolio";
 import RouteFallback from "./RouteFallback";
 import UserMenu from "./UserMenu";
@@ -27,6 +27,8 @@ const navItems: Array<{ to: string; label: string; icon: typeof Home; match: (pa
   },
   { to: "/job-switch", label: "직무 전환", icon: Repeat, match: (p) => p.startsWith("/job-switch") },
   { to: "/community", label: "커뮤니티", icon: Users, match: (p) => p.startsWith("/community") },
+  // [2026-09-29] 템플릿 갤러리 — 공개 페이지(/templates)라 사이드바 밖으로 나갑니다
+  { to: "/templates", label: "템플릿", icon: LayoutTemplate, match: (p) => p.startsWith("/templates") },
   { to: "/settings", label: "설정", icon: Settings, match: (p) => p.startsWith("/settings") },
 ];
 

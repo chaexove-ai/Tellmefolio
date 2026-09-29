@@ -6,6 +6,7 @@ import {
   getPortfolioWithProjects,
   updatePortfolioProject,
   updatePortfolioTitle,
+  updatePortfolioStyle,
   updatePortfolioCopy,
   updatePortfolioTheme,
   createPortfolioProject,
@@ -31,6 +32,7 @@ import EditorPreview from "../../components/EditorPreview";
 import StylePanel from "../../components/StylePanel";
 import DeletePortfolioDialog from "../../components/DeletePortfolioDialog";
 import CopyEditor from "../../components/CopyEditor";
+import { takePendingDesignFor } from "../../lib/pendingDesign";
 import ThemeControls from "../../components/ThemeControls";
 import TemplateFrame from "../../components/TemplateFrame";
 
@@ -534,7 +536,8 @@ export default function PortfolioEditor() {
     setLoading(true);
     setLoadError(null);
     getPortfolioWithProjects(id)
-      .then(({ portfolio: p, projects: ps }) => {
+      .then(({ portfolio: loaded, projects: ps }) => {
+        let p = loaded;
         if (!alive) return;
         // [2026-09-23] 남의 것이면 여기서 돌려보냅니다.
         //
@@ -551,6 +554,16 @@ export default function PortfolioEditor() {
         if (session?.user?.id && p.user_id !== session.user.id) {
           navigate(`/p/${p.id}`, { replace: true });
           return;
+        }
+
+        // [2026-09-29] 템플릿 갤러리에서 고른 디자인이 있고 이 포트폴리오가 그 뒤에
+        // 새로 만들어졌으면 한 번 입힙니다(lib/pendingDesign). 스타일 패널이 뜨기 전에
+        // 값을 바꿔 둬야 패널이 옛 템플릿을 들고 있지 않습니다.
+        const pending = takePendingDesignFor(p.created_at);
+        if (pending) {
+          p = { ...p, template_id: pending.templateId, ...(p.theme !== undefined ? { theme: pending.theme } : {}) };
+          void updatePortfolioStyle(p.id, { template_id: pending.templateId }).catch(() => {});
+          if (p.theme !== undefined) void updatePortfolioTheme(p.id, pending.theme).catch(() => {});
         }
 
         setPortfolio(p);

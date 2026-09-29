@@ -1,6 +1,7 @@
+import { clearPendingDesign, peekPendingDesign } from "../lib/pendingDesign";
 import { createContext, forwardRef, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import { MessagesSquare, Paperclip, Repeat, X } from "lucide-react";
+import { MessagesSquare, Paperclip, Repeat, X, Paintbrush } from "lucide-react";
 
 /**
  * "새 포트폴리오" 선택 창 (09-26).
@@ -44,6 +45,7 @@ export function NewPortfolioButton({ className = "btn-primary", children }: { cl
 function NewPortfolioDialog({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate();
   const firstRef = useRef<HTMLButtonElement>(null);
+  const [pending, setPending] = useState(peekPendingDesign);
 
   useEffect(() => {
     firstRef.current?.focus();
@@ -102,6 +104,25 @@ function NewPortfolioDialog({ onClose }: { onClose: () => void }) {
             onClick={() => go("/wizard/source")}
           />
         </div>
+
+        {/* [2026-09-29] 템플릿 갤러리에서 디자인을 골라 왔으면 알려 주고, 아니면 고르러 가는 길 */}
+        {pending ? (
+          <p className="mt-5 inline-flex items-center gap-2 rounded-lg bg-brand/10 px-3 py-2 text-xs text-brand">
+            <Paintbrush size={13} /> 고른 디자인 “{pending.label}”으로 만들어져요
+            <button type="button" onClick={() => { clearPendingDesign(); setPending(null); }} className="ml-1 underline underline-offset-2">
+              취소
+            </button>
+          </p>
+        ) : (
+          <button
+            type="button"
+            onClick={() => go("/templates")}
+            className="mt-5 mr-5 inline-flex items-center gap-1.5 text-xs text-neutral-500 hover:text-brand"
+          >
+            <Paintbrush size={13} strokeWidth={1.75} />
+            디자인부터 고르려면 → 템플릿
+          </button>
+        )}
 
         <button
           type="button"

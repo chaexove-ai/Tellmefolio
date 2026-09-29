@@ -36,6 +36,7 @@ const JobSwitchResult = lazy(() => import("./pages/jobswitch/JobSwitchResult"));
 const ChatBuilder = lazy(() => import("./pages/chat/ChatBuilder"));
 
 const Gallery = lazy(() => import("./pages/gallery/Gallery"));
+const TemplateGallery = lazy(() => import("./pages/templates/TemplateGallery"));
 
 const AccountSettings = lazy(() => import("./pages/account/AccountSettings"));
 const SocialAccountManage = lazy(() => import("./pages/account/SocialAccountManage"));
@@ -63,6 +64,15 @@ export default function App() {
         element={
           <Suspense fallback={<RouteFallback />}>
             <PublicPortfolio />
+          </Suspense>
+        }
+      />
+      {/* [2026-09-29] 템플릿 갤러리 — 로그인 없이도 봅니다(디자인부터 고르는 입구) */}
+      <Route
+        path="/templates"
+        element={
+          <Suspense fallback={<RouteFallback />}>
+            <TemplateGallery />
           </Suspense>
         }
       />
