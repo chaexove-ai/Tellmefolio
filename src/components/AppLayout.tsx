@@ -5,6 +5,7 @@ import { Home, LibraryBig, Plus, Repeat, Users, Settings, Menu, X } from "lucide
 import { NewPortfolioProvider, useNewPortfolio } from "./NewPortfolio";
 import RouteFallback from "./RouteFallback";
 import UserMenu from "./UserMenu";
+import Logo from "./Logo";
 
 /**
  * [09-26] 사이드바 정리. "생성"을 빼고 맨 위 "＋ 새 포트폴리오" 버튼(선택 창)으로,
@@ -118,9 +119,7 @@ export default function AppLayout() {
         {/* 좌상단 로고는 홈으로 가는 버튼이라는 게 오래된 관습입니다.
             span 으로 두면 눌러도 아무 일이 없어서, 사용자는 "안 눌린다"가
             아니라 "다른 홈이 있나"로 해석합니다. */}
-        <Link to="/library" className="text-lg font-heading text-neutral-100 px-2 hover:text-brand transition-colors">
-          Tellmefolio
-        </Link>
+        <Logo to="/library" className="px-2 text-neutral-100 transition-colors hover:text-brand" />
         <NavList />
         <div className="pt-6 border-t border-neutral-800 px-2 space-y-4">
           {/* 다크 테마를 감추면서 토글을 내렸습니다 — index.html 주석 참고 */}
@@ -139,7 +138,7 @@ export default function AppLayout() {
         >
           <Menu size={22} />
         </button>
-        <Link to="/library" className="text-base font-heading text-neutral-100">Tellmefolio</Link>
+        <Logo to="/library" size="sm" className="text-neutral-100" />
         {/* 다크 테마를 감추면서 토글을 내렸습니다 — index.html 주석 참고 */}
       </header>
 
@@ -153,13 +152,7 @@ export default function AppLayout() {
           />
           <aside className="absolute inset-y-0 left-0 w-72 max-w-[80%] bg-neutral-950 border-r border-neutral-800 flex flex-col px-4 py-6 overflow-y-auto">
             <div className="flex items-center justify-between px-2">
-              <Link
-                to="/library"
-                onClick={() => setDrawerOpen(false)}
-                className="text-lg font-heading text-neutral-100"
-              >
-                Tellmefolio
-              </Link>
+              <Logo to="/library" onClick={() => setDrawerOpen(false)} className="text-neutral-100" />
               <button
                 onClick={() => setDrawerOpen(false)}
                 aria-label="메뉴 닫기"

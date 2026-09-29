@@ -15,6 +15,7 @@ import { getMyBookmarkIds, recordView, setBookmark } from "../lib/engagement";
 import { Bookmark, BookmarkCheck, PenLine, UserRound } from "lucide-react";
 
 import { listBlocks, type BlockMap } from "../lib/blocks";
+import { LogoMark } from "../components/Logo";
 /** 프로젝트 이미지를 템플릿이 쓰는 모양으로 읽습니다.
  *  PDF·공개 링크 둘 다 이 경로를 씁니다 — 편집기와 다른 방법으로 읽으면
  *  "편집기엔 보이는데 PDF엔 없는" 상태가 생깁니다. */
@@ -323,8 +324,9 @@ export default function PublicPortfolio() {
       <footer className="py-10 text-center">
         <Link
           to="/"
-          className="text-xs text-neutral-500 hover:text-brand transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs text-neutral-500 hover:text-brand transition-colors"
         >
+          <LogoMark size={14} />
           Tellmefolio로 만든 포트폴리오입니다
         </Link>
       </footer>

@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import SocialLoginButtons, { readLastProvider, rememberProvider } from "../components/SocialLoginButtons";
 import ShelfIllustration from "../components/ShelfIllustration";
 import { useAuth } from "../auth/AuthProvider";
 import type { SocialProviderId } from "../components/BrandIcons";
+import Logo from "../components/Logo";
 
 /**
  * [2026-08-20] 목업이던 로그인을 Supabase OAuth 로 바꿨습니다.
@@ -61,15 +62,13 @@ export default function Login() {
        버튼을 넉넉하게, 위에 책장 그림을 두어 한 단 자체에 무게를 줍니다. */
     <div className="min-h-screen flex flex-col">
       <header className="flex items-center justify-between px-6 py-5 lg:px-10">
-        <Link to="/" className="text-xs tracking-[0.2em] text-brand uppercase hover:opacity-80">
-          Tellmefolio
-        </Link>
+        <Logo to="/" size="sm" className="text-neutral-100 hover:opacity-80" />
       </header>
 
       <main className="flex flex-1 items-center justify-center px-6 pb-16">
         <div className="w-full max-w-[460px] text-center">
-          <div className="mx-auto mb-8 w-full max-w-[300px] [zoom:0.5] sm:mb-10 sm:[zoom:0.62]" aria-hidden="true">
-            <ShelfIllustration />
+          <div className="mb-8 [zoom:0.5] sm:mb-10 sm:[zoom:0.62]" aria-hidden="true">
+            <ShelfIllustration centered />
           </div>
 
           <h1 className="font-heading text-[28px] leading-[1.3] lg:text-[36px] break-keep">

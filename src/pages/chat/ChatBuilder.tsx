@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate, useParams, useSearchParams } from "reac
 import { AlertTriangle, ArrowRight, Check, LoaderCircle, Minus, Plus, SendHorizontal } from "lucide-react";
 import { useAuth } from "../../auth/AuthProvider";
 import { listMyPortfolios, type LibraryPortfolio } from "../../lib/portfolios";
+import { LogoMark } from "../../components/Logo";
 import {
   draftInterview,
   filledCount,
@@ -402,7 +403,10 @@ function ChatBuilder() {
 function AiBubble({ text, followUp }: { text: string; followUp?: boolean }) {
   return (
     <div className="max-w-[80%]">
-      <p className="text-[11px] text-brand mb-1 ml-0.5">Tellmefolio{followUp && " · 한 번 더 여쭤볼게요"}</p>
+      <p className="mb-1 ml-0.5 inline-flex items-center gap-1.5 text-[11px] text-brand">
+        <LogoMark size={14} />
+        Tellmefolio{followUp && " · 한 번 더 여쭤볼게요"}
+      </p>
       <p className="rounded-2xl rounded-bl-md border border-neutral-800 bg-neutral-900/60 px-4 py-2.5 text-sm text-neutral-100 leading-relaxed break-keep whitespace-pre-line">
         {text}
       </p>

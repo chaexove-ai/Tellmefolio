@@ -13,6 +13,7 @@ import { scheduleScrollRefresh } from "../lib/scrollRefresh";
 import GrainCover from "../components/GrainCover";
 import MarqueeRail from "../components/MarqueeRail";
 import { sampleWorks } from "../landingContent";
+import Logo from "../components/Logo";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -130,7 +131,7 @@ export default function Landing() {
       </a>
 
       <header className="sticky top-0 z-50 flex items-center justify-between px-4 sm:px-8 py-4 sm:py-6 border-b border-neutral-800 bg-neutral-950/85 backdrop-blur-md supports-[backdrop-filter]:bg-neutral-950/70">
-        <span className="text-base sm:text-lg font-heading">Tellmefolio</span>
+        <Logo to="/" className="text-neutral-100" />
         <nav className="flex items-center gap-2 sm:gap-6" aria-label="주요 메뉴">
           {/* 다크 테마를 감추면서 토글을 내렸습니다 — index.html 주석 참고 */}
           <Link to="/login" className="btn-primary text-xs sm:text-sm px-3 sm:px-4">
@@ -329,7 +330,7 @@ export default function Landing() {
       <footer className="px-4 sm:px-8 py-14 border-t border-neutral-800 text-sm text-neutral-500">
         <div className="max-w-4xl lg:max-w-5xl mx-auto grid gap-10 sm:grid-cols-[1.4fr_1fr_1fr]">
           <div>
-            <p className="font-heading text-lg text-neutral-100">Tellmefolio</p>
+            <Logo className="text-neutral-100" />
             <p className="mt-2.5 leading-relaxed">
               이야기하면 포트폴리오가 됩니다.
               <br />

@@ -1,4 +1,4 @@
-import { Monitor } from "lucide-react";
+import Logo from "./Logo";
 
 /**
  * [2026-09] 좁은 창에서 앱 화면을 막고 안내만 보여줍니다.
@@ -29,10 +29,7 @@ export default function DesktopOnly() {
     <div className="gate-grain min-h-screen flex items-center justify-center px-6 py-16">
       <div className="w-full max-w-[520px] text-center">
         <div className="inline-flex items-center gap-2.5 mb-14">
-          <Monitor size={20} strokeWidth={1.5} style={{ color: BRAND }} aria-hidden="true" />
-          <span className="text-lg font-heading" style={{ color: INK }}>
-            Tellmefolio
-          </span>
+          <Logo style={{ color: INK }} />
         </div>
 
         <div className="flex items-center justify-center gap-3 mb-7">

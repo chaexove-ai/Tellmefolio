@@ -47,19 +47,32 @@ const SPINES: Spine[] = [
   { id: "be", color: "#9a6b3f", height: 284, width: 62, lean: true },
 ];
 
-export default function ShelfIllustration() {
+/**
+ * @param centered [2026-09-29] 한 단 로그인 화면용. 선반을 책 폭만큼만 긋고
+ *   덩어리째 가운데 둡니다. 기본(좌우 분할의 면)은 선반을 면 끝까지 긋고 책을 왼쪽에 모읍니다.
+ */
+export default function ShelfIllustration({ centered = false }: { centered?: boolean }) {
   return (
-    <div aria-hidden="true" className="shelf-illo w-full select-none [zoom:0.8] xl:[zoom:1] 2xl:[zoom:1.15]">
+    <div
+      aria-hidden="true"
+      className={
+        centered
+          ? "shelf-illo flex w-full justify-center select-none"
+          : "shelf-illo w-full select-none [zoom:0.8] xl:[zoom:1] 2xl:[zoom:1.15]"
+      }
+    >
       {/* 크기는 zoom 으로 화면 폭에 맞춥니다(lg 0.8 / xl 1 / 2xl 1.15). 책마다 치수를
           단계별로 따로 적는 것보다 한 줄로 끝납니다.
           선반 선은 면 끝까지 긋습니다. 책이 한쪽에 모여 있어도 선이 바닥을
           잡아줘서 허공에 떠 보이지 않습니다. */}
-      <div className="flex w-full items-end gap-[6px] border-b-2 border-neutral-700 pb-0">
+      <div
+        className={`flex items-end gap-[6px] border-b-2 border-neutral-700 pb-0 ${centered ? "w-fit px-3" : "w-full"}`}
+      >
         {SPINES.map((s, i) => (
           <div
             key={s.id}
             className={`shelf-illo-book relative shrink-0 ${s.lean ? "shelf-illo-lean" : ""} ${
-              s.wide ? "hidden 2xl:block" : ""
+              s.wide && !centered ? "hidden 2xl:block" : s.wide ? "hidden" : ""
             }`}
             style={{
               height: s.height,
