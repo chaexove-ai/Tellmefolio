@@ -463,13 +463,15 @@ function compare(names: string[]) {
   console.log(L.join("\n"));
 }
 
-const runs = arg("runs");
-if (runs) compare(runs.split(","));
-else {
-  const name = arg("run");
-  if (!name) {
-    console.error("--run=<이름> 또는 --runs=<이름,...>");
-    process.exit(1);
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const runs = arg("runs");
+  if (runs) compare(runs.split(","));
+  else {
+    const name = arg("run");
+    if (!name) {
+      console.error("--run=<이름> 또는 --runs=<이름,...>");
+      process.exit(1);
+    }
+    console.log(summarize(name).md);
   }
-  console.log(summarize(name).md);
 }
