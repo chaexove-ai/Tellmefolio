@@ -13,8 +13,14 @@ dist/
 
 # 예시 파일은 저장소에 포함합니다
 !.env.example
+!.env.eval.example
 vite.config.ts.timestamp-*.mjs
 supabase/.temp/
 
 # 작업 중 산출물 임시 폴더 (커밋하지 않습니다)
 Claude outputs/
+
+# 평가 — 원시 결과와 실제 데이터는 커밋하지 않습니다
+eval/runs/
+eval/private/
+eval/review/*.csv
