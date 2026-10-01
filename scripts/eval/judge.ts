@@ -4,6 +4,14 @@
  * 같은 계열이 자기 글을 채점하면 너그러워질 수 있어서입니다.
  *
  *   npm run eval:judge -- --run=<eval/runs 아래 이름>
+ *   npm run eval:judge -- --list-models        # 이 키로 쓸 수 있는 Gemini 모델 목록
+ *
+ * [서버 과부하 대응 — 10-01 맥 실행에서 3.8 Flash 가 503 을 연달아 냄]
+ *  - 판정 호출마다 결과를 judge/.cache 에 저장합니다. 다시 돌리면 성공한 호출은
+ *    건너뛰고 실패한 것만 다시 부릅니다(케이스 하나가 실패해도 앞 호출을 버리지 않음).
+ *  - 503·시간 초과는 20→40→80→120초로 늘려 가며 재시도합니다.
+ *  - JUDGE_FALLBACK_MODELS=모델1,모델2 를 주면 앞 모델이 끝내 실패할 때 다음 모델로
+ *    넘어갑니다. 어느 모델이 판정했는지 항목마다 기록하고 리포트에 적습니다.
  *
  * 판정은 세 가지입니다.
  *   J1 재작성 문장: 원문에 없는 사실(날조)이 있는가 + 인용한 근거가 그 문장을 뒷받침하는가
@@ -15,6 +23,7 @@
  *
  * 판정기 자체의 정확도는 사람 검수 표본(eval:sample)으로 따로 잽니다.
  */
+import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { FIELDS } from "../../supabase/functions/_shared/evidence.ts";
@@ -25,67 +34,124 @@ import type { RunResult } from "./pipeline.ts";
 loadEnv();
 const KEY = process.env.GEMINI_API_KEY;
 export const JUDGE_MODEL = process.env.JUDGE_MODEL ?? "gemini-3.8-flash";
+const MODELS = [JUDGE_MODEL, ...(process.env.JUDGE_FALLBACK_MODELS ?? "").split(",").map((x) => x.trim()).filter(Boolean)];
 const MIN_INTERVAL_MS = Number(process.env.JUDGE_INTERVAL_MS ?? 4000); // 무료 등급 분당 한도 여유
-
 const CALL_TIMEOUT_MS = Number(process.env.JUDGE_TIMEOUT_MS ?? 90_000);
+const TRIES_PER_MODEL = 5;
+const BACKOFF_S = (process.env.JUDGE_BACKOFF_S ?? "20,40,80,120,120").split(",").map(Number);
+
+/** main 이 정합니다. 없으면(테스트) 캐시 없이 동작 */
+let CACHE_DIR: string | null = null;
 
 let last = 0;
 let callNo = 0;
-/** 판정 호출 하나. 무엇을 기다리는지 늘 출력합니다(조용히 멈춘 것처럼 보이지 않게). */
-async function gemini(prompt: string, label: string): Promise<unknown> {
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * 판정 호출 하나. 무엇을 기다리는지 늘 출력합니다(조용히 멈춘 것처럼 보이지 않게).
+ * 같은 프롬프트의 성공 결과가 캐시에 있으면 부르지 않습니다.
+ */
+async function gemini(prompt: string, label: string): Promise<{ data: unknown; model: string }> {
   if (!KEY) throw new Error("GEMINI_API_KEY 가 없습니다(.env.eval.local)");
   const no = ++callNo;
-  for (let attempt = 1; attempt <= 4; attempt++) {
-    const wait = last + MIN_INTERVAL_MS - Date.now();
-    if (wait > 0) await new Promise((r) => setTimeout(r, wait));
-    last = Date.now();
-    const t = Date.now();
-    process.stdout.write(`  · 판정 #${no} ${label}${attempt > 1 ? ` (재시도 ${attempt - 1})` : ""} … `);
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), CALL_TIMEOUT_MS);
-    let res: Response;
-    try {
-      res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${JUDGE_MODEL}:generateContent`, {
-        method: "POST",
-        signal: controller.signal,
-        headers: { "content-type": "application/json", "x-goog-api-key": KEY },
-        body: JSON.stringify({
-          contents: [{ role: "user", parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0, responseMimeType: "application/json" },
-        }),
-      });
-    } catch (e) {
-      console.log(`${((Date.now() - t) / 1000).toFixed(0)}초 시간 초과`);
-      continue;
-    } finally {
-      clearTimeout(timer);
-    }
-    const sec = ((Date.now() - t) / 1000).toFixed(1);
-    if (res.status === 429 || res.status >= 500) {
-      // 한도 초과면 서버가 알려 준 대기 시간을 따릅니다(없으면 20초)
-      const body = await res.text();
-      const hint = body.match(/"retryDelay":\s*"(\d+)s"/);
-      const delay = (hint ? Number(hint[1]) : 20) * 1000;
-      console.log(`${sec}초 · ${res.status} ${res.status === 429 ? "요청 한도 초과" : "서버 오류"} → ${delay / 1000}초 뒤 재시도`);
-      if (res.status === 429 && /PerDay|per day|daily/i.test(body)) throw new Error("Gemini 하루 한도 초과 — 내일 다시 하거나 JUDGE_MODEL 을 바꾸세요");
-      await new Promise((r) => setTimeout(r, delay));
-      continue;
-    }
-    if (!res.ok) {
-      console.log(`${sec}초 · 오류 ${res.status}`);
-      throw new Error(`Gemini ${res.status}: ${(await res.text()).slice(0, 300)}`);
-    }
-    const body = await res.json();
-    const text = (body.candidates?.[0]?.content?.parts ?? []).map((p: { text?: string }) => p.text ?? "").join("");
-    try {
-      const data = JSON.parse(text);
-      console.log(`${sec}초`);
-      return data;
-    } catch {
-      console.log(`${sec}초 · JSON 해석 실패`);
-    }
+  const hash = createHash("sha256").update(prompt).digest("hex").slice(0, 16);
+  const cached = CACHE_DIR ? join(CACHE_DIR, `${hash}.json`) : null;
+  if (cached && existsSync(cached)) {
+    console.log(`  · 판정 #${no} ${label} … 저장된 결과 사용`);
+    return JSON.parse(readFileSync(cached, "utf8"));
   }
-  throw new Error(`판정 #${no} 실패(재시도 초과)`);
+
+  for (const model of MODELS) {
+    for (let attempt = 1; attempt <= TRIES_PER_MODEL; attempt++) {
+      const wait = last + MIN_INTERVAL_MS - Date.now();
+      if (wait > 0) await sleep(wait);
+      last = Date.now();
+      const t = Date.now();
+      const tag = `${MODELS.length > 1 ? `[${model}] ` : ""}${attempt > 1 ? `(재시도 ${attempt - 1}) ` : ""}`;
+      process.stdout.write(`  · 판정 #${no} ${label} ${tag}… `);
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), CALL_TIMEOUT_MS);
+      let res: Response | null = null;
+      try {
+        res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+          method: "POST",
+          signal: controller.signal,
+          headers: { "content-type": "application/json", "x-goog-api-key": KEY },
+          body: JSON.stringify({
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0, responseMimeType: "application/json" },
+          }),
+        });
+      } catch {
+        res = null;
+      } finally {
+        clearTimeout(timer);
+      }
+      const sec = ((Date.now() - t) / 1000).toFixed(1);
+      const backoff = BACKOFF_S[attempt - 1] * 1000;
+      const last_ = attempt === TRIES_PER_MODEL;
+
+      if (!res) {
+        console.log(`${sec}초 · 시간 초과${last_ ? "" : ` → ${backoff / 1000}초 뒤 재시도`}`);
+        if (!last_) await sleep(backoff);
+        continue;
+      }
+      if (res.status === 429) {
+        const body = await res.text();
+        if (/PerDay|per day|daily/i.test(body)) {
+          console.log(`${sec}초 · 하루 한도 초과 → 이 모델은 건너뜀`);
+          break;
+        }
+        const hint = body.match(/"retryDelay":\s*"(\d+)s"/);
+        const delay = (hint ? Number(hint[1]) : 30) * 1000;
+        console.log(`${sec}초 · 429 요청 한도 초과 → ${delay / 1000}초 뒤 재시도`);
+        await sleep(delay);
+        continue;
+      }
+      if (res.status >= 500) {
+        await res.text();
+        console.log(`${sec}초 · ${res.status} 서버 과부하${last_ ? "" : ` → ${backoff / 1000}초 뒤 재시도`}`);
+        if (!last_) await sleep(backoff);
+        continue;
+      }
+      if (!res.ok) {
+        console.log(`${sec}초 · 오류 ${res.status}`);
+        const body = await res.text();
+        if (res.status === 404) {
+          console.log(`    모델 ${model} 을 쓸 수 없습니다 → npm run eval:judge -- --list-models`);
+          break;
+        }
+        throw new Error(`Gemini ${res.status}: ${body.slice(0, 300)}`);
+      }
+      const body = await res.json();
+      const text = (body.candidates?.[0]?.content?.parts ?? []).map((p: { text?: string }) => p.text ?? "").join("");
+      try {
+        const out = { data: JSON.parse(text), model };
+        console.log(`${sec}초`);
+        if (cached) {
+          mkdirSync(CACHE_DIR!, { recursive: true });
+          writeFileSync(cached, JSON.stringify(out));
+        }
+        return out;
+      } catch {
+        console.log(`${sec}초 · JSON 해석 실패`);
+      }
+    }
+    if (MODELS.indexOf(model) < MODELS.length - 1) console.log(`  · ${model} 포기 → 다음 판정 모델로`);
+  }
+  throw new Error(`판정 #${no} 실패 — 모든 판정 모델이 응답하지 않음. 잠시 뒤 같은 명령을 다시 실행하면 성공한 호출은 건너뜁니다`);
+}
+
+async function listModels() {
+  if (!KEY) throw new Error("GEMINI_API_KEY 가 없습니다(.env.eval.local)");
+  const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200", { headers: { "x-goog-api-key": KEY } });
+  if (!res.ok) throw new Error(`목록 조회 실패 ${res.status}`);
+  const body = (await res.json()) as { models?: { name: string; supportedGenerationMethods?: string[] }[] };
+  const names = (body.models ?? [])
+    .filter((m) => m.supportedGenerationMethods?.includes("generateContent"))
+    .map((m) => m.name.replace(/^models\//, ""))
+    .filter((n) => /gemini/i.test(n));
+  console.log(names.join("\n"));
 }
 
 /* ------------------------------------------------------------------ */
@@ -154,6 +220,7 @@ export async function judgeRun(r: RunResult): Promise<JudgeOut> {
   const c = loadCase(r.case);
   const textById = new Map(c.evidence.map((e) => [e.id, e.text]));
   const out: JudgeOut = { judgeModel: JUDGE_MODEL, j1: [], j2: [], j3: [] };
+  const used = new Set<string>();
 
   // J1 — 프로젝트마다 한 번
   for (let pi = 0; pi < r.rewrites.length; pi++) {
@@ -168,7 +235,9 @@ export async function judgeRun(r: RunResult): Promise<JudgeOut> {
       `스택: ${p.stack.join(", ")}`,
       ...c.evidence.filter((e) => e.projectIndex === pi).map((e) => `${e.id}: ${e.text}`),
     ].join("\n");
-    const res = (await gemini(j1Prompt(source, items), `${r.case} 재작성 p${pi} (${items.length}문장)`)) as { items?: Record<string, unknown>[] };
+    const g1 = await gemini(j1Prompt(source, items), `${r.case} 재작성 p${pi} (${items.length}문장)`);
+    used.add(g1.model);
+    const res = g1.data as { items?: Record<string, unknown>[] };
     const byKey = new Map((res.items ?? []).map((x) => [String(x.key), x]));
     for (const it of items) {
       const x = byKey.get(it.key) ?? {};
@@ -196,7 +265,9 @@ export async function judgeRun(r: RunResult): Promise<JudgeOut> {
       level: m.level,
       evidence: m.evidenceIds.map((id) => textById.get(id) ?? ""),
     }));
-    const res = (await gemini(`${RUBRIC_J2}\n\n${JSON.stringify(items, null, 1)}`, `${r.case} 매칭 근거 (${items.length}개)`)) as { items?: Record<string, unknown>[] };
+    const g2 = await gemini(`${RUBRIC_J2}\n\n${JSON.stringify(items, null, 1)}`, `${r.case} 매칭 근거 (${items.length}개)`);
+    used.add(g2.model);
+    const res = g2.data as { items?: Record<string, unknown>[] };
     out.j2 = (res.items ?? []).map((x) => ({ requirementId: String(x.requirementId), support: String(x.support), reason: String(x.reason ?? "") }));
   }
 
@@ -204,13 +275,18 @@ export async function judgeRun(r: RunResult): Promise<JudgeOut> {
   if (r.mode === "e2e" && r.analysis) {
     const A = c.label.requirements.map((q) => `${q.id}: ${q.text}`).join("\n");
     const B = r.analysis.requirements.map((q) => `${q.id}: ${q.text}`).join("\n");
-    const res = (await gemini(`${RUBRIC_J3}\n\n## A (정답)\n${A}\n\n## B (AI)\n${B}`, `${r.case} 요구사항 대응`)) as { items?: Record<string, unknown>[] };
+    const g3 = await gemini(`${RUBRIC_J3}\n\n## A (정답)\n${A}\n\n## B (AI)\n${B}`, `${r.case} 요구사항 대응`);
+    used.add(g3.model);
+    const res = g3.data as { items?: Record<string, unknown>[] };
     out.j3 = (res.items ?? []).map((x) => ({ modelId: String(x.modelId), goldId: x.goldId ? String(x.goldId) : null }));
   }
+  // 대체 모델로 넘어간 호출이 있으면 여기에 함께 남습니다(리포트에 그대로 표시)
+  if (used.size) out.judgeModel = [...used].join(" + ");
   return out;
 }
 
 async function main() {
+  if (process.argv.includes("--list-models")) return listModels();
   const name = arg("run");
   if (!name) throw new Error("--run=<이름> 이 필요합니다");
   const dir = join(EVAL, "runs", name);
@@ -220,6 +296,7 @@ async function main() {
   if (!KEY) throw new Error("GEMINI_API_KEY 가 없습니다(.env.eval.local)");
   const jdir = join(dir, "judge");
   mkdirSync(jdir, { recursive: true });
+  CACHE_DIR = join(jdir, ".cache");
   const files = readdirSync(dir).filter((f) => /\.r\d+\.json$/.test(f));
   let i = 0;
   for (const f of files) {
@@ -228,7 +305,7 @@ async function main() {
     if (existsSync(target) && !process.argv.includes("--force")) continue;
     const r = JSON.parse(readFileSync(join(dir, f), "utf8")) as RunResult;
     if (r.error) continue;
-    console.log(`[${i}/${files.length}] ${f} 판정 시작 (모델 ${JUDGE_MODEL})`);
+    console.log(`[${i}/${files.length}] ${f} 판정 시작 (모델 ${MODELS.join(" → ")})`);
     try {
       writeFileSync(target, JSON.stringify(await judgeRun(r), null, 2));
       console.log(`[${i}/${files.length}] ${f} 완료`);
