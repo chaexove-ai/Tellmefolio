@@ -45,6 +45,16 @@ export interface GoldRequirement {
   evidence: string[];
   trap: Trap | null;
   note: string;
+  /** 사람이 이 요구사항을 검수한 기록. 없으면 Claude 초안 그대로(미검수) */
+  human?: {
+    reviewer: string;
+    at: string;
+    /** keep(none) 처럼 유지, 또는 none→partial 처럼 바꾼 내용 */
+    decision: string;
+    comment?: string;
+    /** 함정이었다가 사람이 none 이 아니라고 판정해 함정에서 뺀 경우 원래 유형 */
+    was_trap?: Trap;
+  };
 }
 
 export interface CaseLabel {

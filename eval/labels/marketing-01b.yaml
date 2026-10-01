@@ -70,10 +70,18 @@ requirements:
     kind: must
     scope: project
     keywords: [A/B 테스트, 통계적 유의성, 실험 설계]
-    level: none
-    evidence: []
-    trap: T4
+    level: partial
+    evidence:
+      - p0:execution:2
+      - p0:reflection:1
+    trap: null
     note: 원문은 소재 두 개를 일주일씩 번갈아 집행해 클릭률을 비교한 것(p0:execution:2)이고, 본인도 기간이 나뉘어 요일 차이가 섞였을 수 있다고 인정한다(p0:reflection:1). 동시 무작위 배정도 유의성 판단도 없으므로 none. 비슷한 단어만으로 근거를 삼는지 보는 함정.
+    human:
+      reviewer: 채환
+      at: 2026-10-01
+      decision: none→partial
+      comment: 마케팅 현장에서 자주 쓰이는 ‘소재 A/B 테스트(AB Test)’의 초급 형태를 시도해보신 경험은 맞으나 통계적 유의성을 기반으로 한 A/B 테스트는 아님
+      was_trap: T4
   - id: r7
     text: GA4 등 분석 도구로 전환 데이터의 정합성을 관리해 본 경험
     label: 데이터 정합성

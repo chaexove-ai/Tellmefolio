@@ -50,10 +50,17 @@ requirements:
     kind: must
     scope: project
     keywords: [사용성 테스트, 과제 성공률, 소요 시간, 정량 분석]
-    level: none
-    evidence: []
-    trap: T4
+    level: partial
+    evidence:
+      - p0:execution:2
+    trap: null
     note: 원문은 사내 동료 6명에게 시안을 써 보게 하고 의견을 받은 것뿐이고, 본인도 회고에서 검증이 부족했다고 쓴다. 비공식 시안 점검은 있으므로 "사용성 테스트 경험"만 묻는다면 partial 로 볼 여지가 있으나, 이 요건의 핵심은 설계와 정량 분석이라 none 으로 둔다.
+    human:
+      reviewer: 채환
+      at: 2026-10-01
+      decision: none→partial
+      comment: ‘정성적인 사용자 테스트(UT, Usability Testing)를 직접 진행해본 경험’은 맞지만, ‘과제 성공률이나 소요 시간 등의 정량적 지표를 체계적으로 측정 및 분석한 경험’으로 보기에는 어렵습니다. 측정 지표(과제 성공률, 소요 시간 등)의 부재, 표본(Sample)과 환경의 한계
+      was_trap: T4
   - id: r5
     text: 복잡한 절차를 사용자가 이해하기 쉬운 흐름으로 단순화해 본 경험
     label: 흐름 단순화

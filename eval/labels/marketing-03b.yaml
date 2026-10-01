@@ -74,6 +74,11 @@ requirements:
     evidence: []
     trap: T4
     note: 원문에는 Canva 템플릿 세 가지 틀(p2:execution:0)과 한 장짜리 톤 가이드(p1:execution:2)가 있지만 컴포넌트 단위 시스템은 아니다. Figma 도 와이어프레임 한 번 뿐. 템플릿·가이드라는 비슷한 말을 디자인 시스템으로 부르는지 보는 함정.
+    human:
+      reviewer: 채환
+      at: 2026-10-01
+      decision: keep(none)
+      comment: 디자인 시스템(컴포넌트 단위) 구축과 다른 이유 대상 및 매체의 차이 (프로덕트 vs 마케팅 에셋), 확장성 및 개발 연계의 부재
   - id: r7
     text: 월 50건 이상의 콘텐츠 디자인을 소화해 본 경험
     label: 월 50건 제작

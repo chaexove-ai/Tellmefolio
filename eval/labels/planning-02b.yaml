@@ -44,6 +44,10 @@ requirements:
     evidence: []
     trap: T4
     note: 원문의 "가정이 인터뷰로 뒤집힘", "유형별 건수 공유", "리뷰 14건→3건"이 유사어 유혹이지만 정성 인터뷰 후 결정이고 실험은 없다. 본인도 숫자로 뒷받침 못 했다고 썼다(p0:reflection:1). 정성 가설 검증으로 보면 partial 주장이 가능하나 요건이 '정량·실험'이라 none.
+    human:
+      reviewer: 채환
+      at: 2026-10-01
+      decision: keep(none)
   - id: r4
     text: 사용자 인터뷰 등 리서치로 문제를 발견해 본 경험
     label: 사용자 리서치

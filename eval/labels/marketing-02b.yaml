@@ -44,6 +44,11 @@ requirements:
     evidence: []
     trap: T5
     note: 리뉴얼 캠페인은 마케팅 팀장이 이끌었고(p1:context:1) 본인은 인스타그램 콘텐츠 파트 담당(p1:role:0). 캠페인 참여는 사실이지만 총괄·리딩은 없다. "캠페인을 이끌었다"로 쓰면 역할 과장.
+    human:
+      reviewer: 채환
+      at: 2026-10-01
+      decision: keep(none)
+      comment: 해당 이력서 내용은 ‘브랜드 통합 캠페인을 총괄(Lead)한 경험’으로 보기 어렵습니다. 대신 ‘통제 집단(Control Group)을 활용한 증분(Incrementality) 효과 검증 경험(p0)’ 및 ‘통합 캠페인의 특정 채널(인스타그램) 실무 담당 경험(p1)’으로 해석하는 것이 정확합니다.
   - id: r4
     text: 회원 50만 명 이상 규모의 CRM을 운영해 본 경험
     label: 대규모 CRM

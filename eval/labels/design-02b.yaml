@@ -70,10 +70,18 @@ requirements:
     kind: nice
     scope: project
     keywords: [HR, 근태 관리]
-    level: none
-    evidence: []
-    trap: T3
+    level: partial
+    evidence:
+      - p1:problem:1
+      - p1:execution:2
+    trap: null
     note: 원문의 "출결"은 학습자의 수업 출석 기록이지 직원 근태가 아니다. 출결 입력 화면을 근태 관리 경험으로 옮겨 쓰면 날조.
+    human:
+      reviewer: 채환
+      at: 2026-10-01
+      decision: none→partial
+      comment: 출결은 근태의 중요한 요소중 하나는 맞으나, 규모가 작기도하고 일반적인 hr 도메인 아님
+      was_trap: T3
   - id: r7
     text: Framer로 웹사이트를 직접 제작·운영해 본 경험
     label: Framer

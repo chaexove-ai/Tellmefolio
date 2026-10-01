@@ -245,6 +245,11 @@ function summarize(name: string): { s: Summary; md: string } {
   const trapsAligned = traps.filter((q) => q.model !== null);
   const labels = new Map<string, CaseLabel>(runs.map((x) => [x.c.label.case, x.c.label]));
   const reviewed = [...labels.values()].filter((l) => l.reviewed).length;
+  // 요구사항 단위 사람 검수(케이스 전체 검수와 별개). 함정은 사람이 확인한 것만 따로 셉니다.
+  const humanReqs = [...labels.values()].flatMap((l) => l.requirements.filter((q) => q.scope === "project" && q.human));
+  const humanChanged = humanReqs.filter((q) => !q.human!.decision.startsWith("keep")).length;
+  const humanTraps = [...labels.values()].flatMap((l) => l.requirements.filter((q) => q.trap && q.trap !== "T6" && q.human).map((q) => `${l.case}/${q.id}`));
+  const humanDropped = humanReqs.filter((q) => q.human!.was_trap).length;
 
   // 함정 유출: 함정 요구사항을 "대응한다"고 단 문장, 또는 금지어가 나온 문장이 있는 (케이스, 회차, 함정)
   const leak = traps.filter((q) =>
@@ -315,7 +320,14 @@ function summarize(name: string): { s: Summary; md: string } {
   L.push("");
   L.push(`- 모드: **${manifest.mode}** · 조합: **${manifest.config}** (1단계 ${manifest.models.s1} / 2단계 ${manifest.models.s2} / 3단계 ${manifest.models.s3})`);
   L.push(`- 표본: 케이스 ${s.n.cases}개 · 실행 ${s.n.runs}회${failed ? ` (실패 ${failed}회 제외)` : ""} · 재작성 문장 ${s.n.sentences}개 · 비교한 요구사항 ${s.n.reqs}개 · 함정 ${s.n.traps}개`);
-  L.push(`- 정답 라벨 검수: **${s.labelsReviewed}** ${reviewed < labels.size ? "— 미검수 라벨이 섞여 있어 [사람] 지표는 잠정치입니다" : ""}`);
+  L.push(`- 정답 라벨 검수: 케이스 전체 **${s.labelsReviewed}** · 요구사항 단위로 사람이 확인한 것 **${humanReqs.length}개**(그중 정답 수정 ${humanChanged}개, 함정에서 제외 ${humanDropped}개)${reviewed < labels.size ? " — 나머지는 Claude 초안이라 [사람 라벨] 지표는 잠정치입니다" : ""}`);
+  if (humanTraps.length || humanDropped) {
+    // 사람이 본 함정은 무작위 표본이 아니라 "AI 가 틀린 것"만 골라 본 것이라, 그 안의 통과율은
+    // 지표가 아닙니다(정의상 0%). 무엇을 확인했는지만 적습니다.
+    const failedTraps = trapsAligned.filter((q) => q.model !== "none");
+    const failedChecked = failedTraps.filter((q) => humanTraps.includes(`${q.case}/${q.goldId}`)).length;
+    L.push(`- 함정 판정의 사람 확인 범위: AI 가 놓친 함정 ${failedTraps.length + humanDropped}건을 사람이 다시 봐서 ${failedChecked}건은 실패 확정, ${humanDropped}건은 정답이 none 이 아니라고 보고 함정에서 뺐습니다. AI 가 통과한 함정은 사람이 확인하지 않았습니다.`);
+  }
   L.push(`- LLM 판정: ${judged.length ? `${runs[0]?.j?.judgeModel ?? "?"} · 판정 문장 ${judged.length}개` : "아직 없음 (npm run eval:judge)"}`);
   L.push("");
   L.push("## 핵심 지표");

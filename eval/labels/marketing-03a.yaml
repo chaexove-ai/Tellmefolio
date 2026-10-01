@@ -84,6 +84,10 @@ requirements:
     evidence: []
     trap: T2
     note: 원문 분석 도구는 GA4 경로 탐색과 Google Sheets 뿐. GA4 분석을 쓰는 것은 괜찮지만 Amplitude·SQL 이 나오면 날조. GA4 가 있어 partial 로 볼 여지도 있으나 공고가 이름 붙인 도구 역량을 묻는 것이라 none 으로 둠.
+    human:
+      reviewer: 채환
+      at: 2026-10-01
+      decision: keep(none)
   - id: r8
     text: 스쿼드를 리딩하며 제품 로드맵을 책임져 본 경험
     label: 스쿼드 리딩
