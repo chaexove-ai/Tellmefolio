@@ -49,7 +49,7 @@ cp .env.eval.example .env.eval.local   # 키 입력 (.env*.local 은 커밋되�
 
 - `ANTHROPIC_API_KEY` 평가 대상 호출
 - `GEMINI_API_KEY` 판정(다른 계열 모델). 무료 등급은 입력이 학습에 쓰일 수 있어 가상 샘플만 보냅니다
-- Node 22.6 이상(TypeScript 를 바로 실행)
+- Node 22.7 이상(`--experimental-transform-types` 로 TypeScript 를 바로 실행. 운영 model.ts 의 parameter property 때문에 strip-only 로는 안 됨)
 
 ## 명령
 

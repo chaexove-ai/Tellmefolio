@@ -20,6 +20,18 @@ import { initModel, runCase } from "./pipeline.ts";
 import { FIELDS } from "../../supabase/functions/_shared/evidence.ts";
 import { execFileSync } from "node:child_process";
 
+// 운영 model.ts 를 실제로 불러올 수 있는지 먼저 확인합니다. 아래 가짜 모델만 쓰면
+// 이 파일을 한 번도 안 읽어서, Node 가 못 읽는 문법(parameter property)이 있어도
+// 자가 점검이 통과해 버렸습니다(10-01 맥 첫 실행에서 발견).
+{
+  const g = globalThis as unknown as { Deno?: unknown };
+  g.Deno ??= { env: { get: (k: string) => process.env[k] } };
+  const m = await import("../../supabase/functions/_shared/model.ts");
+  const ok = typeof m.callModelJson === "function" && new m.ModelError("x", 429).status === 429;
+  console.log(`${ok ? "통과" : "실패"}  운영 model.ts 불러오기`);
+  if (!ok) process.exit(1);
+}
+
 const CASES = ["dev-01b", "marketing-01b", "planning-03a"];
 let current: LoadedCase;
 const plan = new Map<string, { fakeFull: string; realFull: string }>();
@@ -91,7 +103,7 @@ for (const id of CASES) {
   expect.traps += current.label.requirements.filter((q) => q.trap && q.trap !== "T6").length;
 }
 
-execFileSync("node", ["--experimental-strip-types", "--no-warnings", "scripts/eval/score.ts", `--run=${name}`], { stdio: "ignore" });
+execFileSync("node", ["--experimental-transform-types", "--no-warnings", "scripts/eval/score.ts", `--run=${name}`], { stdio: "ignore" });
 const s = JSON.parse(readFileSync(join(dir, "summary.json"), "utf8"));
 
 const checks: [string, unknown, unknown][] = [
