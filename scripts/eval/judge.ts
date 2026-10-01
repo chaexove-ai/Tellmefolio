@@ -38,6 +38,8 @@ const MODELS = [JUDGE_MODEL, ...(process.env.JUDGE_FALLBACK_MODELS ?? "").split(
 const MIN_INTERVAL_MS = Number(process.env.JUDGE_INTERVAL_MS ?? 4000); // 무료 등급 분당 한도 여유
 const CALL_TIMEOUT_MS = Number(process.env.JUDGE_TIMEOUT_MS ?? 90_000);
 const TRIES_PER_MODEL = 5;
+/** J1 한 번에 보낼 문장 수 */
+const BATCH = Math.max(1, Number(process.env.JUDGE_BATCH ?? 4));
 const BACKOFF_S = (process.env.JUDGE_BACKOFF_S ?? "20,40,80,120,120").split(",").map(Number);
 
 /** main 이 정합니다. 없으면(테스트) 캐시 없이 동작 */
@@ -109,8 +111,9 @@ async function gemini(prompt: string, label: string): Promise<{ data: unknown; m
         continue;
       }
       if (res.status >= 500) {
-        await res.text();
-        console.log(`${sec}초 · ${res.status} 서버 과부하${last_ ? "" : ` → ${backoff / 1000}초 뒤 재시도`}`);
+        const body = await res.text();
+        const msg = (body.match(/"message":\s*"([^"]{0,160})/)?.[1] ?? "").trim();
+        console.log(`${sec}초 · ${res.status} 서버 과부하${msg ? ` (${msg})` : ""}${last_ ? "" : ` → ${backoff / 1000}초 뒤 재시도`}`);
         if (!last_) await sleep(backoff);
         continue;
       }
@@ -235,10 +238,19 @@ export async function judgeRun(r: RunResult): Promise<JudgeOut> {
       `스택: ${p.stack.join(", ")}`,
       ...c.evidence.filter((e) => e.projectIndex === pi).map((e) => `${e.id}: ${e.text}`),
     ].join("\n");
-    const g1 = await gemini(j1Prompt(source, items), `${r.case} 재작성 p${pi} (${items.length}문장)`);
-    used.add(g1.model);
-    const res = g1.data as { items?: Record<string, unknown>[] };
-    const byKey = new Map((res.items ?? []).map((x) => [String(x.key), x]));
+    // 한 번에 BATCH 문장씩. 무료 등급이 긴 요청(생각이 오래 걸리는 요청)을 503 으로
+    // 거절해서 나눴습니다(10-01: 짧은 요청은 200, 12문장 판정은 503 반복).
+    const byKey = new Map<string, Record<string, unknown>>();
+    for (let b = 0; b < items.length; b += BATCH) {
+      const chunk = items.slice(b, b + BATCH);
+      const g1 = await gemini(
+        j1Prompt(source, chunk),
+        `${r.case} 재작성 p${pi} ${b + 1}~${b + chunk.length}/${items.length}문장`
+      );
+      used.add(g1.model);
+      const res = g1.data as { items?: Record<string, unknown>[] };
+      for (const x of res.items ?? []) byKey.set(String(x.key), x);
+    }
     for (const it of items) {
       const x = byKey.get(it.key) ?? {};
       const [, field, idx] = it.key.split(":");
@@ -265,10 +277,13 @@ export async function judgeRun(r: RunResult): Promise<JudgeOut> {
       level: m.level,
       evidence: m.evidenceIds.map((id) => textById.get(id) ?? ""),
     }));
-    const g2 = await gemini(`${RUBRIC_J2}\n\n${JSON.stringify(items, null, 1)}`, `${r.case} 매칭 근거 (${items.length}개)`);
-    used.add(g2.model);
-    const res = g2.data as { items?: Record<string, unknown>[] };
-    out.j2 = (res.items ?? []).map((x) => ({ requirementId: String(x.requirementId), support: String(x.support), reason: String(x.reason ?? "") }));
+    for (let b = 0; b < items.length; b += BATCH * 2) {
+      const chunk = items.slice(b, b + BATCH * 2);
+      const g2 = await gemini(`${RUBRIC_J2}\n\n${JSON.stringify(chunk, null, 1)}`, `${r.case} 매칭 근거 ${b + 1}~${b + chunk.length}/${items.length}개`);
+      used.add(g2.model);
+      const res = g2.data as { items?: Record<string, unknown>[] };
+      out.j2.push(...(res.items ?? []).map((x) => ({ requirementId: String(x.requirementId), support: String(x.support), reason: String(x.reason ?? "") })));
+    }
   }
 
   // J3 — E2E 만
