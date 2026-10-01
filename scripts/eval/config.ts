@@ -54,11 +54,25 @@ export function cost(model: string, input: number, output: number): number {
  * .env.eval.local 을 읽어 process.env 에 넣습니다. 이 파일은 .gitignore 에
  * 있습니다(.env*.local). 키는 여기와 환경변수에만 둡니다.
  */
+let warned = false;
 export function loadEnv() {
   const f = join(ROOT, ".env.eval.local");
   if (!existsSync(f)) return;
   for (const line of readFileSync(f, "utf8").split("\n")) {
     const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/);
-    if (m && !process.env[m[1]]) process.env[m[1]] = m[2].replace(/^["']|["']$/g, "");
+    if (!m) continue;
+    const value = m[2].replace(/^["']|["']$/g, "");
+    const current = process.env[m[1]];
+    if (current === undefined || current === "") {
+      process.env[m[1]] = value;
+    } else if (current !== value && !warned) {
+      // 터미널에 같은 이름의 환경변수가 이미 있으면 그쪽이 이깁니다(한 번만 쓰는
+      // JUDGE_MODEL=... npm run ... 을 살리기 위해). 그런데 이걸 모르면 파일을 고쳐도
+      // 안 바뀌는 것처럼 보입니다(10-01, source 로 넣은 값이 남아 있었음). 그래서 알립니다.
+      const shown = /KEY/.test(m[1]) ? "(키 값은 숨김)" : `${current} (파일: ${value})`;
+      console.log(`[설정] 터미널 환경변수 ${m[1]} 가 .env.eval.local 보다 우선합니다: ${shown}`);
+      console.log(`       파일 값을 쓰려면: unset ${m[1]}`);
+    }
   }
+  warned = true;
 }
