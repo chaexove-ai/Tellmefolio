@@ -1,5 +1,6 @@
 /**
- * LLM 판정. 평가 대상(Claude)과 다른 계열 모델(기본 Gemini Flash)이 채점합니다.
+ * LLM 판정. 평가 대상(Claude)과 다른 계열 모델(기본 gemini-3.8-flash)이 채점합니다.
+ * [10-01] gemini-2.5-flash 는 신규 사용자에게 404("no longer available")라 바꿨습니다.
  * 같은 계열이 자기 글을 채점하면 너그러워질 수 있어서입니다.
  *
  *   npm run eval:judge -- --run=<eval/runs 아래 이름>
@@ -23,7 +24,7 @@ import type { RunResult } from "./pipeline.ts";
 
 loadEnv();
 const KEY = process.env.GEMINI_API_KEY;
-export const JUDGE_MODEL = process.env.JUDGE_MODEL ?? "gemini-2.5-flash";
+export const JUDGE_MODEL = process.env.JUDGE_MODEL ?? "gemini-3.8-flash";
 const MIN_INTERVAL_MS = Number(process.env.JUDGE_INTERVAL_MS ?? 4500); // 무료 등급 분당 한도 여유
 
 let last = 0;

@@ -3,11 +3,13 @@
  *
  * 입력 토큰: ANTHROPIC_API_KEY 가 있으면 공식 count_tokens 로 정확히 셉니다(무료).
  *            없으면 한국어 기준 1.4자 ≈ 1토큰으로 어림합니다.
- * 출력 토큰: 실행 전에는 알 수 없어서 아래 가정으로 어림합니다. 실제 실행 후
- *            리포트의 실측값과 비교해 가정을 고칩니다.
+ * 출력 토큰: 실행 전에는 알 수 없어서 아래 가정으로 어림합니다.
  *   1단계  900
- *   2단계  요구사항당 120 + 100
- *   3단계  그 프로젝트 원문 토큰의 1.8배 (근거 id·JSON 껍데기 포함)
+ *   2단계  요구사항당 160 + 100
+ *   3단계  그 프로젝트 원문 글자 수 × 3.9 (근거 id·요구사항 id·JSON 껍데기 포함)
+ *   [10-01 보정] 첫 실측(dev-01a, n=1)에서 2단계 1,704 / 3단계 3,379 토큰이 나와
+ *   처음 가정(요구사항당 120, 원문 토큰의 1.8배)을 올렸습니다. 3단계는 처음 가정의
+ *   약 3배였습니다 — 재작성 문장마다 근거·요구사항 id 를 다는 JSON 이 원문보다 깁니다.
  * 재시도(JSON 해석 실패)로 10% 더 든다고 봅니다.
  *
  *   npm run eval:estimate                 # 계획 전체(아래 PLAN)
@@ -94,13 +96,13 @@ export async function estimateRun(
     }
     if (only === "s1") continue;
     const reqN = analysis.requirements.filter((r) => r.scope !== "profile").length;
-    add("s2", models.s2, await tok(models.s2, matchPrompt(analysis, c.evidence, c.portfolio.projects)), reqN * 120 + 100);
+    add("s2", models.s2, await tok(models.s2, matchPrompt(analysis, c.evidence, c.portfolio.projects)), reqN * 160 + 100);
     const matches = goldMatches(c);
     for (let pi = 0; pi < c.portfolio.projects.length; pi++) {
       const own = c.evidence.filter((e) => e.projectIndex === pi).map((e) => e.text).join("\n");
       if (!own) continue;
       const p = rewritePrompt(c.label.target_job, analysis, matches, pi, c.portfolio.projects[pi], c.evidence);
-      add("s3", models.s3, await tok(models.s3, p), Math.ceil((own.length / CHARS_PER_TOKEN) * 1.8));
+      add("s3", models.s3, await tok(models.s3, p), Math.ceil(own.length * 3.9));
     }
   }
   return { usd, calls, byStage, method: exact ? "입력 토큰 실측(count_tokens)" : "입력 토큰 글자 수 어림" };
