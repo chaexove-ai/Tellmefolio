@@ -45,6 +45,11 @@ const BACKOFF_S = (process.env.JUDGE_BACKOFF_S ?? "20,40,80,120,120").split(",")
 /** main 이 정합니다. 없으면(테스트) 캐시 없이 동작 */
 let CACHE_DIR: string | null = null;
 
+/** 하루 한도에 걸린 모델. 이 실행 동안 다시 부르지 않습니다 */
+const exhausted = new Set<string>();
+
+export class QuotaExhausted extends Error {}
+
 let last = 0;
 let callNo = 0;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -64,6 +69,7 @@ async function gemini(prompt: string, label: string): Promise<{ data: unknown; m
   }
 
   for (const model of MODELS) {
+    if (exhausted.has(model)) continue;
     for (let attempt = 1; attempt <= TRIES_PER_MODEL; attempt++) {
       const wait = last + MIN_INTERVAL_MS - Date.now();
       if (wait > 0) await sleep(wait);
@@ -101,7 +107,8 @@ async function gemini(prompt: string, label: string): Promise<{ data: unknown; m
       if (res.status === 429) {
         const body = await res.text();
         if (/PerDay|per day|daily/i.test(body)) {
-          console.log(`${sec}초 · 하루 한도 초과 → 이 모델은 건너뜀`);
+          console.log(`${sec}초 · 하루 한도 초과 → 이 모델은 오늘 더 쓰지 않음`);
+          exhausted.add(model);
           break;
         }
         const hint = body.match(/"retryDelay":\s*"(\d+)s"/);
@@ -141,6 +148,9 @@ async function gemini(prompt: string, label: string): Promise<{ data: unknown; m
       }
     }
     if (MODELS.indexOf(model) < MODELS.length - 1) console.log(`  · ${model} 포기 → 다음 판정 모델로`);
+  }
+  if (MODELS.every((m) => exhausted.has(m))) {
+    throw new QuotaExhausted("모든 판정 모델이 하루 한도에 걸렸습니다");
   }
   throw new Error(`판정 #${no} 실패 — 모든 판정 모델이 응답하지 않음. 잠시 뒤 같은 명령을 다시 실행하면 성공한 호출은 건너뜁니다`);
 }
@@ -325,6 +335,13 @@ async function main() {
       writeFileSync(target, JSON.stringify(await judgeRun(r), null, 2));
       console.log(`[${i}/${files.length}] ${f} 완료`);
     } catch (e) {
+      if (e instanceof QuotaExhausted) {
+        // 남은 케이스도 전부 같은 이유로 실패하므로 여기서 멈춥니다(10-01: 24케이스를 다 돌며 같은 실패 반복)
+        const done = files.filter((x) => existsSync(join(jdir, x))).length;
+        console.log(`\n멈춤: ${e.message}. 판정 완료 ${done}/${files.length} 케이스, 성공한 호출은 저장돼 있습니다.`);
+        console.log("무료 등급은 보통 한국 시간 오후 4~5시에 초기화됩니다. 결제를 연결했다면 바로 다시 실행하세요.");
+        process.exit(2);
+      }
       console.log(`[${i}/${files.length}] ${f} 실패: ${(e as Error).message}`);
     }
   }
