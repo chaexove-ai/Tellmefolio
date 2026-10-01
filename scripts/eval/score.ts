@@ -210,6 +210,10 @@ export interface Summary {
 
 function loadRun(name: string) {
   const dir = join(EVAL, "runs", name);
+  if (!existsSync(join(dir, "manifest.json"))) {
+    console.error(`실행 결과가 없습니다: eval/runs/${name}\n먼저 npm run eval -- --name=${name} ... 로 실행하세요.`);
+    process.exit(1);
+  }
   const manifest = JSON.parse(readFileSync(join(dir, "manifest.json"), "utf8"));
   const files = readdirSync(dir).filter((f) => /\.r\d+\.json$/.test(f)).sort();
   const runs: CaseRun[] = [];

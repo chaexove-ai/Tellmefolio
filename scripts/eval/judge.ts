@@ -186,6 +186,10 @@ async function main() {
   const name = arg("run");
   if (!name) throw new Error("--run=<이름> 이 필요합니다");
   const dir = join(EVAL, "runs", name);
+  if (!existsSync(join(dir, "manifest.json"))) {
+    throw new Error(`실행 결과가 없습니다: eval/runs/${name} — 먼저 npm run eval -- --name=${name} ... 로 실행하세요`);
+  }
+  if (!KEY) throw new Error("GEMINI_API_KEY 가 없습니다(.env.eval.local)");
   const jdir = join(dir, "judge");
   mkdirSync(jdir, { recursive: true });
   const files = readdirSync(dir).filter((f) => /\.r\d+\.json$/.test(f));
