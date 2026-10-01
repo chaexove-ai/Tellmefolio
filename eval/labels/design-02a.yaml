@@ -1,0 +1,116 @@
+# 정답 라벨 — 사람이 검수하는 원본입니다. 검수용 표는 npm run eval:review 로 만듭니다.
+# level: full(직접 보여줌) / partial(관련 있지만 약함) / none(없음). profile 요건은 null.
+# trap: 일부러 넣은 함정. T1 수치 · T2 도구 · T3 도메인 · T4 유사어 · T5 역할 과장 · T6 이력서 요건
+case: design-02a
+portfolio: pf-design-02
+job: jd-design-02a
+target_job: UX/UI 디자이너 (학습 경험)
+family: design
+job_family: design
+difficulty: sufficient
+reviewed: false
+reviewer: null
+lead: problem
+vocabulary: [온보딩, 첫 사용 경험, 사용자 인터뷰, 사용성 테스트, 과제 성공률, 리텐션, 학습 경험, 관리자 웹, 핸드오프, 반응형]
+must_not_appear: [MAU, 50만, 태블릿 대응, 반응형]
+requirements:
+  - id: r1
+    text: 모바일 앱 UX/UI 디자인 실무 경험
+    label: 모바일 UX/UI
+    kind: must
+    scope: project
+    keywords: [모바일 앱, UX/UI]
+    level: full
+    evidence: [p0:context:0, p0:role:0]
+    trap: null
+    note: 학습 앱 온보딩의 설계와 UI 디자인을 맡았다.
+  - id: r2
+    text: 사용자 인터뷰 등 정성 리서치를 직접 진행하고 설계에 반영한 경험
+    label: 정성 리서치
+    kind: must
+    scope: project
+    keywords: [사용자 인터뷰, 정성 리서치]
+    level: full
+    evidence: [p0:problem:1, p0:execution:0, p1:execution:0]
+    trap: null
+    note: 이탈자 8명 인터뷰 결과로 레벨 테스트를 줄였고, 강사 5명의 업무를 관찰했다.
+  - id: r3
+    text: 사용성 테스트를 설계하고 과제 성공률 등 정량 결과로 시안을 비교해 본 경험
+    label: 정량 사용성 테스트
+    kind: must
+    scope: project
+    keywords: [사용성 테스트, 과제 성공률, 정량]
+    level: full
+    evidence: [p0:execution:2, p0:execution:3]
+    trap: null
+    note: Maze 로 24명 대상 과제 성공률·소요 시간을 기존안과 비교했다(61%→88%).
+  - id: r4
+    text: 온보딩 등 첫 사용 경험을 개선해 본 경험
+    label: 온보딩 개선
+    kind: must
+    scope: project
+    keywords: [온보딩, 첫 사용 경험]
+    level: full
+    evidence: [p0:execution:0, p0:execution:1, p0:outcome:0]
+    trap: null
+    note: 온보딩 개편 프로젝트 자체가 대응한다.
+  - id: r5
+    text: Figma 기반 설계와 개발 핸드오프 경험
+    label: Figma 핸드오프
+    kind: must
+    scope: project
+    keywords: [Figma, 핸드오프]
+    level: full
+    evidence: [p1:execution:3]
+    trap: null
+    note: Figma Dev Mode 로 간격·상태값을 넘기고 주 2회 검수했다.
+  - id: r6
+    text: 지표로 디자인 개선 효과를 확인해 본 경험
+    label: 지표 검증
+    kind: must
+    scope: project
+    keywords: [지표, 개선 효과]
+    level: full
+    evidence: [p0:outcome:0, p0:outcome:1, p1:outcome:0]
+    trap: null
+    note: 첫 레슨 완료 52%→71%, 출결 누락 140건→20건 이하.
+  - id: r7
+    text: 교육·학습 서비스 디자인 경험
+    label: 교육 도메인
+    kind: nice
+    scope: project
+    keywords: [교육, 학습 서비스]
+    level: full
+    evidence: [p0:context:0, p1:context:0]
+    trap: null
+    note: 영어 회화 학습 앱과 화상 수업 관리 웹.
+  - id: r8
+    text: 관리자·운영자용 웹 대시보드 설계 경험
+    label: 관리자 웹
+    kind: nice
+    scope: project
+    keywords: [관리자, 웹 대시보드]
+    level: full
+    evidence: [p1:role:0, p1:execution:1]
+    trap: null
+    note: 강사용 수업 관리 대시보드를 데스크톱 웹으로 설계했다.
+  - id: r9
+    text: MAU 50만 이상 규모 서비스의 디자인 경험
+    label: 대규모 서비스
+    kind: nice
+    scope: project
+    keywords: [MAU, 50만, 규모]
+    level: none
+    evidence: []
+    trap: T1
+    note: 원문에 서비스 사용자 규모가 없다. 강사 120명·참가자 24명·인터뷰 8명 같은 숫자가 가까이 있어 규모를 지어내기 쉽다.
+  - id: r10
+    text: 모바일·태블릿·데스크톱을 아우르는 반응형 설계 경험
+    label: 반응형 설계
+    kind: nice
+    scope: project
+    keywords: [반응형, 태블릿, 멀티 디바이스]
+    level: none
+    evidence: []
+    trap: null
+    note: 회고에 태블릿 접속을 배포 후에 알았다고 적혀 있어 오히려 반대 근거다. 의도한 함정은 아니지만 "태블릿" 단어 때문에 근거로 잡힐 수 있다.

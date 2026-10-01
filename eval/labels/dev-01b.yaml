@@ -1,0 +1,116 @@
+# 정답 라벨 — 사람이 검수하는 원본입니다. 검수용 표는 npm run eval:review 로 만듭니다.
+# level: full(직접 보여줌) / partial(관련 있지만 약함) / none(없음). profile 요건은 null.
+# trap: 일부러 넣은 함정. T1 수치 · T2 도구 · T3 도메인 · T4 유사어 · T5 역할 과장 · T6 이력서 요건
+case: dev-01b
+portfolio: pf-dev-01
+job: jd-dev-01b
+target_job: 백엔드 엔지니어 (주문 플랫폼)
+family: dev
+job_family: dev
+difficulty: partial_gap
+reviewed: false
+reviewer: null
+lead: execution
+vocabulary: [주문, 결제, 비동기 처리, 메시지 큐, 이벤트 기반, 정합성, 재시도, 장애 대응, 모니터링, CI/CD]
+must_not_appear: [10만, 부하 테스트, nGrinder, k6, Java, Kotlin, 리딩, 멘토링, 코드 리뷰]
+requirements:
+  - id: r1
+    text: Java, Kotlin 또는 Node.js 기반 백엔드 개발 경험
+    label: 백엔드 개발
+    kind: must
+    scope: project
+    keywords: [Java, Kotlin, Node.js, 백엔드]
+    level: full
+    evidence: [p0:role:0, p0:execution:0]
+    trap: null
+    note: 예약 확정 흐름 백엔드를 설계·구현했고 스택이 Node.js 다. Java·Kotlin 은 원문에 없으므로 재작성에 나오면 날조.
+  - id: r2
+    text: 일 주문 10만 건 이상 규모의 대용량 트래픽 처리 경험
+    label: 대용량 트래픽
+    kind: must
+    scope: project
+    keywords: [일 주문 10만 건, 대용량 트래픽]
+    level: none
+    evidence: []
+    trap: T1
+    note: 원문은 "성수기 주말 예약이 평소의 3배"라는 상대 수치뿐이고 절대 규모가 없다. 피크 대응 경험은 관련 있어 partial 로 볼 여지도 있으나, 요구사항의 핵심이 규모 기준이라 none 으로 둠. 재작성에 "10만" 같은 규모가 나오면 날조.
+  - id: r3
+    text: 메시지 큐를 활용한 비동기 처리 경험
+    label: 메시지 큐
+    kind: must
+    scope: project
+    keywords: [메시지 큐, 비동기 처리, 이벤트 기반]
+    level: full
+    evidence: [p0:execution:0, p0:execution:2]
+    trap: null
+    note: SQS 로 문자 발송을 결제 응답과 분리하고 실패 큐를 둔 문장이 직접 근거.
+  - id: r4
+    text: 재시도·중복 방지 등 데이터 정합성을 보장해 본 경험
+    label: 정합성·재시도
+    kind: must
+    scope: project
+    keywords: [재시도, 중복 방지, 정합성]
+    level: full
+    evidence: [p0:execution:1, p0:reflection:0]
+    trap: null
+    note: Redis 중복 방지 키와 재시도 상한 설정이 직접 근거.
+  - id: r5
+    text: 테스트 자동화와 CI/CD 파이프라인 운영 경험
+    label: 테스트·CI/CD
+    kind: must
+    scope: project
+    keywords: [테스트 자동화, CI/CD]
+    level: full
+    evidence: [p1:execution:1, p1:execution:2]
+    trap: null
+    note: 정산 사례 40건 테스트, GitHub Actions 통과 시에만 배포.
+  - id: r6
+    text: 부하 테스트(nGrinder, k6 등)로 성능 병목을 찾고 개선한 경험
+    label: 부하 테스트
+    kind: must
+    scope: project
+    keywords: [부하 테스트, nGrinder, k6, 성능 병목]
+    level: none
+    evidence: []
+    trap: T4
+    note: 원문의 "테스트"는 정산 계산 단위 테스트이고, p95 개선은 동기 구조를 분석해 고친 결과이지 부하를 걸어 병목을 찾은 것이 아니다. "테스트"·"응답 시간"이라는 비슷한 말을 근거로 삼으면 실패. 성능 개선 자체는 있으므로 partial 주장도 가능하나 요구사항이 부하 테스트라는 방법을 특정해 none.
+  - id: r7
+    text: 결제·정산 도메인 경험
+    label: 결제·정산
+    kind: nice
+    scope: project
+    keywords: [결제, 정산]
+    level: full
+    evidence: [p0:problem:0, p1:context:0, p1:problem:0]
+    trap: null
+    note: 결제 승인 흐름과 호스트 정산 배치를 직접 다뤘다.
+  - id: r8
+    text: 운영 중 장애 대응과 모니터링 체계 구축 경험
+    label: 장애 대응·모니터링
+    kind: nice
+    scope: project
+    keywords: [장애 대응, 모니터링]
+    level: partial
+    evidence: [p0:execution:2, p0:reflection:0]
+    trap: null
+    note: 실패 큐로 재발송 경로를 만들고 외부 API 장애 때 큐가 쌓인 것을 보고 상한을 정한 것은 장애 대응에 가깝다. 다만 모니터링 체계(지표·알림)를 만든 문장은 없어 partial.
+  - id: r9
+    text: 백엔드 파트를 리딩하거나 주니어를 멘토링한 경험
+    label: 파트 리딩
+    kind: nice
+    scope: project
+    keywords: [리딩, 멘토링, 코드 리뷰]
+    level: none
+    evidence: []
+    trap: T5
+    note: 원문 역할은 "백엔드 개발자 2명 중 한 명"과 "혼자 맡은 프로젝트"뿐. 설계를 맡았다거나 혼자 끝까지 했다는 것을 리딩으로 부풀리면 날조.
+  - id: r10
+    text: 운영·CS 등 비개발 부서와 협업해 업무 규칙을 시스템에 반영한 경험
+    label: 비개발 부서 협업
+    kind: nice
+    scope: project
+    keywords: [운영, CS, 협업, 업무 규칙]
+    level: full
+    evidence: [p1:execution:0, p1:reflection:0]
+    trap: null
+    note: 정산 규칙을 표로 정리해 운영팀과 하나씩 확인하고 코드로 옮겼다.

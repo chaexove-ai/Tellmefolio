@@ -1,0 +1,116 @@
+# 정답 라벨 — 사람이 검수하는 원본입니다. 검수용 표는 npm run eval:review 로 만듭니다.
+# level: full(직접 보여줌) / partial(관련 있지만 약함) / none(없음). profile 요건은 null.
+# trap: 일부러 넣은 함정. T1 수치 · T2 도구 · T3 도메인 · T4 유사어 · T5 역할 과장 · T6 이력서 요건
+case: planning-03a
+portfolio: pf-planning-03
+job: jd-planning-03a
+target_job: CRM 마케터
+family: planning
+job_family: marketing
+difficulty: cross
+reviewed: false
+reviewer: null
+lead: execution
+vocabulary: [CRM, 세그먼트, 고객 여정, 메시지 시나리오, 캠페인, 리텐션, 재구매, 오픈율, 전환율, 개인화]
+must_not_appear: [Braze, 100만, 오픈율, 재구매, 뷰티, 커머스, 이메일, 알림톡]
+requirements:
+  - id: r1
+    text: CRM 마케팅 경력 2년 이상
+    label: CRM 경력 2년
+    kind: must
+    scope: profile
+    keywords: [CRM 마케팅, 2년 이상]
+    level: null
+    evidence: []
+    trap: T6
+    note: 경력 연수는 이력서로 확인할 요건. 기획 경력 5년을 CRM 경력으로 바꿔 쓰면 안 된다.
+  - id: r2
+    text: 고객 데이터를 기준으로 세그먼트를 나눠 본 경험
+    label: 세그먼트 설계
+    kind: must
+    scope: project
+    keywords: [고객 데이터, 세그먼트]
+    level: full
+    evidence: [p0:execution:0]
+    trap: null
+    note: 접종 예정일·마지막 기록일·나이 기준으로 5개 그룹을 나눴다. 구매 데이터는 아니지만 행동 기준 세그먼트 그대로다.
+  - id: r3
+    text: 고객 여정에 맞춘 메시지 시나리오를 기획해 본 경험
+    label: 메시지 시나리오
+    kind: must
+    scope: project
+    keywords: [고객 여정, 메시지 시나리오]
+    level: full
+    evidence: [p0:problem:0, p0:execution:1]
+    trap: null
+    note: 그룹별로 언제 어떤 알림을 보낼지 시나리오 표를 만들었다.
+  - id: r4
+    text: Braze 등 CRM 툴로 캠페인을 직접 세팅·운영해 본 경험
+    label: CRM 툴 운영
+    kind: must
+    scope: project
+    keywords: [Braze, CRM 툴, 캠페인 세팅]
+    level: none
+    evidence: []
+    trap: T2
+    note: 실제 발송 설정은 마케팅팀이 했다고 원문이 명시한다(p0:role:0). 툴 이름도 없다.
+  - id: r5
+    text: 캠페인 성과를 분석하고 개선해 본 경험
+    label: 캠페인 성과 분석
+    kind: must
+    scope: project
+    keywords: [캠페인 성과, 분석, 개선]
+    level: partial
+    evidence: [p0:outcome:0, p0:reflection:0]
+    trap: null
+    note: 공지성 알림 대비 2배라는 성과 비교는 있지만 마케팅팀 리포트에 의존했고 개선 반복은 없다. none 과 고민했으나 성과를 비교·인지한 문장이 있어 partial.
+  - id: r6
+    text: 재방문·재구매 등 리텐션 개선 경험
+    label: 리텐션 개선
+    kind: must
+    scope: project
+    keywords: [재방문, 재구매, 리텐션]
+    level: partial
+    evidence: [p0:context:1, p0:outcome:0]
+    trap: null
+    note: 재방문이 4명 중 1명인 문제에서 출발했지만 결과 지표는 기록 입력률이지 재방문율이 아니다. 재구매는 해당 없음.
+  - id: r7
+    text: 월 100만 건 이상 메시지 발송 규모를 운영해 본 경험
+    label: 발송 100만 건
+    kind: nice
+    scope: project
+    keywords: [월 100만 건, 발송 규모]
+    level: none
+    evidence: []
+    trap: T1
+    note: 발송량·회원 수가 원문에 없다. '4명 중 1명', '2배'를 규모 수치로 바꾸면 날조.
+  - id: r8
+    text: 메시지 카피를 쓰고 A/B 테스트로 최적화해 본 경험
+    label: 카피 A/B 테스트
+    kind: nice
+    scope: project
+    keywords: [메시지 카피, A/B 테스트]
+    level: none
+    evidence: []
+    trap: null
+    note: 카피를 직접 썼다는 문장이 없고 문구별 차이는 확인하지 못했다고 원문이 밝힌다(p0:reflection:0). 의도한 함정은 아니지만 정답은 none.
+  - id: r9
+    text: 이커머스·뷰티 도메인 경험
+    label: 이커머스·뷰티
+    kind: nice
+    scope: project
+    keywords: [이커머스, 뷰티]
+    level: none
+    evidence: []
+    trap: T3
+    note: 반려동물 건강 기록 앱이다. 커머스·뷰티 경험은 없다.
+  - id: r10
+    text: 개발·디자인 등 유관 부서와 협업해 본 경험
+    label: 유관 부서 협업
+    kind: nice
+    scope: project
+    keywords: [개발, 디자인, 유관 부서]
+    level: full
+    evidence: [p0:execution:1, p0:execution:2, p1:role:0]
+    trap: null
+    note: 마케팅팀에 시나리오 전달, 개발팀에 딥링크 요청, 디자이너와 분업.

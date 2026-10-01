@@ -1,0 +1,126 @@
+# 정답 라벨 — 사람이 검수하는 원본입니다. 검수용 표는 npm run eval:review 로 만듭니다.
+# level: full(직접 보여줌) / partial(관련 있지만 약함) / none(없음). profile 요건은 null.
+# trap: 일부러 넣은 함정. T1 수치 · T2 도구 · T3 도메인 · T4 유사어 · T5 역할 과장 · T6 이력서 요건
+case: dev-01a
+portfolio: pf-dev-01
+job: jd-dev-01a
+target_job: 백엔드 엔지니어
+family: dev
+job_family: dev
+difficulty: sufficient
+reviewed: false
+reviewer: null
+lead: execution
+vocabulary: [비동기 처리, 메시지 큐, 정합성, 멱등성, 재시도, 장애 대응, 정산, 성능 지표, CI, 응답 시간]
+must_not_appear: [Terraform, Kafka, IaC]
+requirements:
+  - id: r1
+    text: Node.js 또는 Python 기반 백엔드 개발 경험
+    label: 백엔드 개발
+    kind: must
+    scope: project
+    keywords: [Node.js, Python, 백엔드]
+    level: full
+    evidence: [p0:execution:0, p1:execution:1]
+    trap: null
+    note: 두 프로젝트 모두 백엔드 구현이고 스택에 Node.js·Python 이 있다.
+  - id: r2
+    text: 백엔드 개발 경력 3년 이상
+    label: 경력 3년
+    kind: must
+    scope: profile
+    keywords: [3년 이상]
+    level: null
+    evidence: []
+    trap: T6
+    note: 경력 연수는 이력서로 확인할 요건. 프로젝트 근거를 달면 안 된다.
+  - id: r3
+    text: PostgreSQL 등 관계형 데이터베이스 설계와 쿼리 튜닝 경험
+    label: DB 설계·튜닝
+    kind: must
+    scope: project
+    keywords: [PostgreSQL, 데이터베이스 설계, 쿼리 튜닝]
+    level: none
+    evidence: []
+    trap: null
+    note: 스택에 PostgreSQL 은 있지만 설계·튜닝을 보여 주는 문장이 없다. 스택 목록만으로는 근거가 아니다(의도한 함정은 아니지만 정답은 none).
+  - id: r4
+    text: 메시지 큐(SQS, Kafka 등)를 활용한 비동기 처리 경험
+    label: 메시지 큐
+    kind: must
+    scope: project
+    keywords: [메시지 큐, SQS, 비동기]
+    level: full
+    evidence: [p0:execution:0, p0:execution:2]
+    trap: null
+    note: SQS 로 문자 발송을 분리하고 실패 큐를 둔 문장이 직접 근거. Kafka 는 쓴 적 없음.
+  - id: r5
+    text: 중복 처리·재시도 등 분산 환경의 정합성 문제를 다뤄 본 경험
+    label: 정합성·재시도
+    kind: must
+    scope: project
+    keywords: [중복 처리, 재시도, 정합성]
+    level: full
+    evidence: [p0:execution:1, p0:reflection:0]
+    trap: null
+    note: Redis 중복 방지 키, 재시도 상한 설정이 직접 근거.
+  - id: r6
+    text: 테스트 코드 작성과 CI 기반 배포 경험
+    label: 테스트·CI
+    kind: must
+    scope: project
+    keywords: [테스트 코드, CI, 배포]
+    level: full
+    evidence: [p1:execution:1, p1:execution:2]
+    trap: null
+    note: 사례 40건 테스트, GitHub Actions 통과 시에만 배포.
+  - id: r7
+    text: 결제·정산 도메인 경험
+    label: 결제·정산
+    kind: nice
+    scope: project
+    keywords: [결제, 정산]
+    level: full
+    evidence: [p0:problem:0, p1:context:0, p1:problem:0]
+    trap: null
+    note: 결제 흐름과 호스트 정산 배치를 직접 다뤘다.
+  - id: r8
+    text: 장애 상황을 가정한 설계(재시도 상한, 실패 큐 등) 경험
+    label: 장애 대비 설계
+    kind: nice
+    scope: project
+    keywords: [재시도 상한, 실패 큐, 장애]
+    level: full
+    evidence: [p0:execution:2, p0:reflection:0, p0:reflection:1]
+    trap: null
+    note: 실패 큐와 재시도 상한이 그대로 있다.
+  - id: r9
+    text: 비개발 부서와 규칙을 정리하고 합의해 본 경험
+    label: 운영팀 협업
+    kind: nice
+    scope: project
+    keywords: [운영팀, 규칙 합의]
+    level: full
+    evidence: [p1:execution:0, p1:reflection:0]
+    trap: null
+    note: 정산 규칙을 표로 정리해 운영팀과 확인.
+  - id: r10
+    text: 응답 시간 등 성능 지표를 측정하고 개선한 경험
+    label: 성능 개선
+    kind: nice
+    scope: project
+    keywords: [응답 시간, 성능 지표]
+    level: full
+    evidence: [p0:outcome:0]
+    trap: null
+    note: p95 4.2초 → 0.8초.
+  - id: r11
+    text: Terraform 등 IaC 도구 사용 경험
+    label: IaC
+    kind: nice
+    scope: project
+    keywords: [Terraform, IaC]
+    level: none
+    evidence: []
+    trap: T2
+    note: 원문 어디에도 인프라 코드 관리가 없다. 재작성에 Terraform 이 나오면 날조.

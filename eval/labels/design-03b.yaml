@@ -1,0 +1,126 @@
+# 정답 라벨 — 사람이 검수하는 원본입니다. 검수용 표는 npm run eval:review 로 만듭니다.
+# level: full(직접 보여줌) / partial(관련 있지만 약함) / none(없음). profile 요건은 null.
+# trap: 일부러 넣은 함정. T1 수치 · T2 도구 · T3 도메인 · T4 유사어 · T5 역할 과장 · T6 이력서 요건
+case: design-03b
+portfolio: pf-design-03
+job: jd-design-03b
+target_job: 브랜드 마케터
+family: design
+job_family: marketing
+difficulty: cross
+reviewed: false
+reviewer: null
+lead: context
+vocabulary: [브랜드 아이덴티티, 톤앤매너, 브랜드 경험, 캠페인, 키비주얼, SNS 채널, 콘텐츠 성과, 퍼포먼스 광고, 팝업스토어, 고객 조사]
+must_not_appear: [Meta, ROAS, 퍼포먼스 광고, 50억, 매출액, 뷰티, 화장품, 스킨케어, 팔로워, 도달률, 참여율]
+requirements:
+  - id: r1
+    text: 브랜드 아이덴티티를 정리하고 여러 접점에 일관되게 적용해 본 경험
+    label: 브랜드 일관성
+    kind: must
+    scope: project
+    keywords: [브랜드 아이덴티티, 일관성, 접점]
+    level: full
+    evidence: [p0:execution:0, p0:execution:1, p0:outcome:0]
+    trap: null
+    note: 로고 2종 정리, 40쪽 브랜드 가이드, 32개 중 29개 매장 적용.
+  - id: r2
+    text: 캠페인을 기획하고 실행까지 맡아 본 경험
+    label: 캠페인 기획·실행
+    kind: must
+    scope: project
+    keywords: [캠페인, 기획, 실행]
+    level: partial
+    evidence: [p2:context:0, p2:execution:0]
+    trap: null
+    note: 시즌 프로모션의 키비주얼·POP 를 만들었지만 기획과 일정은 마케팅팀이 정했다(p2:role:0). 실행 일부만 맡았으므로 partial. 기획까지 했다고 쓰면 과장.
+  - id: r3
+    text: SNS 채널을 직접 운영하고 콘텐츠 성과를 분석해 본 경험
+    label: SNS 운영·분석
+    kind: must
+    scope: project
+    keywords: [SNS, 채널 운영, 콘텐츠 성과]
+    level: none
+    evidence: []
+    trap: T4
+    note: 원문에 "인스타그램 광고와 피드"가 나오지만 마케팅팀이 쓸 이미지 12종을 만든 것뿐이다. 채널 운영·성과 분석 문장은 없다. 역할 과장(T5)으로도 볼 수 있으나 같은 단어가 유혹하는 구조라 T4 로 분류.
+  - id: r4
+    text: Meta 광고 관리자 등으로 퍼포먼스 광고를 집행하고 ROAS를 관리해 본 경험
+    label: 퍼포먼스 광고
+    kind: must
+    scope: project
+    keywords: [Meta, 퍼포먼스 광고, ROAS]
+    level: none
+    evidence: []
+    trap: T2
+    note: 광고용 이미지 제작만 있고 광고 집행·도구·ROAS 는 없다. 재작성에 Meta·ROAS 가 나오면 날조.
+  - id: r5
+    text: 고객 조사 결과를 브랜드 전략에 반영해 본 경험
+    label: 고객 조사 반영
+    kind: must
+    scope: project
+    keywords: [고객 조사, 브랜드 전략]
+    level: partial
+    evidence: [p0:role:1, p0:context:1]
+    trap: null
+    note: 고객 설문 기반 리뉴얼에 참여했지만 설문은 마케팅팀이, 방향은 대표·팀장이 정했다. none 과 고민했다. 본인이 조사를 반영해 전략을 정한 것은 아니므로 r2 처럼 "참여"로만 인정해 partial 로 두었고, 검수자가 none 으로 내려도 무리가 없다.
+  - id: r6
+    text: 대행사·제작사 등 외부 파트너와 협업해 본 경험
+    label: 외부 파트너 협업
+    kind: must
+    scope: project
+    keywords: [대행사, 제작사, 외부 파트너]
+    level: full
+    evidence: [p0:execution:3, p1:execution:0]
+    trap: null
+    note: 인쇄소 3곳 샘플 비교·선정, 촬영 대행사와 140개 메뉴 재촬영.
+  - id: r7
+    text: 뷰티·화장품 브랜드 경험
+    label: 뷰티 도메인
+    kind: nice
+    scope: project
+    keywords: [뷰티, 화장품]
+    level: none
+    evidence: []
+    trap: T3
+    note: 원문은 베이커리 카페 프랜차이즈뿐이다. "리테일·소비재 브랜드" 정도로 일반화하는 것은 괜찮지만 뷰티 경험을 주장하면 날조.
+  - id: r8
+    text: 연 매출 50억 원 이상 브랜드에서 캠페인을 운영해 본 경험
+    label: 매출 규모
+    kind: nice
+    scope: project
+    keywords: [연 매출, 50억 원]
+    level: none
+    evidence: []
+    trap: T1
+    note: 원문에 매출액이 없다. 매장 32개·2.1만 그릇·1.4배 같은 숫자가 가까이 있어 매출 규모를 추정해 쓰기 쉽다.
+  - id: r9
+    text: 오프라인 매장·팝업 등 공간에서 브랜드 경험을 만들어 본 경험
+    label: 오프라인 브랜드 경험
+    kind: nice
+    scope: project
+    keywords: [오프라인 매장, 팝업, 브랜드 경험]
+    level: full
+    evidence: [p0:role:0, p0:outcome:0, p2:problem:0, p2:execution:0]
+    trap: null
+    note: 매장 간판·사인물·포장재와 매장 POP 를 디자인했다. 팝업은 없지만 매장 공간 경험으로 full.
+  - id: r10
+    text: 디자인 도구로 간단한 콘텐츠를 직접 만들 수 있는 분
+    label: 콘텐츠 제작
+    kind: nice
+    scope: project
+    keywords: [디자인 도구, 콘텐츠 제작]
+    level: full
+    evidence: [p2:execution:1]
+    trap: null
+    note: 정사각형·세로형 이미지 12종을 직접 만들었다.
+  - id: r11
+    text: 마케팅 예산을 직접 편성하고 집행해 본 경험
+    label: 예산 집행
+    kind: nice
+    scope: project
+    keywords: [마케팅 예산, 편성, 집행]
+    level: none
+    evidence: []
+    trap: null
+    note: 예산 관련 문장이 없다. 의도한 함정은 아닌 진짜 빈 요구사항.

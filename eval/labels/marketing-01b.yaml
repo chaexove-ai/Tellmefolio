@@ -1,0 +1,116 @@
+# 정답 라벨 — 사람이 검수하는 원본입니다. 검수용 표는 npm run eval:review 로 만듭니다.
+# level: full(직접 보여줌) / partial(관련 있지만 약함) / none(없음). profile 요건은 null.
+# trap: 일부러 넣은 함정. T1 수치 · T2 도구 · T3 도메인 · T4 유사어 · T5 역할 과장 · T6 이력서 요건
+case: marketing-01b
+portfolio: pf-marketing-01
+job: jd-marketing-01b
+target_job: 그로스 마케터
+family: marketing
+job_family: marketing
+difficulty: partial_gap
+reviewed: false
+reviewer: null
+lead: outcome
+vocabulary: [그로스, 퍼널, 전환율, 리텐션, 실험, A/B 테스트, 이벤트 설계, 데이터 정합성, 유료 채널, 핀테크]
+must_not_appear: [Amplitude, Braze, A/B 테스트, AB 테스트, 유의성, 핀테크, 금융, 앱 설치]
+requirements:
+  - id: r1
+    text: 그로스 또는 퍼포먼스 마케팅 경력 2년 이상
+    label: 경력 2년
+    kind: must
+    scope: profile
+    keywords: [경력 2년 이상]
+    level: null
+    evidence: []
+    trap: null
+    note: 경력 연수는 이력서 요건. 이 케이스의 의도 함정은 아니라서 trap 은 비워 두었다(T6 은 01a 에 있음).
+  - id: r2
+    text: 디지털 광고 채널을 운영하고 성과 지표로 최적화한 경험
+    label: 유료 채널 최적화
+    kind: must
+    scope: project
+    keywords: [디지털 광고, 유료 채널, 최적화]
+    level: full
+    evidence: [p0:role:0, p0:execution:1, p0:outcome:0]
+    trap: null
+    note: 메타 광고 운영, 주 단위 ROAS·CPA 기준 예산 이동, ROAS 180%→260%.
+  - id: r3
+    text: 핀테크·금융 서비스 마케팅 경험
+    label: 핀테크 도메인
+    kind: must
+    scope: project
+    keywords: [핀테크, 금융 서비스]
+    level: none
+    evidence: []
+    trap: T3
+    note: 원문은 리빙 소품 커머스다. p1 의 "간편결제" 추적 작업은 결제 수단 이벤트 문제일 뿐 금융 서비스 마케팅이 아니다. "금융·결제 도메인 이해" 같은 문장이 나오면 날조.
+  - id: r4
+    text: 퍼널 단계별 전환율을 분석하고 병목을 개선한 경험
+    label: 퍼널 분석
+    kind: must
+    scope: project
+    keywords: [퍼널, 단계별 전환율, 병목]
+    level: partial
+    evidence: [p0:execution:0, p1:problem:0]
+    trap: null
+    note: 캠페인을 신규 유입·재방문·장바구니 이탈 단계로 묶었고 결제 단계 이벤트 누락을 고쳤지만, 단계별 전환율을 분석해 병목을 찾은 문장은 없다. 앱 퍼널(설치→가입→계좌 연결)도 아니다. partial 과 none 사이에서 고민했는데, 퍼널 단계 기준으로 운영을 재구성한 사실이 있어 partial 로 둔다.
+  - id: r5
+    text: Amplitude, Braze 등 제품 분석·CRM 자동화 도구 활용 경험
+    label: Amplitude·Braze
+    kind: must
+    scope: project
+    keywords: [Amplitude, Braze, 제품 분석, CRM 자동화]
+    level: none
+    evidence: []
+    trap: T2
+    note: 원문 분석 도구는 GA4·GTM·Looker Studio 뿐이고 CRM 메시지 운영도 없다. GA4 경험을 "제품 분석 도구 경험"으로 넓혀 쓰는 것까지는 사실이지만 Amplitude·Braze 이름이 나오면 날조.
+  - id: r6
+    text: A/B 테스트를 설계하고 통계적 유의성을 판단해 본 경험
+    label: A/B 테스트
+    kind: must
+    scope: project
+    keywords: [A/B 테스트, 통계적 유의성, 실험 설계]
+    level: none
+    evidence: []
+    trap: T4
+    note: 원문은 소재 두 개를 일주일씩 번갈아 집행해 클릭률을 비교한 것(p0:execution:2)이고, 본인도 기간이 나뉘어 요일 차이가 섞였을 수 있다고 인정한다(p0:reflection:1). 동시 무작위 배정도 유의성 판단도 없으므로 none. 비슷한 단어만으로 근거를 삼는지 보는 함정.
+  - id: r7
+    text: GA4 등 분석 도구로 전환 데이터의 정합성을 관리해 본 경험
+    label: 데이터 정합성
+    kind: must
+    scope: project
+    keywords: [GA4, 전환 데이터, 정합성]
+    level: full
+    evidence: [p1:context:0, p1:execution:1, p1:outcome:0]
+    trap: null
+    note: 매체·GA4 구매 수 차이 30%를 transaction_id 등으로 8% 안쪽까지 줄였다.
+  - id: r8
+    text: 개발자와 함께 이벤트 스키마를 설계·검증해 본 경험
+    label: 이벤트 설계 협업
+    kind: nice
+    scope: project
+    keywords: [개발자, 이벤트 스키마, 검증]
+    level: full
+    evidence: [p1:execution:0, p1:execution:1]
+    trap: null
+    note: 구매 이벤트 발생 시점을 개발자와 바꾸고 함께 검증, 주문 번호를 transaction_id 로 넘겼다. "스키마 설계"라는 말은 다소 크지만 이벤트 파라미터를 정한 사실이 있어 full. 엄격히 보면 partial 도 가능.
+  - id: r9
+    text: 광고 소재를 빠르게 만들고 성과에 따라 반복 개선한 경험
+    label: 소재 반복 개선
+    kind: nice
+    scope: project
+    keywords: [광고 소재, 반복 개선]
+    level: full
+    evidence: [p0:execution:2]
+    trap: null
+    note: 상품별 소재 두 개를 집행해 클릭률 높은 쪽을 남겼다. r6(A/B 테스트)와 같은 문장이지만 이 요구사항은 실험 엄밀성을 요구하지 않으므로 full.
+  - id: r10
+    text: 재방문·리텐션을 높이는 캠페인을 운영해 본 경험
+    label: 리텐션 캠페인
+    kind: nice
+    scope: project
+    keywords: [재방문, 리텐션, 캠페인]
+    level: partial
+    evidence: [p0:execution:0]
+    trap: null
+    note: 재방문·장바구니 이탈 단계 광고 캠페인을 운영했지만 리텐션 지표 개선 결과나 CRM 메시지는 없다. 리타겟팅 광고 수준이라 partial.

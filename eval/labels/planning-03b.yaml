@@ -1,0 +1,116 @@
+# 정답 라벨 — 사람이 검수하는 원본입니다. 검수용 표는 npm run eval:review 로 만듭니다.
+# level: full(직접 보여줌) / partial(관련 있지만 약함) / none(없음). profile 요건은 null.
+# trap: 일부러 넣은 함정. T1 수치 · T2 도구 · T3 도메인 · T4 유사어 · T5 역할 과장 · T6 이력서 요건
+case: planning-03b
+portfolio: pf-planning-03
+job: jd-planning-03b
+target_job: UX 리서처
+family: planning
+job_family: design
+difficulty: cross
+reviewed: false
+reviewer: null
+lead: problem
+vocabulary: [UX 리서치, 사용성 테스트, 사용자 인터뷰, 인사이트, 정량 리서치, 설문, 프로토타입, 페인 포인트, 사용자 여정, 리서치 운영]
+must_not_appear: [Figma, 설문, 통계, 프로토타입, 디자인 시스템]
+requirements:
+  - id: r1
+    text: 사용자 인터뷰·사용성 테스트를 설계하고 진행해 본 경험
+    label: 인터뷰·사용성 테스트
+    kind: must
+    scope: project
+    keywords: [사용자 인터뷰, 사용성 테스트]
+    level: full
+    evidence: [p1:execution:0, p1:execution:1]
+    trap: null
+    note: 회원 6명에게 실제 입력 과제를 주고 막히는 지점을 관찰했다. 이름은 안 붙였지만 사용성 테스트다. 약식이라 partial 로 볼 수도 있어 검수 필요.
+  - id: r2
+    text: 리서치 결과를 정리해 제품 개선으로 연결해 본 경험
+    label: 인사이트→개선
+    kind: must
+    scope: project
+    keywords: [리서치 결과, 인사이트, 제품 개선]
+    level: full
+    evidence: [p1:execution:2, p1:outcome:0]
+    trap: null
+    note: 관찰 결과로 필수 항목을 3개로 줄였고 완료율이 52%→71%로 올랐다.
+  - id: r3
+    text: 설문 설계와 통계 분석 등 정량 리서치 경험
+    label: 정량 리서치
+    kind: must
+    scope: project
+    keywords: [설문, 통계 분석, 정량 리서치]
+    level: none
+    evidence: []
+    trap: T4
+    note: 원문의 "6명 중 4명", "52%→71%" 같은 숫자가 정량 리서치처럼 보이는 유혹이지만 소수 관찰 결과와 출시 후 지표일 뿐 설문·통계는 없다.
+  - id: r4
+    text: Figma로 프로토타입을 만들어 사용자 검증을 해 본 경험
+    label: Figma 프로토타입
+    kind: must
+    scope: project
+    keywords: [Figma, 프로토타입, 사용자 검증]
+    level: none
+    evidence: []
+    trap: T2
+    note: 손그림 와이어프레임을 디자이너에게 넘겼을 뿐(p1:execution:2) Figma 도, 프로토타입 검증도 없다.
+  - id: r5
+    text: 디자이너·PM·개발자와 협업해 본 경험
+    label: 제품팀 협업
+    kind: must
+    scope: project
+    keywords: [디자이너, PM, 개발자, 협업]
+    level: full
+    evidence: [p1:role:0, p1:execution:2, p0:execution:2]
+    trap: null
+    note: 디자이너에게 개선안 전달, 개발팀에 딥링크 요청. 본인이 기획자(PM 역할)였다.
+  - id: r6
+    text: 리서치 리포트가 포함된 포트폴리오 제출
+    label: 포트폴리오 제출
+    kind: must
+    scope: profile
+    keywords: [리서치 리포트, 포트폴리오 제출]
+    level: null
+    evidence: []
+    trap: T6
+    note: 제출 서류 요건. 프로젝트 근거를 달면 안 된다.
+  - id: r7
+    text: 사용 데이터와 정성 리서치를 결합해 분석해 본 경험
+    label: 데이터+정성 결합
+    kind: nice
+    scope: project
+    keywords: [사용 데이터, 정성 리서치, 결합]
+    level: partial
+    evidence: [p1:outcome:0]
+    trap: null
+    note: 관찰로 원인을 찾고 개선 효과를 완료율로 확인했지만, 분석 단계에서 두 자료를 결합한 것은 아니다. partial 과 none 사이에서 고민함.
+  - id: r8
+    text: 헬스케어 도메인 경험
+    label: 헬스케어 도메인
+    kind: nice
+    scope: project
+    keywords: [헬스케어, 건강 기록]
+    level: partial
+    evidence: [p0:context:0]
+    trap: null
+    note: 반려동물 예방접종·병원 기록 앱이라 건강 기록 구조는 닮았지만 사람 대상 헬스케어는 아니다. none 으로 볼 검수자도 있을 것.
+  - id: r9
+    text: 디자인 시스템에 대한 이해
+    label: 디자인 시스템
+    kind: nice
+    scope: project
+    keywords: [디자인 시스템]
+    level: none
+    evidence: []
+    trap: null
+    note: 원문에 디자인 시스템 관련 문장이 없다(의도한 함정은 아니지만 정답은 none).
+  - id: r10
+    text: 리서치 운영 체계(참여자 모집·리서치 저장소)를 만들어 본 경험
+    label: 리서치 운영 체계
+    kind: nice
+    scope: project
+    keywords: [참여자 모집, 리서치 저장소, 리서치 운영]
+    level: none
+    evidence: []
+    trap: null
+    note: 6명을 관찰한 일회성 리서치만 있고 운영 체계를 만든 근거는 없다.

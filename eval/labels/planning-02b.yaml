@@ -1,0 +1,106 @@
+# 정답 라벨 — 사람이 검수하는 원본입니다. 검수용 표는 npm run eval:review 로 만듭니다.
+# level: full(직접 보여줌) / partial(관련 있지만 약함) / none(없음). profile 요건은 null.
+# trap: 일부러 넣은 함정. T1 수치 · T2 도구 · T3 도메인 · T4 유사어 · T5 역할 과장 · T6 이력서 요건
+case: planning-02b
+portfolio: pf-planning-02
+job: jd-planning-02b
+target_job: 프로덕트 오너
+family: planning
+job_family: planning
+difficulty: partial_gap
+reviewed: false
+reviewer: null
+lead: problem
+vocabulary: [프로덕트 오너, 로드맵, 백로그, 우선순위, 가설 검증, 실험, 리텐션, 사용자 리서치, 스쿼드, 데이터 기반 의사결정]
+must_not_appear: [로드맵, 백로그, 우선순위, 프로덕트 오너, A/B 테스트]
+requirements:
+  - id: r1
+    text: PM 또는 PO 경력 4년 이상
+    label: 경력 4년
+    kind: must
+    scope: profile
+    keywords: [PM, PO, 4년 이상]
+    level: null
+    evidence: []
+    trap: T6
+    note: 경력 연수는 이력서로 확인할 요건.
+  - id: r2
+    text: 프로덕트 오너로서 제품 로드맵을 세우고 우선순위를 결정해 본 경험
+    label: 로드맵 오너십
+    kind: must
+    scope: project
+    keywords: [프로덕트 오너, 로드맵, 우선순위]
+    level: none
+    evidence: []
+    trap: T5
+    note: 원문 역할은 '기획 보조'(p0:role:0)와 '선임이 정한 범위 안에서'(p1:role:0)이고 결정 주체는 팀이다(p0:execution:2). 분류 기준 설계(p2:role:0)를 맡은 것도 로드맵·우선순위와는 거리가 멀다.
+  - id: r3
+    text: 정량 데이터로 가설을 세우고 A/B 테스트 등 실험으로 검증해 의사결정한 경험
+    label: 가설·실험 검증
+    kind: must
+    scope: project
+    keywords: [정량 데이터, 가설, A/B 테스트, 실험]
+    level: none
+    evidence: []
+    trap: T4
+    note: 원문의 "가정이 인터뷰로 뒤집힘", "유형별 건수 공유", "리뷰 14건→3건"이 유사어 유혹이지만 정성 인터뷰 후 결정이고 실험은 없다. 본인도 숫자로 뒷받침 못 했다고 썼다(p0:reflection:1). 정성 가설 검증으로 보면 partial 주장이 가능하나 요건이 '정량·실험'이라 none.
+  - id: r4
+    text: 사용자 인터뷰 등 리서치로 문제를 발견해 본 경험
+    label: 사용자 리서치
+    kind: must
+    scope: project
+    keywords: [사용자 인터뷰, 리서치, 문제 발견]
+    level: full
+    evidence: [p0:execution:0, p0:execution:1, p0:reflection:0]
+    trap: null
+    note: 12명 인터뷰로 처음 가정과 다른 진짜 원인(시간대)을 찾았다.
+  - id: r5
+    text: 디자이너·개발자와 협업해 기능을 명세하고 출시해 본 경험
+    label: 기능 명세·출시
+    kind: must
+    scope: project
+    keywords: [디자이너, 개발자, 기능 명세, 출시]
+    level: partial
+    evidence: [p1:execution:1, p1:execution:2]
+    trap: null
+    note: 와이어프레임 검토와 QA 는 했지만 범위는 선임이 정했고 명세서를 쓴 문장이 없다. 02a 의 같은 류 요건(명세 없음)은 full 로 뒀고 여기선 '명세'와 PO 맥락 때문에 partial.
+  - id: r6
+    text: 리텐션 등 사용자 지속 지표를 개선해 본 경험
+    label: 리텐션 개선
+    kind: must
+    scope: project
+    keywords: [리텐션, 지속 지표, 학습 지속률]
+    level: partial
+    evidence: [p0:context:0, p0:outcome:0]
+    trap: null
+    note: 알림을 끄는 회원 문제는 리텐션 맥락이지만 결과는 리뷰 불만 감소뿐이고 지속률 지표가 없다. partial 과 none 사이에서 고민했고, 문제 자체가 리텐션 문제라 partial 로 둠.
+  - id: r7
+    text: 학습·교육 앱 도메인 경험
+    label: 학습 앱 도메인
+    kind: nice
+    scope: project
+    keywords: [학습 앱, 교육]
+    level: full
+    evidence: [p0:context:0, p1:context:0]
+    trap: null
+    note: 영어 학습 앱에서 2년간 일했다.
+  - id: r8
+    text: VOC를 제품 개선으로 연결해 본 경험
+    label: VOC 연결
+    kind: nice
+    scope: project
+    keywords: [VOC, 제품 개선]
+    level: full
+    evidence: [p2:execution:0, p2:execution:1, p2:outcome:0]
+    trap: null
+    note: 문의 분류 체계로 반복 불편이 기획 회의에 1주 안에 올라오게 했다.
+  - id: r9
+    text: 여러 이해관계자에게 근거를 정리해 공유하고 합의를 이끈 경험
+    label: 근거 공유·합의
+    kind: nice
+    scope: project
+    keywords: [이해관계자, 공유, 합의]
+    level: partial
+    evidence: [p0:execution:2, p2:execution:1]
+    trap: null
+    note: 인터뷰 결과와 주간 건수를 정리해 공유한 것은 있지만 합의를 이끈 주체는 팀이다. '이끈'까지는 보여 주지 못해 partial.

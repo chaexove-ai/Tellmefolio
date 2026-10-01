@@ -1,0 +1,116 @@
+# 정답 라벨 — 사람이 검수하는 원본입니다. 검수용 표는 npm run eval:review 로 만듭니다.
+# level: full(직접 보여줌) / partial(관련 있지만 약함) / none(없음). profile 요건은 null.
+# trap: 일부러 넣은 함정. T1 수치 · T2 도구 · T3 도메인 · T4 유사어 · T5 역할 과장 · T6 이력서 요건
+case: marketing-02b
+portfolio: pf-marketing-02
+job: jd-marketing-02b
+target_job: 브랜드·CRM 마케터
+family: marketing
+job_family: marketing
+difficulty: partial_gap
+reviewed: false
+reviewer: null
+lead: context
+vocabulary: [브랜드 캠페인, CRM, 리브랜딩, UGC, 세그먼트, 브랜드 콘텐츠, 회원 등급, 구매 주기, 콘텐츠 캘린더, 성과 분석]
+must_not_appear: [뷰티, 화장품, 스킨케어, 코스메틱, 총괄, 50만]
+requirements:
+  - id: r1
+    text: 마케팅 실무 경력 4년 이상
+    label: 경력 4년
+    kind: must
+    scope: profile
+    keywords: [경력 4년 이상]
+    level: null
+    evidence: []
+    trap: null
+    note: 경력 연수는 이력서 요건. 의도 함정은 아니라 trap 은 비움(T6 은 02a 에 있음).
+  - id: r2
+    text: 뷰티·화장품 업계 마케팅 경험
+    label: 뷰티 업계
+    kind: must
+    scope: project
+    keywords: [뷰티, 화장품]
+    level: none
+    evidence: []
+    trap: T3
+    note: 원문은 반려동물 사료 정기배송이다. 소비재 D2C 라는 공통점은 있지만 뷰티 도메인 경험은 없다. 자동 검사 외에 "뷰티 고객 이해" 같은 한글 주장도 날조로 본다.
+  - id: r3
+    text: 브랜드 통합 캠페인을 처음부터 끝까지 총괄해 본 경험
+    label: 캠페인 총괄
+    kind: must
+    scope: project
+    keywords: [통합 캠페인, 총괄]
+    level: none
+    evidence: []
+    trap: T5
+    note: 리뉴얼 캠페인은 마케팅 팀장이 이끌었고(p1:context:1) 본인은 인스타그램 콘텐츠 파트 담당(p1:role:0). 캠페인 참여는 사실이지만 총괄·리딩은 없다. "캠페인을 이끌었다"로 쓰면 역할 과장.
+  - id: r4
+    text: 회원 50만 명 이상 규모의 CRM을 운영해 본 경험
+    label: 대규모 CRM
+    kind: must
+    scope: project
+    keywords: [회원 50만 명, CRM 규모]
+    level: none
+    evidence: []
+    trap: T1
+    note: 원문 회원 수는 약 4.3만 명, 발송 대상은 그중 휴면 회원이다. CRM 운영 자체는 있지만 이 요구사항의 핵심은 규모라 none. 4.3만을 쓰는 것은 괜찮고 "수십만 명" 등은 날조.
+  - id: r5
+    text: 고객 세그먼트별 메시지를 기획하고 운영해 본 경험
+    label: 세그먼트 메시지
+    kind: must
+    scope: project
+    keywords: [세그먼트, 메시지 기획]
+    level: full
+    evidence: [p0:execution:0, p0:execution:1]
+    trap: null
+    note: 휴면 회원을 네 그룹으로 나눠 메시지를 달리했다. 공고의 "회원 등급" 기준은 아니지만 세그먼트 기획 자체는 직접 근거.
+  - id: r6
+    text: 인스타그램 등 SNS 브랜드 콘텐츠를 운영해 본 경험
+    label: SNS 브랜드 콘텐츠
+    kind: must
+    scope: project
+    keywords: [인스타그램, 브랜드 콘텐츠]
+    level: full
+    evidence: [p1:role:0, p1:execution:0, p1:outcome:0]
+    trap: null
+    note: 리뉴얼 기간 인스타그램 콘텐츠 기획·업로드, 팔로워 8천→2.1만 명.
+  - id: r7
+    text: 캠페인 성과를 측정하고 분석해 본 경험
+    label: 성과 측정
+    kind: must
+    scope: project
+    keywords: [성과 측정, 분석]
+    level: full
+    evidence: [p0:execution:2, p0:outcome:0, p1:outcome:1]
+    trap: null
+    note: CRM 은 대조군 비교, 콘텐츠는 저장 수 3배. 단 콘텐츠의 매출 기여는 측정하지 못했다고 본인이 밝힘(p1:reflection:0).
+  - id: r8
+    text: 리브랜딩·브랜드 리뉴얼 프로젝트 참여 경험
+    label: 리브랜딩 참여
+    kind: nice
+    scope: project
+    keywords: [리브랜딩, 브랜드 리뉴얼, 참여]
+    level: full
+    evidence: [p1:context:0, p1:role:0]
+    trap: null
+    note: 공고가 "참여"만 요구하므로 콘텐츠 파트 담당으로 충분히 full. r3(총괄)과 대비되는 쌍.
+  - id: r9
+    text: 고객 리뷰·UGC를 활용한 콘텐츠 운영 경험
+    label: UGC 활용
+    kind: nice
+    scope: project
+    keywords: [리뷰, UGC]
+    level: full
+    evidence: [p1:execution:2]
+    trap: null
+    note: 고객 후기 사진을 동의를 받아 재게시하는 코너를 운영했다.
+  - id: r10
+    text: 콘텐츠 캘린더 등으로 발행 일정을 관리해 본 경험
+    label: 콘텐츠 캘린더
+    kind: nice
+    scope: project
+    keywords: [콘텐츠 캘린더, 발행 일정]
+    level: full
+    evidence: [p1:execution:1]
+    trap: null
+    note: 주 3회 일정과 Notion 콘텐츠 캘린더.

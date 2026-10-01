@@ -1,0 +1,116 @@
+# 정답 라벨 — 사람이 검수하는 원본입니다. 검수용 표는 npm run eval:review 로 만듭니다.
+# level: full(직접 보여줌) / partial(관련 있지만 약함) / none(없음). profile 요건은 null.
+# trap: 일부러 넣은 함정. T1 수치 · T2 도구 · T3 도메인 · T4 유사어 · T5 역할 과장 · T6 이력서 요건
+case: marketing-02a
+portfolio: pf-marketing-02
+job: jd-marketing-02a
+target_job: CRM 마케터
+family: marketing
+job_family: marketing
+difficulty: sufficient
+reviewed: false
+reviewer: null
+lead: outcome
+vocabulary: [CRM, 세그먼트, 리텐션, 재구매율, 대조군, 알림톡, 수신 거부, 구독, 메시지 시나리오, 피로도]
+must_not_appear: [Braze, 앱 푸시]
+requirements:
+  - id: r1
+    text: CRM 마케팅 실무 경력 2년 이상
+    label: 경력 2년
+    kind: must
+    scope: profile
+    keywords: [CRM, 경력 2년 이상]
+    level: null
+    evidence: []
+    trap: T6
+    note: 경력 연수는 이력서 요건. 프로젝트 근거를 달면 안 된다.
+  - id: r2
+    text: 고객을 세그먼트로 나누고 그룹별 메시지를 기획해 본 경험
+    label: 세그먼트 메시지
+    kind: must
+    scope: project
+    keywords: [세그먼트, 그룹별 메시지]
+    level: full
+    evidence: [p0:execution:0, p0:execution:1]
+    trap: null
+    note: 마지막 주문 시점·반려동물 나이로 네 그룹을 나누고 메시지를 달리했다.
+  - id: r3
+    text: 알림톡·문자 등 CRM 채널을 직접 운영해 본 경험
+    label: CRM 채널 운영
+    kind: must
+    scope: project
+    keywords: [알림톡, 문자, CRM 채널]
+    level: full
+    evidence: [p0:role:0, p0:problem:0]
+    trap: null
+    note: 메시지 기획·발송을 혼자 맡았다. 채널명은 문장상 "문자"이고 알림톡은 스택에만 있으나, 직접 발송 운영 문장이 있어 full. 앱 푸시 경험은 없다.
+  - id: r4
+    text: 대조군 등으로 캠페인의 실제 효과를 측정해 본 경험
+    label: 대조군 효과 측정
+    kind: must
+    scope: project
+    keywords: [대조군, 효과 측정]
+    level: full
+    evidence: [p0:execution:2, p0:outcome:0]
+    trap: null
+    note: 발송 대상 10%를 대조군으로 남기고 재구매율 27% vs 18% 로 비교.
+  - id: r5
+    text: 재구매율·리텐션 지표를 개선한 경험
+    label: 재구매율 개선
+    kind: must
+    scope: project
+    keywords: [재구매율, 리텐션]
+    level: full
+    evidence: [p0:outcome:0]
+    trap: null
+    note: 90일 내 재구매율이 대조군보다 9%p 높았다. "18%에서 27%로 올랐다"는 전후 비교로 쓰면 사실 왜곡(대조군 대비 수치임).
+  - id: r6
+    text: 구독·정기배송 서비스 경험
+    label: 구독 서비스
+    kind: nice
+    scope: project
+    keywords: [구독, 정기배송]
+    level: full
+    evidence: [p0:context:0, p0:context:1]
+    trap: null
+    note: 반려동물 사료 정기배송 서비스에서 일했다.
+  - id: r7
+    text: 수신 거부율 등 고객 피로도를 관리해 본 경험
+    label: 피로도 관리
+    kind: nice
+    scope: project
+    keywords: [수신 거부율, 피로도]
+    level: full
+    evidence: [p0:problem:1, p0:outcome:1]
+    trap: null
+    note: 일괄 발송으로 늘던 수신 거부율을 절반 수준으로 줄였다.
+  - id: r8
+    text: SNS 콘텐츠를 기획·운영해 본 경험
+    label: SNS 콘텐츠
+    kind: nice
+    scope: project
+    keywords: [SNS, 콘텐츠 기획]
+    level: full
+    evidence: [p1:role:0, p1:execution:0, p1:outcome:0]
+    trap: null
+    note: 인스타그램 정보형 카드뉴스 기획·업로드, 팔로워 8천→2.1만 명.
+  - id: r9
+    text: 디자이너 등 유관 직군과 일정·소재를 맞춰 협업한 경험
+    label: 유관 직군 협업
+    kind: nice
+    scope: project
+    keywords: [디자이너, 협업, 일정]
+    level: full
+    evidence: [p1:execution:1]
+    trap: null
+    note: Notion 콘텐츠 캘린더를 만들어 디자이너와 공유했다.
+  - id: r10
+    text: Braze 등 마케팅 자동화 솔루션 사용 경험
+    label: 마케팅 자동화
+    kind: nice
+    scope: project
+    keywords: [Braze, 마케팅 자동화]
+    level: none
+    evidence: []
+    trap: T2
+    note: 원문은 카카오 알림톡·Google Sheets 로 발송·분석했고 자동화 솔루션이나 트리거 기반 자동 발송 문장이 없다. Braze 나 "자동화 시나리오"로 쓰면 날조.

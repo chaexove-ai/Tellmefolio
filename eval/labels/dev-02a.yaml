@@ -1,0 +1,116 @@
+# 정답 라벨 — 사람이 검수하는 원본입니다. 검수용 표는 npm run eval:review 로 만듭니다.
+# level: full(직접 보여줌) / partial(관련 있지만 약함) / none(없음). profile 요건은 null.
+# trap: 일부러 넣은 함정. T1 수치 · T2 도구 · T3 도메인 · T4 유사어 · T5 역할 과장 · T6 이력서 요건
+case: dev-02a
+portfolio: pf-dev-02
+job: jd-dev-02a
+target_job: 프론트엔드 엔지니어 (구독 웹)
+family: dev
+job_family: dev
+difficulty: sufficient
+reviewed: false
+reviewer: null
+lead: execution
+vocabulary: [Core Web Vitals, LCP, 서버 사이드 렌더링, 상태 관리, 단위 테스트, 공통 컴포넌트, 디자인 시스템, 웹 접근성, 전환, 결제 흐름]
+must_not_appear: [Sentry, 에러 모니터링]
+requirements:
+  - id: r1
+    text: React와 TypeScript를 사용한 웹 개발 경험
+    label: React·TypeScript
+    kind: must
+    scope: project
+    keywords: [React, TypeScript]
+    level: full
+    evidence: [p0:execution:3, p1:execution:0]
+    trap: null
+    note: 세 프로젝트 스택이 모두 React·TypeScript 이고, Next.js SSR 전환과 Zustand 스토어 설계 문장이 React 기반 구현을 직접 보여 준다.
+  - id: r2
+    text: 프론트엔드 개발 경력 2년 이상
+    label: 경력 2년
+    kind: must
+    scope: profile
+    keywords: [2년 이상]
+    level: null
+    evidence: []
+    trap: T6
+    note: 경력 연수는 이력서로 확인할 요건. persona 의 "3년 차"는 프로젝트 근거가 아니다.
+  - id: r3
+    text: Core Web Vitals 등 웹 성능 지표를 측정하고 개선한 경험
+    label: 웹 성능 개선
+    kind: must
+    scope: project
+    keywords: [Core Web Vitals, 성능 지표, 측정]
+    level: full
+    evidence: [p0:execution:0, p0:problem:1, p0:outcome:0]
+    trap: null
+    note: Lighthouse 로 개선 전 수치를 기록했고 LCP(Core Web Vitals 지표) 4.8초 → 1.9초.
+  - id: r4
+    text: Next.js 등을 이용한 서버 사이드 렌더링 경험
+    label: SSR
+    kind: must
+    scope: project
+    keywords: [Next.js, 서버 사이드 렌더링]
+    level: full
+    evidence: [p0:execution:3]
+    trap: null
+    note: 상세 페이지를 Next.js SSR 로 전환한 문장이 직접 근거.
+  - id: r5
+    text: 여러 화면에 걸친 클라이언트 상태를 설계하고 관리해 본 경험
+    label: 상태 관리
+    kind: must
+    scope: project
+    keywords: [클라이언트 상태, 상태 관리]
+    level: full
+    evidence: [p1:problem:0, p1:execution:0]
+    trap: null
+    note: 화면마다 흩어진 쿠폰·포인트 상태를 Zustand 스토어 하나로 모았다.
+  - id: r6
+    text: 단위 테스트 작성 경험
+    label: 단위 테스트
+    kind: must
+    scope: project
+    keywords: [단위 테스트]
+    level: full
+    evidence: [p1:execution:3]
+    trap: null
+    note: 금액 계산 함수에 Jest 단위 테스트 25개.
+  - id: r7
+    text: 디자이너와 협업해 공통 컴포넌트나 디자인 시스템을 만든 경험
+    label: 공통 컴포넌트
+    kind: nice
+    scope: project
+    keywords: [디자이너 협업, 공통 컴포넌트, 디자인 시스템]
+    level: full
+    evidence: [p2:role:0, p2:execution:0, p2:outcome:0]
+    trap: null
+    note: 폼 컴포넌트 12종을 직접 작성하고 Storybook 으로 디자이너와 확인했다. 방향은 리드가 정했으므로 "디자인 시스템 구축을 주도"로 쓰면 과장이지만, 공고 문구("만든 경험")에는 full.
+  - id: r8
+    text: 웹 접근성을 고려한 마크업 경험
+    label: 웹 접근성
+    kind: nice
+    scope: project
+    keywords: [웹 접근성, 마크업]
+    level: partial
+    evidence: [p2:execution:1]
+    trap: null
+    note: 입력창 라벨·오류 메시지에 aria 속성을 넣은 문장 하나뿐이고 범위가 폼에 한정된다. 공고 문구가 "고려한 경험"이라 full 로 볼 여지도 있어 검수 시 확인 필요.
+  - id: r9
+    text: 결제·가입 등 전환 흐름을 개선해 본 경험
+    label: 전환 흐름 개선
+    kind: nice
+    scope: project
+    keywords: [결제, 전환 흐름]
+    level: full
+    evidence: [p1:context:0, p1:execution:2, p1:outcome:1]
+    trap: null
+    note: 결제 4단계를 2단계로 합쳤고 결제 완료 건수가 1.3배. 전후 비교라 인과는 약하지만 전환 흐름을 개선한 경험 자체는 직접 보여 준다.
+  - id: r10
+    text: Sentry 등 프론트엔드 에러 모니터링 도구 운영 경험
+    label: 에러 모니터링
+    kind: nice
+    scope: project
+    keywords: [Sentry, 에러 모니터링]
+    level: none
+    evidence: []
+    trap: T2
+    note: Lighthouse(성능 측정)와 오류 문의 0건은 있지만 에러 모니터링 도구를 운영한 문장은 없다. 재작성에 Sentry 가 나오면 날조.

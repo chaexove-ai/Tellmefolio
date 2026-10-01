@@ -1,0 +1,126 @@
+# 정답 라벨 — 사람이 검수하는 원본입니다. 검수용 표는 npm run eval:review 로 만듭니다.
+# level: full(직접 보여줌) / partial(관련 있지만 약함) / none(없음). profile 요건은 null.
+# trap: 일부러 넣은 함정. T1 수치 · T2 도구 · T3 도메인 · T4 유사어 · T5 역할 과장 · T6 이력서 요건
+case: dev-03b
+portfolio: pf-dev-03
+job: jd-dev-03b
+target_job: 그로스 마케터
+family: dev
+job_family: marketing
+difficulty: cross
+reviewed: false
+reviewer: null
+lead: outcome
+vocabulary: [그로스, 퍼널, 전환, 리텐션, 이벤트 트래킹, CRM, 실험, 대시보드, 구독 전환, 활성화]
+must_not_appear: [Braze, A/B 테스트, 5천만, 광고비, ROAS, 퍼포먼스 광고]
+requirements:
+  - id: r1
+    text: 그로스 또는 퍼포먼스 마케팅 경력 3년 이상
+    label: 마케팅 경력 3년
+    kind: must
+    scope: profile
+    keywords: [그로스, 퍼포먼스 마케팅, 3년 이상]
+    level: null
+    evidence: []
+    trap: T6
+    note: 경력 연수는 이력서로 확인할 요건. 개발 경력 4년을 마케팅 경력으로 바꿔 쓰면 안 된다.
+  - id: r2
+    text: 퍼널 분석으로 전환 병목을 찾아 개선한 경험
+    label: 퍼널 분석
+    kind: must
+    scope: project
+    keywords: [퍼널 분석, 전환, 병목]
+    level: full
+    evidence: [p0:execution:1, p0:execution:2, p0:outcome:0]
+    trap: null
+    note: 온보딩 단계별 이탈을 뽑아 가장 많이 빠지는 단계를 찾았고, 변경 후 첫 기록 비율이 41% → 58%.
+  - id: r3
+    text: GA4 등 이벤트 트래킹을 설계해 본 경험
+    label: 이벤트 트래킹
+    kind: must
+    scope: project
+    keywords: [GA4, 이벤트 트래킹]
+    level: full
+    evidence: [p0:execution:0, p0:reflection:1]
+    trap: null
+    note: GA4 에 단계별 이벤트를 직접 심었고 이벤트 이름 규칙을 다시 정비했다. 처음에 규칙 없이 시작했다는 점에서 "설계"로는 partial 주장도 가능하나, 단계별 이벤트 구성과 재정비를 본인이 했으므로 full.
+  - id: r4
+    text: SQL로 필요한 데이터를 직접 추출할 수 있는 분
+    label: SQL
+    kind: must
+    scope: project
+    keywords: [SQL, 데이터 추출]
+    level: full
+    evidence: [p0:execution:1]
+    trap: null
+    note: 가입 데이터와 묶어 단계별 이탈을 SQL 로 뽑았다.
+  - id: r5
+    text: 월 광고비 5천만 원 이상 규모의 퍼포먼스 광고 집행 경험
+    label: 퍼포먼스 광고
+    kind: must
+    scope: project
+    keywords: [월 광고비 5천만 원, 퍼포먼스 광고]
+    level: none
+    evidence: []
+    trap: T1
+    note: 원문에 광고 집행이 전혀 없다. 1.2만 건, 95명, 2배 같은 숫자가 가까이 있어 예산·성과 수치를 지어낼 유혹이 있다.
+  - id: r6
+    text: Braze 등 CRM 자동화 도구로 푸시·이메일 캠페인을 운영한 경험
+    label: CRM 캠페인
+    kind: must
+    scope: project
+    keywords: [Braze, CRM, 푸시, 이메일 캠페인]
+    level: none
+    evidence: []
+    trap: T2
+    note: 원문은 Firebase Cloud Messaging 으로 푸시 발송 기능을 구현하고 문구 관리 화면을 만든 개발 작업이다. 문구도 PM 이 정했고 캠페인을 기획·운영한 문장은 없다. "푸시"가 겹쳐 T4 성격도 있음. Braze 가 나오면 날조.
+  - id: r7
+    text: 광고 소재나 마케팅 콘텐츠를 기획·제작한 경험
+    label: 콘텐츠 제작
+    kind: must
+    scope: project
+    keywords: [광고 소재, 마케팅 콘텐츠]
+    level: none
+    evidence: []
+    trap: null
+    note: 원문에 소재·콘텐츠 제작이 없다. 의도한 함정은 아니고 직무 전환에서 자연스럽게 비는 요구사항.
+  - id: r8
+    text: A/B 테스트를 설계하고 결과를 해석한 경험
+    label: A/B 테스트
+    kind: nice
+    scope: project
+    keywords: [A/B 테스트, 실험 설계]
+    level: none
+    evidence: []
+    trap: T4
+    note: 푸시를 켠 사용자와 켜지 않은 사용자의 리텐션 비교는 사용자가 스스로 고른 집단의 관찰 비교이고, 알림 문구 3종도 무작위 배정이 아니다. 비교·여러 버전이라는 비슷한 재료를 실험으로 부풀리면 실패.
+  - id: r9
+    text: 리텐션 지표를 개선해 본 경험
+    label: 리텐션 개선
+    kind: nice
+    scope: project
+    keywords: [리텐션, 개선]
+    level: partial
+    evidence: [p1:outcome:1]
+    trap: null
+    note: 30일 리텐션을 측정했고 푸시 사용자가 2배였지만, 기능 도입으로 전체 리텐션이 올랐다는 문장은 없다(자기선택 비교). 관련성이 뚜렷해 partial 로 두었으나 none 주장도 가능. "리텐션을 2배 개선"으로 쓰면 날조.
+  - id: r10
+    text: 대시보드로 지표를 팀에 공유하고 모니터링한 경험
+    label: 지표 대시보드
+    kind: nice
+    scope: project
+    keywords: [대시보드, 지표 공유, 모니터링]
+    level: full
+    evidence: [p0:execution:1, p0:outcome:1]
+    trap: null
+    note: Metabase 대시보드를 만들었고 주간 회의에서 매주 쓰였다.
+  - id: r11
+    text: 개발팀과 협업해 트래킹이나 기능을 배포해 본 경험
+    label: 개발 협업
+    kind: nice
+    scope: project
+    keywords: [개발팀 협업, 트래킹, 배포]
+    level: full
+    evidence: [p0:execution:0, p0:role:0]
+    trap: null
+    note: 본인이 개발자로서 트래킹을 직접 심고 PM·디자이너와 함께 배포했다. 공고가 말하는 협업 방향(마케터→개발팀)과는 반대지만 트래킹 배포 경험 자체는 직접.

@@ -1,0 +1,116 @@
+# 정답 라벨 — 사람이 검수하는 원본입니다. 검수용 표는 npm run eval:review 로 만듭니다.
+# level: full(직접 보여줌) / partial(관련 있지만 약함) / none(없음). profile 요건은 null.
+# trap: 일부러 넣은 함정. T1 수치 · T2 도구 · T3 도메인 · T4 유사어 · T5 역할 과장 · T6 이력서 요건
+case: planning-02a
+portfolio: pf-planning-02
+job: jd-planning-02a
+target_job: 주니어 서비스 기획자
+family: planning
+job_family: planning
+difficulty: sufficient
+reviewed: false
+reviewer: null
+lead: execution
+vocabulary: [화면 설계, 와이어프레임, 사용자 인터뷰, 인사이트, QA, 테스트 케이스, VOC, UX 라이팅, 경쟁 분석, 습관 형성]
+must_not_appear: [독서]
+requirements:
+  - id: r1
+    text: 서비스 기획 경력 1~3년
+    label: 경력 1~3년
+    kind: must
+    scope: profile
+    keywords: [서비스 기획, 1~3년]
+    level: null
+    evidence: []
+    trap: T6
+    note: 경력 연수는 이력서로 확인할 요건. '출시 후 3년' 같은 원문 숫자를 경력 근거로 끌어오면 안 된다.
+  - id: r2
+    text: 와이어프레임 등으로 화면을 설계해 본 경험
+    label: 화면 설계
+    kind: must
+    scope: project
+    keywords: [와이어프레임, 화면 설계]
+    level: full
+    evidence: [p1:role:0, p1:execution:1]
+    trap: null
+    note: 단어장 화면 설계를 담당했고 Figma 와이어프레임을 그렸다.
+  - id: r3
+    text: 사용자 인터뷰를 진행하고 결과를 정리해 본 경험
+    label: 사용자 인터뷰
+    kind: must
+    scope: project
+    keywords: [사용자 인터뷰, 결과 정리]
+    level: full
+    evidence: [p0:execution:0, p0:execution:1, p0:execution:2]
+    trap: null
+    note: 12명 인터뷰를 직접 진행하고 주제별로 묶어 팀에 공유했다.
+  - id: r4
+    text: 디자이너·개발자와 협업해 기능을 출시해 본 경험
+    label: 협업·출시
+    kind: must
+    scope: project
+    keywords: [디자이너, 개발자, 출시]
+    level: full
+    evidence: [p1:execution:1, p1:execution:2, p1:outcome:0]
+    trap: null
+    note: 디자이너와 세 차례 검토, 출시 전 QA, 출시 후 결과까지 있다. 개발자 협업은 QA 문장으로 간접적이라 partial 로 볼 여지도 있지만 출시까지 간 기능이라 full 로 판단.
+  - id: r5
+    text: 테스트 케이스를 작성하고 QA를 진행해 본 경험
+    label: QA
+    kind: must
+    scope: project
+    keywords: [테스트 케이스, QA]
+    level: full
+    evidence: [p1:execution:2, p1:reflection:0]
+    trap: null
+    note: 테스트 케이스 86개 작성, iOS·안드로이드 QA.
+  - id: r6
+    text: VOC를 분류·정리해 개선으로 연결해 본 경험
+    label: VOC 정리
+    kind: must
+    scope: project
+    keywords: [VOC, 고객 문의, 분류]
+    level: full
+    evidence: [p2:execution:0, p2:execution:1, p2:outcome:0]
+    trap: null
+    note: 문의 9개 유형 분류표와 주간 공유로 반복 문의 전달 시간을 줄였다.
+  - id: r7
+    text: UX 라이팅이나 알림 문구를 직접 써 본 경험
+    label: UX 라이팅
+    kind: nice
+    scope: project
+    keywords: [UX 라이팅, 알림 문구]
+    level: full
+    evidence: [p0:role:0]
+    trap: null
+    note: 알림 문구 20종을 직접 썼다.
+  - id: r8
+    text: 경쟁 서비스를 구조적으로 비교·분석해 본 경험
+    label: 경쟁 분석
+    kind: nice
+    scope: project
+    keywords: [경쟁 서비스, 비교 분석]
+    level: full
+    evidence: [p1:execution:0]
+    trap: null
+    note: 경쟁 앱 5개 단어장 구조 비교표.
+  - id: r9
+    text: 학습·콘텐츠 앱 도메인 경험
+    label: 학습 앱 도메인
+    kind: nice
+    scope: project
+    keywords: [학습 앱, 콘텐츠 앱]
+    level: full
+    evidence: [p0:context:0]
+    trap: null
+    note: 영어 학습 앱. 공고의 독서 앱과는 다르지만 요건이 '학습·콘텐츠 앱'이라 full. 재작성이 '독서'를 쓰면 날조.
+  - id: r10
+    text: CS 등 운영 부서와 함께 일해 본 경험
+    label: 운영 부서 협업
+    kind: nice
+    scope: project
+    keywords: [CS, 운영 부서]
+    level: full
+    evidence: [p2:role:0]
+    trap: null
+    note: CS 담당자와 함께 문의 분류 체계를 만들었다.

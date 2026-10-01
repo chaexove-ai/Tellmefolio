@@ -1,0 +1,116 @@
+# 정답 라벨 — 사람이 검수하는 원본입니다. 검수용 표는 npm run eval:review 로 만듭니다.
+# level: full(직접 보여줌) / partial(관련 있지만 약함) / none(없음). profile 요건은 null.
+# trap: 일부러 넣은 함정. T1 수치 · T2 도구 · T3 도메인 · T4 유사어 · T5 역할 과장 · T6 이력서 요건
+case: planning-01a
+portfolio: pf-planning-01
+job: jd-planning-01a
+target_job: 서비스 기획자
+family: planning
+job_family: planning
+difficulty: sufficient
+reviewed: false
+reviewer: null
+lead: problem
+vocabulary: [서비스 정책, 예약 흐름, 취소 정책, 와이어프레임, 요구사항 정의서, 백오피스, 사용자 인터뷰, A/B 테스트, 노쇼, 운영 정책]
+must_not_appear: [환불]
+requirements:
+  - id: r1
+    text: 서비스 기획 경력 3년 이상
+    label: 경력 3년
+    kind: must
+    scope: profile
+    keywords: [서비스 기획, 3년 이상]
+    level: null
+    evidence: []
+    trap: T6
+    note: 경력 연수는 이력서로 확인할 요건. 프로젝트 근거를 달면 안 된다.
+  - id: r2
+    text: 예약·취소 등 서비스 정책을 직접 설계해 본 경험
+    label: 서비스 정책 설계
+    kind: must
+    scope: project
+    keywords: [예약, 취소, 서비스 정책]
+    level: full
+    evidence: [p0:execution:1, p1:execution:0]
+    trap: null
+    note: 취소 마감·이용권 차감 정책안을 직접 만들었고, 정산 계산식을 정책 문서로 옮겼다.
+  - id: r3
+    text: Figma 등으로 와이어프레임과 화면 흐름을 그릴 수 있는 분
+    label: 와이어프레임
+    kind: must
+    scope: project
+    keywords: [Figma, 와이어프레임, 화면 흐름]
+    level: full
+    evidence: [p0:execution:2]
+    trap: null
+    note: 대기 알림 흐름을 Figma 와이어프레임으로 그린 문장이 직접 근거. p2 스택의 Figma 는 문장 근거가 아니다.
+  - id: r4
+    text: 요구사항 정의서를 쓰고 개발·디자인과 협업하며 일정을 관리해 본 경험
+    label: 정의서·일정 관리
+    kind: must
+    scope: project
+    keywords: [요구사항 정의서, 협업, 일정]
+    level: full
+    evidence: [p1:role:0, p1:execution:1, p1:execution:2]
+    trap: null
+    note: 4인 팀에서 기획·일정 관리, Confluence 정의서 작성, Jira 로 범위 조정해 6주 일정을 지켰다.
+  - id: r5
+    text: 사용자 인터뷰 등으로 고객 의견을 듣고 기획에 반영해 본 경험
+    label: 사용자 인터뷰
+    kind: must
+    scope: project
+    keywords: [사용자 인터뷰, 고객 의견]
+    level: full
+    evidence: [p0:execution:0, p0:execution:1]
+    trap: null
+    note: 강사 6명·회원 8명 인터뷰로 취소 시점과 이유를 정리하고 바로 정책안으로 이어졌다.
+  - id: r6
+    text: 지표를 미리 정하고 A/B 테스트 등으로 개선 효과를 확인해 본 경험
+    label: 지표·A/B 테스트
+    kind: must
+    scope: project
+    keywords: [지표, A/B 테스트, 개선 효과]
+    level: full
+    evidence: [p2:execution:1, p2:outcome:0]
+    trap: null
+    note: 판단 지표를 하나로 미리 정하고 2주 A/B 테스트 후 1.3배 결과로 전체 적용했다.
+  - id: r7
+    text: 공급자(호스트·강사·파트너) 쪽 관리 화면을 기획해 본 경험
+    label: 공급자 관리 화면
+    kind: nice
+    scope: project
+    keywords: [호스트, 강사, 관리 화면]
+    level: full
+    evidence: [p1:execution:1, p1:outcome:0]
+    trap: null
+    note: 강사가 수업별 정산 내역을 보는 화면을 기획했다. 공급자용 화면 그대로다.
+  - id: r8
+    text: 정책 변경 시 CS·운영 부서와 공지·응대를 준비해 본 경험
+    label: CS 공지·응대
+    kind: nice
+    scope: project
+    keywords: [CS, 공지, 응대]
+    level: full
+    evidence: [p0:execution:3, p0:reflection:0]
+    trap: null
+    note: 정책 변경 공지 문구와 고객센터 응대 스크립트를 CS팀과 함께 준비했다.
+  - id: r9
+    text: 클래스·예약 플랫폼 도메인 경험
+    label: 클래스 예약 도메인
+    kind: nice
+    scope: project
+    keywords: [클래스, 예약 플랫폼]
+    level: full
+    evidence: [p0:context:0]
+    trap: null
+    note: 운동 클래스 예약 앱. 취미 클래스와 업종은 조금 다르지만 예약 구조가 같아 full 로 봤다.
+  - id: r10
+    text: 앱 푸시 등 알림 시나리오를 설계해 본 경험
+    label: 알림 시나리오
+    kind: nice
+    scope: project
+    keywords: [앱 푸시, 알림 시나리오]
+    level: partial
+    evidence: [p0:execution:2, p0:outcome:1]
+    trap: null
+    note: 빈자리 대기 알림 흐름 하나를 그렸을 뿐 여러 알림을 시나리오로 설계한 근거는 없어 partial. 푸시 채널이라는 언급도 없다.
