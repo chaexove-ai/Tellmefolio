@@ -25,40 +25,67 @@ import type { RunResult } from "./pipeline.ts";
 loadEnv();
 const KEY = process.env.GEMINI_API_KEY;
 export const JUDGE_MODEL = process.env.JUDGE_MODEL ?? "gemini-3.8-flash";
-const MIN_INTERVAL_MS = Number(process.env.JUDGE_INTERVAL_MS ?? 4500); // 무료 등급 분당 한도 여유
+const MIN_INTERVAL_MS = Number(process.env.JUDGE_INTERVAL_MS ?? 4000); // 무료 등급 분당 한도 여유
+
+const CALL_TIMEOUT_MS = Number(process.env.JUDGE_TIMEOUT_MS ?? 90_000);
 
 let last = 0;
-async function gemini(prompt: string): Promise<unknown> {
+let callNo = 0;
+/** 판정 호출 하나. 무엇을 기다리는지 늘 출력합니다(조용히 멈춘 것처럼 보이지 않게). */
+async function gemini(prompt: string, label: string): Promise<unknown> {
   if (!KEY) throw new Error("GEMINI_API_KEY 가 없습니다(.env.eval.local)");
-  for (let attempt = 0; attempt < 5; attempt++) {
+  const no = ++callNo;
+  for (let attempt = 1; attempt <= 4; attempt++) {
     const wait = last + MIN_INTERVAL_MS - Date.now();
     if (wait > 0) await new Promise((r) => setTimeout(r, wait));
     last = Date.now();
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${JUDGE_MODEL}:generateContent`,
-      {
+    const t = Date.now();
+    process.stdout.write(`  · 판정 #${no} ${label}${attempt > 1 ? ` (재시도 ${attempt - 1})` : ""} … `);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), CALL_TIMEOUT_MS);
+    let res: Response;
+    try {
+      res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${JUDGE_MODEL}:generateContent`, {
         method: "POST",
+        signal: controller.signal,
         headers: { "content-type": "application/json", "x-goog-api-key": KEY },
         body: JSON.stringify({
           contents: [{ role: "user", parts: [{ text: prompt }] }],
           generationConfig: { temperature: 0, responseMimeType: "application/json" },
         }),
-      }
-    );
+      });
+    } catch (e) {
+      console.log(`${((Date.now() - t) / 1000).toFixed(0)}초 시간 초과`);
+      continue;
+    } finally {
+      clearTimeout(timer);
+    }
+    const sec = ((Date.now() - t) / 1000).toFixed(1);
     if (res.status === 429 || res.status >= 500) {
-      await new Promise((r) => setTimeout(r, 15_000 * (attempt + 1)));
+      // 한도 초과면 서버가 알려 준 대기 시간을 따릅니다(없으면 20초)
+      const body = await res.text();
+      const hint = body.match(/"retryDelay":\s*"(\d+)s"/);
+      const delay = (hint ? Number(hint[1]) : 20) * 1000;
+      console.log(`${sec}초 · ${res.status} ${res.status === 429 ? "요청 한도 초과" : "서버 오류"} → ${delay / 1000}초 뒤 재시도`);
+      if (res.status === 429 && /PerDay|per day|daily/i.test(body)) throw new Error("Gemini 하루 한도 초과 — 내일 다시 하거나 JUDGE_MODEL 을 바꾸세요");
+      await new Promise((r) => setTimeout(r, delay));
       continue;
     }
-    if (!res.ok) throw new Error(`Gemini ${res.status}: ${(await res.text()).slice(0, 300)}`);
+    if (!res.ok) {
+      console.log(`${sec}초 · 오류 ${res.status}`);
+      throw new Error(`Gemini ${res.status}: ${(await res.text()).slice(0, 300)}`);
+    }
     const body = await res.json();
     const text = (body.candidates?.[0]?.content?.parts ?? []).map((p: { text?: string }) => p.text ?? "").join("");
     try {
-      return JSON.parse(text);
+      const data = JSON.parse(text);
+      console.log(`${sec}초`);
+      return data;
     } catch {
-      continue; // 한 번 더
+      console.log(`${sec}초 · JSON 해석 실패`);
     }
   }
-  throw new Error("Gemini 판정 실패(재시도 초과)");
+  throw new Error(`판정 #${no} 실패(재시도 초과)`);
 }
 
 /* ------------------------------------------------------------------ */
@@ -123,7 +150,7 @@ export interface JudgeOut {
   j3: { modelId: string; goldId: string | null }[];
 }
 
-async function judgeRun(r: RunResult): Promise<JudgeOut> {
+export async function judgeRun(r: RunResult): Promise<JudgeOut> {
   const c = loadCase(r.case);
   const textById = new Map(c.evidence.map((e) => [e.id, e.text]));
   const out: JudgeOut = { judgeModel: JUDGE_MODEL, j1: [], j2: [], j3: [] };
@@ -141,7 +168,7 @@ async function judgeRun(r: RunResult): Promise<JudgeOut> {
       `스택: ${p.stack.join(", ")}`,
       ...c.evidence.filter((e) => e.projectIndex === pi).map((e) => `${e.id}: ${e.text}`),
     ].join("\n");
-    const res = (await gemini(j1Prompt(source, items))) as { items?: Record<string, unknown>[] };
+    const res = (await gemini(j1Prompt(source, items), `${r.case} 재작성 p${pi} (${items.length}문장)`)) as { items?: Record<string, unknown>[] };
     const byKey = new Map((res.items ?? []).map((x) => [String(x.key), x]));
     for (const it of items) {
       const x = byKey.get(it.key) ?? {};
@@ -169,7 +196,7 @@ async function judgeRun(r: RunResult): Promise<JudgeOut> {
       level: m.level,
       evidence: m.evidenceIds.map((id) => textById.get(id) ?? ""),
     }));
-    const res = (await gemini(`${RUBRIC_J2}\n\n${JSON.stringify(items, null, 1)}`)) as { items?: Record<string, unknown>[] };
+    const res = (await gemini(`${RUBRIC_J2}\n\n${JSON.stringify(items, null, 1)}`, `${r.case} 매칭 근거 (${items.length}개)`)) as { items?: Record<string, unknown>[] };
     out.j2 = (res.items ?? []).map((x) => ({ requirementId: String(x.requirementId), support: String(x.support), reason: String(x.reason ?? "") }));
   }
 
@@ -177,7 +204,7 @@ async function judgeRun(r: RunResult): Promise<JudgeOut> {
   if (r.mode === "e2e" && r.analysis) {
     const A = c.label.requirements.map((q) => `${q.id}: ${q.text}`).join("\n");
     const B = r.analysis.requirements.map((q) => `${q.id}: ${q.text}`).join("\n");
-    const res = (await gemini(`${RUBRIC_J3}\n\n## A (정답)\n${A}\n\n## B (AI)\n${B}`)) as { items?: Record<string, unknown>[] };
+    const res = (await gemini(`${RUBRIC_J3}\n\n## A (정답)\n${A}\n\n## B (AI)\n${B}`, `${r.case} 요구사항 대응`)) as { items?: Record<string, unknown>[] };
     out.j3 = (res.items ?? []).map((x) => ({ modelId: String(x.modelId), goldId: x.goldId ? String(x.goldId) : null }));
   }
   return out;
@@ -201,9 +228,10 @@ async function main() {
     if (existsSync(target) && !process.argv.includes("--force")) continue;
     const r = JSON.parse(readFileSync(join(dir, f), "utf8")) as RunResult;
     if (r.error) continue;
+    console.log(`[${i}/${files.length}] ${f} 판정 시작 (모델 ${JUDGE_MODEL})`);
     try {
       writeFileSync(target, JSON.stringify(await judgeRun(r), null, 2));
-      console.log(`[${i}/${files.length}] ${f}`);
+      console.log(`[${i}/${files.length}] ${f} 완료`);
     } catch (e) {
       console.log(`[${i}/${files.length}] ${f} 실패: ${(e as Error).message}`);
     }
