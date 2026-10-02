@@ -106,14 +106,22 @@ async function gemini(prompt: string, label: string): Promise<{ data: unknown; m
       }
       if (res.status === 429) {
         const body = await res.text();
-        if (/PerDay|per day|daily/i.test(body)) {
-          console.log(`${sec}초 · 하루 한도 초과 → 이 모델은 오늘 더 쓰지 않음`);
+        // 어떤 한도인지는 quotaId 로만 판단합니다. 예전에는 본문 전체에서 "day" 를 찾았는데,
+        // 설명 문구나 링크에 섞인 단어로 분당 한도를 하루 한도로 오판할 수 있었습니다(10-02).
+        const quotaIds = [...body.matchAll(/"quotaId":\s*"([^"]+)"/g)].map((m) => m[1]);
+        const quotaValue = body.match(/"quotaValue":\s*"?(\d+)/)?.[1];
+        const why = quotaIds.length ? ` [${quotaIds.join(", ")}${quotaValue ? ` 한도 ${quotaValue}` : ""}]` : "";
+        if (quotaIds.some((q) => /PerDay/i.test(q))) {
+          console.log(`${sec}초 · 하루 한도 초과${why} → 이 모델은 오늘 더 쓰지 않음`);
+          if (quotaIds.some((q) => /FreeTier/i.test(q))) {
+            console.log("    이 키는 무료 등급으로 처리되고 있습니다. 결제를 붙인 프로젝트의 키인지 AI Studio 에서 확인하세요.");
+          }
           exhausted.add(model);
           break;
         }
         const hint = body.match(/"retryDelay":\s*"(\d+)s"/);
         const delay = (hint ? Number(hint[1]) : 30) * 1000;
-        console.log(`${sec}초 · 429 요청 한도 초과 → ${delay / 1000}초 뒤 재시도`);
+        console.log(`${sec}초 · 429 요청 한도 초과${why} → ${delay / 1000}초 뒤 재시도`);
         await sleep(delay);
         continue;
       }
