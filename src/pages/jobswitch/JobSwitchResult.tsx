@@ -34,6 +34,7 @@ import {
   type RewriteField,
 } from "../../lib/jobSwitch";
 import type { PortfolioProjectRow } from "../../lib/portfolios";
+import EvidenceCompare from "./EvidenceCompare";
 
 /**
  * 직무 전환 재구성 — 결과 화면. 설계는 docs/job-switch-design.md 4절.
@@ -45,6 +46,7 @@ import type { PortfolioProjectRow } from "../../lib/portfolios";
  *  3. 경고 — 원문에 없는 숫자·기술명, 근거 없는 문장. 지우지 않고 원문과
  *     나란히 둡니다(오탐일 수 있고 판단은 사용자 몫).
  *  4. 문장 비교 — 원본 → 재구성, 그리고 어느 요구사항 때문인지.
+ *     [10-02] 문장을 가리키면 원문 근거가 하이라이트되고 선으로 이어집니다(EvidenceCompare).
  */
 
 const LEVEL_LABEL: Record<Match["level"], string> = {
@@ -379,65 +381,20 @@ export default function JobSwitchResult() {
       </div>
 
       {/* ── 프로젝트별 비교 ───────────────────────────────────── */}
-      {projects.map((p, pi) => {
-        const original = source?.projects.find((sp) => sp.id === p.source_project_id);
-        const fields: RewriteField[] = ["role", ...orderedFields(run.lead)];
-        return (
-          <section key={p.id} className="entry">
-            <div className="flex items-baseline justify-between gap-4 mb-2">
-              <h2 className="entry-title mb-0">{p.name || `프로젝트 ${pi + 1}`}</h2>
-              <span className="text-xs text-neutral-500 inline-flex items-center gap-1.5">
-                원본 <ArrowRight size={12} strokeWidth={1.5} /> 재구성
-              </span>
-            </div>
-            {fields.map((field) => {
-              const before = String(original?.[field] ?? "").trim();
-              const after = p.sentences?.[field] ?? [];
-              if (!before && after.length === 0) return null;
-              const isLead = field === run.lead;
-              return (
-                <div
-                  key={field}
-                  className="grid grid-cols-[104px_minmax(0,1fr)_minmax(0,1.3fr)] gap-x-6 py-3 border-t border-neutral-800/60 text-sm"
-                >
-                  <span className="pt-0.5">
-                    <span className={`badge ${isLead ? "bg-brand/10 text-brand" : "bg-neutral-800/70 text-neutral-400"}`}>
-                      {FIELD_NAMES[field]}
-                    </span>
-                    {isLead && <span className="block text-[11px] text-brand mt-1 ml-1">맨 앞</span>}
-                  </span>
-                  <p className="text-xs leading-relaxed text-neutral-500 whitespace-pre-line break-keep">{before || "—"}</p>
-                  <div className="space-y-1.5">
-                    {after.length === 0 && <p className="text-neutral-600">—</p>}
-                    {after.map((st, si) => {
-                      const flagged = flagsFor(pi, field, si).length > 0;
-                      return (
-                        <p key={si} className="text-neutral-100 break-keep">
-                          {flagged && (
-                            <AlertTriangle size={13} strokeWidth={2} className="inline mr-1 -mt-0.5" style={{ color: "#8a6a3f" }} aria-label="확인 필요" />
-                          )}
-                          <span className={flagged ? "underline decoration-amber-500/70 decoration-2 underline-offset-4" : ""}>
-                            {st.text}
-                          </span>
-                          {st.requirements.map((rid) => (
-                            <span
-                              key={rid}
-                              title={reqById.get(rid)?.text}
-                              className="ml-1.5 align-middle badge bg-brand/10 text-brand whitespace-nowrap"
-                            >
-                              {reqById.get(rid)?.label || short(reqById.get(rid)?.text ?? rid)}
-                            </span>
-                          ))}
-                        </p>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-          </section>
-        );
-      })}
+      {projects.map((p, pi) => (
+        <EvidenceCompare
+          key={p.id}
+          project={p}
+          pi={pi}
+          original={source?.projects.find((sp) => sp.id === p.source_project_id)}
+          fields={["role", ...orderedFields(run.lead)]}
+          lead={run.lead}
+          evidenceById={evidenceById}
+          flagsFor={flagsFor}
+          reqLabel={(rid) => reqById.get(rid)?.label || short(reqById.get(rid)?.text ?? rid)}
+          reqTitle={(rid) => reqById.get(rid)?.text}
+        />
+      ))}
 
       {/* 저장하면 무엇이 어떻게 옮겨지는지 — 문단 대신 짧은 항목으로 */}
       <ul className="flex flex-wrap gap-x-5 gap-y-1.5 text-xs text-neutral-500">

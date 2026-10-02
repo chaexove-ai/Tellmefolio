@@ -100,6 +100,10 @@ export interface Flag {
  * 문장 단위로 자릅니다. 줄바꿈과 문장부호 뒤 공백을 경계로 봅니다.
  * 한국어 문장 끝("~했습니다.")도 마침표라 같은 규칙으로 잘립니다.
  * 소수점("3.5배")은 뒤에 공백이 없어서 잘리지 않습니다.
+ *
+ * [2026-10-02] 프런트 src/lib/splitSentences.ts 에 같은 규칙을 옮겨 적었습니다.
+ * 결과 화면이 근거 ID 의 문장 번호로 원문 문장을 하이라이트하므로, 여기를
+ * 고치면 그쪽도 같이 고치세요.
  */
 export function splitSentences(text: string): string[] {
   return (text ?? "")
