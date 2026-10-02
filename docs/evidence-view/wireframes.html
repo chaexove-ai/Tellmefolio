@@ -1,0 +1,385 @@
+<title>근거 보기 와이어프레임</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: 화면 번호 목록 → 화면마다 [와이어프레임 프레임 | 주석]. 프레임은 회색 구조만, 주석 색 하나만 쓴다 */
+:root {
+  --bg: #eeefec;
+  --paper: #fbfbf9;
+  --ink: #26282a;
+  --ink-2: #6b6e70;
+  --ink-3: #9a9d9f;
+  --line: #d6d8d5;
+  --fill: #e6e7e4;
+  --fill-2: #d2d4d0;
+  --hl: #c9ccc7;
+  --note: #2459c9;
+  --note-bg: #e5ecfb;
+  --f-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #151617; --paper: #1d1f20; --ink: #e3e4e2; --ink-2: #a2a5a6; --ink-3: #74777a;
+    --line: #34373a; --fill: #2a2c2e; --fill-2: #3a3d40; --hl: #4a4e52;
+    --note: #86a8f5; --note-bg: #1f2a44; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #151617; --paper: #1d1f20; --ink: #e3e4e2; --ink-2: #a2a5a6; --ink-3: #74777a;
+  --line: #34373a; --fill: #2a2c2e; --fill-2: #3a3d40; --hl: #4a4e52;
+  --note: #86a8f5; --note-bg: #1f2a44; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 14px; line-height: 1.55; }
+.wrap { max-width: 1320px; margin: 0 auto; padding-inline: 20px; padding-block: 32px 80px; display: grid; gap: 40px; }
+
+/* 머리 */
+header.top { display: grid; gap: 14px; max-width: 72ch; }
+.eyebrow { font-family: var(--f-mono); font-size: 12px; letter-spacing: .04em; color: var(--ink-2); }
+h1 { font-size: 26px; font-weight: 600; margin: 0; text-wrap: balance; }
+header.top p { margin: 0; color: var(--ink-2); }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 12.5px; color: var(--ink-2); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 22px; height: 12px; border-radius: 2px; display: inline-block; }
+.sw.hl { background: var(--hl); }
+.sw.dash { border: 1.5px dashed var(--ink-2); }
+nav.toc { display: flex; flex-wrap: wrap; gap: 6px; }
+nav.toc a { font-size: 13px; color: var(--ink); text-decoration: none; border: 1px solid var(--line); background: var(--paper); padding: 5px 10px; border-radius: 4px; }
+nav.toc a:hover, nav.toc a:focus-visible { border-color: var(--ink-2); outline: none; }
+nav.toc b { font-family: var(--f-mono); font-weight: 500; margin-right: 6px; color: var(--ink-2); }
+
+/* 화면 하나 */
+section.screen { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; scroll-margin-top: 16px; }
+.screen-head { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.screen-head .no { font-family: var(--f-mono); font-size: 13px; color: var(--ink-2); }
+.screen-head h2 { margin: 0; font-size: 19px; font-weight: 600; }
+.screen-head .tag { font-size: 12px; color: var(--note); border: 1px solid var(--note); border-radius: 3px; padding: 0 6px; }
+.frame-box { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); min-width: 0; }
+.notes { display: grid; gap: 10px; font-size: 13px; min-width: 0; }
+.notes ol { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px 24px; }
+.notes li { display: grid; grid-template-columns: 22px 1fr; gap: 8px; }
+.notes .why { color: var(--ink-2); font-size: 12.5px; }
+.notes h3 { margin: 0; font-size: 12px; font-family: var(--f-mono); font-weight: 500; color: var(--ink-2); letter-spacing: .04em; }
+.open { border: 1px dashed var(--note); border-radius: 4px; padding: 8px 10px; color: var(--ink); font-size: 12.5px; background: var(--note-bg); }
+.mk { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--note); color: var(--paper); font: 500 11px/1 var(--f-mono); flex: none; vertical-align: middle; }
+.frame .mk { margin-left: 4px; }
+
+/* ── 프레임 (1180px 고정 폭, 넘치면 상자 안에서 가로 스크롤) ── */
+.frame { width: 1180px; display: grid; grid-template-columns: 150px 1fr; font-size: 12px; position: relative; min-height: 200px; }
+.f-side { border-right: 1px solid var(--line); padding: 16px 12px; display: grid; gap: 8px; align-content: start; }
+.f-side .logo { height: 12px; width: 70px; background: var(--fill-2); border-radius: 2px; margin-bottom: 8px; }
+.f-side .nav { height: 9px; background: var(--fill); border-radius: 2px; }
+.f-side .nav.on { background: var(--fill-2); }
+.f-main { padding: 16px 20px 24px; display: grid; gap: 12px; align-content: start; position: relative; min-width: 0; }
+.f-title { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.f-title .t { display: grid; gap: 2px; }
+.f-title .t b { font-size: 15px; font-weight: 600; }
+.f-title .t span { color: var(--ink-3); font-size: 11px; }
+.btns { display: flex; gap: 6px; align-items: center; }
+.btn { border: 1px solid var(--ink-3); border-radius: 4px; padding: 3px 9px; font-size: 11.5px; background: var(--paper); color: var(--ink); white-space: nowrap; }
+.btn.solid { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.btn.ghost { border-color: transparent; color: var(--ink-2); text-decoration: underline; padding-inline: 4px; }
+.btn.sm { padding: 1px 7px; font-size: 11px; }
+.cards { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid var(--line); border-radius: 4px; }
+.cards div { padding: 8px 10px; display: grid; gap: 2px; }
+.cards div + div { border-left: 1px solid var(--line); }
+.cards small { color: var(--ink-2); font-size: 11px; }
+.cards strong { font-size: 16px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.progress { display: flex; align-items: center; gap: 12px; border: 1.5px solid var(--ink-2); border-radius: 4px; padding: 7px 10px; }
+.progress .lbl { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.progress .bar { flex: 1; height: 6px; background: var(--fill); border-radius: 3px; overflow: hidden; }
+.progress .bar i { display: block; height: 100%; background: var(--ink-2); }
+.progress .warn { border: 1px solid var(--ink-2); border-radius: 12px; padding: 1px 9px; white-space: nowrap; }
+.collapsed { border: 1px dashed var(--line); border-radius: 4px; padding: 8px 10px; color: var(--ink-3); font-size: 11px; }
+.two { display: grid; grid-template-columns: minmax(0, 1fr) 240px; gap: 12px; align-items: start; }
+.box { border: 1px solid var(--line); border-radius: 4px; padding: 10px 12px; display: grid; gap: 6px; min-width: 0; }
+.box h4 { margin: 0; font-size: 12px; font-weight: 600; }
+.req { display: grid; grid-template-columns: 14px 1fr auto auto; gap: 8px; align-items: center; padding: 4px 0; border-top: 1px solid var(--line); }
+.req:first-of-type { border-top: 0; }
+.req .ic { width: 11px; height: 11px; border-radius: 50%; border: 1.5px solid var(--ink-2); }
+.req .ic.part { border-style: dashed; }
+.req .ic.none { background: var(--fill-2); border-color: var(--fill-2); }
+.req .lv { color: var(--ink-2); font-size: 11px; }
+.req-open { margin: 2px 0 6px 22px; display: grid; gap: 6px; }
+.quote { border-left: 2px solid var(--ink-3); padding-left: 8px; display: grid; gap: 1px; }
+.quote small { color: var(--ink-3); font-size: 10.5px; }
+.quote.direct { border-left-style: dashed; }
+.chip { display: inline-block; border: 1px solid var(--ink-3); border-radius: 10px; padding: 0 6px; font-size: 10.5px; color: var(--ink-2); white-space: nowrap; vertical-align: 1px; }
+.chip.warn { border-style: solid; border-color: var(--ink); color: var(--ink); }
+.chip.warn::before { content: "⚠ "; }
+.chip.dash { border-style: dashed; }
+.chip.mark { border-color: transparent; background: var(--fill); }
+.ph { height: 8px; background: var(--fill); border-radius: 2px; }
+
+/* 문장 비교 */
+.cmp { border: 1px solid var(--line); border-radius: 4px; padding: 10px 12px 4px; position: relative; }
+.cmp-h { display: flex; justify-content: space-between; margin-bottom: 4px; }
+.cmp-h b { font-size: 13px; font-weight: 600; }
+.cmp-h span { color: var(--ink-3); font-size: 11px; }
+.row { display: grid; grid-template-columns: 80px minmax(0, 1fr) minmax(0, 1.3fr); column-gap: 24px; padding: 8px 0; border-top: 1px solid var(--line); }
+.row .lab { color: var(--ink-2); font-size: 11px; }
+.row .lab em { display: block; font-style: normal; font-size: 10px; color: var(--ink-3); }
+.src { color: var(--ink-2); font-size: 11px; line-height: 1.6; }
+.src span.on { background: var(--hl); color: var(--ink); border-radius: 2px; }
+.src span.on.direct { background: transparent; outline: 1.5px dashed var(--ink-2); outline-offset: 1px; color: var(--ink); }
+.out { display: grid; gap: 5px; }
+.s { line-height: 1.55; }
+.s .txt.flag { text-decoration: underline dashed var(--ink-2) 1.5px; text-underline-offset: 3px; }
+.s.sel .txt { background: var(--fill-2); box-shadow: 0 0 0 2px var(--fill-2); border-radius: 2px; }
+.s.done .txt { color: var(--ink-2); }
+.s.done::before { content: "✓ "; color: var(--ink-3); }
+.s .orig { color: var(--ink-2); }
+.actions { display: flex; gap: 5px; margin-top: 4px; flex-wrap: wrap; align-items: center; }
+.expand { margin-top: 5px; border: 1px solid var(--ink-3); border-radius: 4px; padding: 7px 9px; display: grid; gap: 5px; background: var(--paper); }
+.expand .why { font-weight: 500; }
+.empty { border: 1px dashed var(--ink-3); border-radius: 4px; padding: 6px 8px; color: var(--ink-2); display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+.edit { border: 1.5px solid var(--ink); border-radius: 4px; padding: 6px 8px; min-height: 44px; background: var(--paper); }
+.edit .caret { display: inline-block; width: 1px; height: 13px; background: var(--ink); vertical-align: -2px; }
+.proposal { border: 1px dashed var(--ink-2); border-radius: 4px; padding: 6px 8px; display: grid; gap: 4px; }
+.toast { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); background: var(--ink); color: var(--paper); border-radius: 6px; padding: 7px 12px; display: flex; gap: 14px; align-items: center; font-size: 11.5px; box-shadow: 0 2px 10px rgb(0 0 0 / .15); }
+.toast u { text-underline-offset: 2px; }
+.toast .t5 { font-family: var(--f-mono); opacity: .7; }
+svg.links { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
+svg.links path { fill: none; stroke: var(--ink); stroke-width: 1.25; }
+.states { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.state { border: 1px solid var(--line); border-radius: 4px; padding: 8px 10px; display: grid; gap: 6px; align-content: start; min-width: 0; }
+.state > small { font-family: var(--f-mono); color: var(--ink-3); font-size: 10.5px; }
+.ta { border: 1.5px solid var(--ink-2); border-radius: 4px; padding: 6px 8px; min-height: 52px; color: var(--ink); background: var(--paper); }
+.ta.ph-text { color: var(--ink-3); }
+.spin { display: inline-block; width: 10px; height: 10px; border: 1.5px solid var(--ink-3); border-top-color: var(--ink); border-radius: 50%; vertical-align: -1px; }
+.done-sum { display: flex; gap: 14px; flex-wrap: wrap; font-variant-numeric: tabular-nums; }
+.done-sum b { font-weight: 600; }
+
+footer.end { color: var(--ink-2); font-size: 12.5px; max-width: 72ch; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="eyebrow">텔미폴리오 · 직무 전환 결과 화면 · design/evidence-view · 2026-10-02</div>
+    <h1>근거 보기 와이어프레임 7장</h1>
+    <p>결과 화면 하나를 상태별로 그렸습니다. 회색 구조만 담았고, 색·서체·간격은 10/14 비주얼에서 기존 브랜드 토큰으로 입힙니다. 내용은 예시 데이터('동네 카페 주문 앱 리디자인')입니다. 화면 1이 기준이고, 2~5는 문장 비교 영역에서 바뀌는 부분만 그렸습니다.</p>
+    <div class="legend">
+      <span><i class="sw hl"></i>원문 근거 하이라이트</span>
+      <span><i class="sw dash"></i>직접 입력·제안·빈칸</span>
+      <span><span class="mk">1</span>오른쪽 주석 번호</span>
+      <span>설계 기준 1440px · 최소 1200px (데스크톱 전용)</span>
+    </div>
+    <nav class="toc" aria-label="화면 목록"></nav>
+  </header>
+  <main id="screens" style="display:grid;gap:56px"></main>
+  <footer class="end">브리프 v8 기준. 와이어프레임은 구조 합의용 초안이라, 배치·문구는 비주얼 단계에서 바꿔도 됩니다. 화면 7은 이번 주 설계만 하고 구현하지 않습니다.</footer>
+</div>
+
+<script>
+/* ── 예시 데이터 (src/pages/jobswitch/demo/evidenceDemo.json 요약) ── */
+const SRC = {
+  role: ["기획, UX 리서치, UI 디자인, 프로토타입 제작을 혼자 맡았습니다."],
+  problem: ["단골 손님 8명을 인터뷰한 결과, 매번 같은 메뉴를 시키는데도 처음부터 다시 골라야 하는 점이 가장 큰 불만이었습니다.", "화면 글자가 작아 나이 든 손님은 직원에게 대신 주문을 부탁했습니다."],
+  context: ["동네 카페 3곳이 같이 쓰는 주문 앱을 리디자인한 개인 프로젝트입니다.", "기존 앱은 메뉴를 고르고 결제까지 6단계를 거쳐야 했습니다."],
+  execution: ["최근 주문을 첫 화면에 두고 한 번에 다시 주문하는 버튼을 만들었습니다.", "글자 크기를 키우고 명도 대비를 4.5:1 이상으로 맞췄습니다.", "카페 직원 2명과 함께 종이 프로토타입으로 3번 테스트했습니다."],
+  outcome: ["주문 단계가 6단계에서 3단계로 줄었습니다.", "테스트에 참여한 손님들이 다시 주문 버튼을 가장 많이 썼습니다."],
+  reflection: ["직원도 사용자라는 걸 늦게 알았습니다.", "다음에는 처음부터 직원 인터뷰를 함께 하겠습니다."],
+};
+const OUT = {
+  role: [{ t: "리서치부터 프로토타입 테스트까지 혼자 진행했습니다.", r: ["리서치·문제 정의"] }],
+  problem: [
+    { t: "단골 손님 8명 인터뷰에서 같은 메뉴를 매번 처음부터 골라야 하는 불편을 핵심 문제로 정의했습니다.", r: ["리서치·문제 정의"] },
+    { t: "작은 글자 때문에 고령 손님이 직원에게 주문을 대신 부탁하는 상황도 확인했습니다.", r: ["접근성"] }],
+  context: [{ t: "단골 손님이 많은 동네 카페 3곳의 주문 앱을 리디자인했습니다.", r: [] }],
+  execution: [
+    { t: "첫 화면에 최근 주문과 한 번에 다시 주문하기 버튼을 두었습니다.", r: [] },
+    { t: "글자 크기를 키우고 명도 대비 4.5:1 이상을 맞춰 접근성 기준을 지켰습니다.", r: ["접근성"] },
+    { t: "Figma 컴포넌트로 버튼과 카드를 정리해 세 카페의 화면 규칙을 통일했습니다.", r: ["디자인 시스템"], flag: "원문에 없는 이름 Figma" },
+    { t: "카페 직원 2명과 종이 프로토타입으로 사용성 테스트를 3회 진행했습니다.", r: ["프로토타입·테스트"] }],
+  outcome: [
+    { t: "주문 단계를 6단계에서 3단계로 줄였습니다.", r: ["성과 검증"] },
+    { t: "다시 주문하기 버튼은 테스트에서 가장 많이 쓰인 기능이 되었고, 재주문 시간이 30% 줄었습니다.", r: ["성과 검증"], flag: "원문에 없는 숫자 30%" }],
+  reflection: [
+    { t: "직원도 사용자라는 점을 늦게 깨달아, 다음에는 처음부터 직원 인터뷰를 함께 하겠습니다.", r: [] },
+    { t: "이 경험으로 데이터를 근거로 디자인을 개선하는 방식을 익혔습니다.", r: ["성과 검증"], flag: "근거 문장 없음" }],
+};
+const FIELDS = [["role", "역할"], ["problem", "문제 정의", "맨 앞"], ["context", "맥락 및 배경"], ["execution", "실행 내용"], ["outcome", "핵심 성과"], ["reflection", "배운 점"]];
+const REQS = [["full", "사용자 리서치를 바탕으로 문제를 정의한 경험", "충족"], ["full", "접근성을 고려한 UI 설계", "충족"], ["full", "프로토타입 제작과 사용성 테스트", "충족"], ["part", "데이터로 디자인 성과를 검증한 경험", "일부", "우대"], ["none", "디자인 시스템 운영 경험", "근거 없음", "우대"]];
+
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+const mk = (n) => (n ? `<span class="mk" aria-label="주석 ${n}">${n}</span>` : "");
+
+/* ── 조각 ── */
+const side = () => `<aside class="f-side"><div class="logo"></div><div class="nav"></div><div class="nav"></div><div class="nav on"></div><div class="nav"></div><div class="nav"></div></aside>`;
+const title = (o = {}) => `<div class="f-title"><div class="t"><b>모바일 앱 UX 디자이너</b><span>원본 · 동네 카페 주문 앱 리디자인</span></div><div class="btns"><span class="btn">버리기</span><span class="btn ${o.saveStrong ? "solid" : ""}">새 포트폴리오로 저장</span>${mk(o.saveMk)}</div></div>`;
+const cards = (o = {}) => `<div class="cards"><div><small>충족</small><strong>${o.full ?? 3}</strong></div><div><small>일부</small><strong>${o.part ?? 1}</strong></div><div><small>근거 없음</small><strong>1</strong></div><div><small>확인 필요</small><strong>3</strong></div></div>`;
+const progress = (done, warn, o = {}) => `<div class="progress"><span class="lbl">검토 ${done} / 12</span>${mk(o.mk1)}<span class="bar"><i style="width:${(done / 12) * 100}%"></i></span><span class="warn">${warn ? `경고 남은 ${warn} ›` : "경고 모두 확인함"}</span>${mk(o.mk2)}</div>`;
+const collapsed = (txt) => `<div class="collapsed">${txt}</div>`;
+const reqTable = (o = {}) => `<div class="box"><h4>프로젝트로 보여 줄 요구사항 5</h4>${REQS.map((q, i) => {
+  const [lv, text, lab, nice] = q;
+  const label = o.override?.[i] ?? lab;
+  return `<div class="req"><span class="ic ${lv}"></span><span>${esc(text)}</span><span class="lv">${nice || ""}</span><span class="lv">${label} ˅</span></div>${o.openAt === i ? o.openHtml : ""}`;
+}).join("")}</div>`;
+const leadBox = (o = {}) => `<div class="box"><h4>맨 앞에 둔 항목${mk(o.mk)}</h4><div class="ph" style="width:80%"></div><div class="ph" style="width:60%"></div>${o.note ? `<small style="color:var(--ink-3)">${o.note}</small>` : ""}</div>`;
+
+/* 문장 하나. st: { sel, done, rejectTo, empty, editing, edited, expand, actions, proposal, mk } */
+function sentence(f, i, st = {}) {
+  const s = OUT[f][i];
+  const chips = s.r.map((r) => `<span class="chip">${r}</span>`).join(" ");
+  if (st.empty) return `<div class="s" data-out="${f}:${i}"><div class="empty"><span>근거가 없어 비웠습니다. 해본 일이라면 원본에 먼저 적어 주세요.</span><span class="btn sm">직접 채우기</span></div>${mk(st.mk)}</div>`;
+  if (st.rejectTo != null) return `<div class="s" data-out="${f}:${i}"><span class="orig">${esc(SRC[f][st.rejectTo])}</span> <span class="chip mark">원문으로 바꿈</span>${mk(st.mk)}</div>`;
+  if (st.editing) return `<div class="s" data-out="${f}:${i}"><div class="edit">${esc(st.editing)}<span class="caret"></span></div><div class="actions"><span class="btn sm solid">저장</span><span class="btn sm">취소</span><span style="color:var(--ink-3);font-size:10.5px">Esc 취소 · ⌘Enter 저장</span>${mk(st.mk)}</div></div>`;
+  const flag = s.flag && !st.hideFlag ? `<span class="chip warn">${s.flag}</span>` : "";
+  let html = `<div class="s ${st.sel ? "sel" : ""} ${st.done ? "done" : ""}" data-out="${f}:${i}"><span class="txt ${s.flag && !st.hideFlag ? "flag" : ""}">${esc(st.text ?? s.t)}</span> ${flag} ${chips}${st.edited ? ` <span class="chip mark">수정함</span>` : ""}${mk(st.mk)}`;
+  if (st.expand) html += `<div class="expand"><span class="why">${esc(st.expand.why)}</span>${st.expand.src.map((x) => `<div class="quote"><span>${esc(x)}</span><small>원문 후보</small></div>`).join("")}<div class="actions"><span class="btn sm">확인했음</span><span class="btn sm">거절</span><span class="btn sm">직접 수정</span>${mk(st.expand.mk)}</div></div>`;
+  if (st.actions) html += `<div class="actions"><span class="btn sm">채택</span><span class="btn sm">거절</span><span class="btn sm">직접 수정</span>${mk(st.actions)}</div>`;
+  html += `</div>`;
+  if (st.proposal) html += `<div class="proposal"><span><span class="chip dash">제안</span> ${esc(st.proposal)}</span><div class="actions"><span class="btn sm">채택</span><span class="btn sm">거절</span>${mk(st.proposalMk)}</div></div>`;
+  return html;
+}
+
+/* 비교 영역. o.only: 보여 줄 칸, o.hl: {field:[index]} 원문 하이라이트, o.direct: 직접 입력 원문, o.st: {"f:i": state} */
+function compare(o = {}) {
+  const rows = FIELDS.filter(([f]) => !o.only || o.only.includes(f)).map(([f, lab, lead]) => {
+    const src = SRC[f].map((t, i) => `<span data-src="${f}:${i}" class="${o.hl?.[f]?.includes(i) ? "on" : ""}">${esc(t)}</span>`).join(" ");
+    const extra = o.direct?.[f] ? ` <span data-src="${f}:d" class="on direct">${esc(o.direct[f])}</span> <span class="chip dash">직접 입력</span>` : "";
+    const out = OUT[f].map((_, i) => sentence(f, i, o.st?.[`${f}:${i}`] || {})).join("");
+    return `<div class="row"><div class="lab">${lab}${lead ? `<em>${lead}</em>` : ""}</div><div class="src">${src}${extra}</div><div class="out">${out}</div></div>`;
+  }).join("");
+  const skipped = o.only ? `<div class="row"><div class="lab" style="color:var(--ink-3)">…</div><div class="src" style="color:var(--ink-3)">다른 칸은 화면 1과 같음</div><div></div></div>` : "";
+  return `<div class="cmp" ${o.links ? `data-links='${JSON.stringify(o.links)}'` : ""}><div class="cmp-h"><b>동네 카페 주문 앱 리디자인</b><span>원본 → 재구성 · 문장을 가리키면 근거가 보입니다</span></div>${rows}${skipped}</div>`;
+}
+
+const frame = (main) => `<div class="frame">${side()}<div class="f-main">${main}</div></div>`;
+
+/* ── 화면 7장 ── */
+const SCREENS = [
+  {
+    id: "s1", title: "기본", main: () => frame(
+      title() + cards() + progress(0, 3, { mk1: 1, mk2: 2 }) +
+      `<div class="two">${reqTable()}${leadBox({ note: "사이드바 '확인 필요' 목록은 없앰", mk: 3 })}</div>` +
+      compare({ st: { "execution:2": { mk: 4 } } })),
+    notes: [
+      ["진행 막대는 요약 카드 4칸 아래 따로 둔다. 검토한 문장 수 / 전체 AI 문장 수.", "결정 사항: 요약 카드는 유지하고 막대를 따로 둔다."],
+      ["'경고 남은 N ›'을 누르면 다음 경고 문장으로 스크롤하고 잠깐 강조. 마지막 다음은 첫 경고로. 키보드 단축키도.", "사이드바 목록이 없어도 경고를 찾는 시선 이동이 생기지 않게 하는 장치."],
+      ["오른쪽 사이드바의 경고 목록을 없앴다. '맨 앞에 둔 항목'만 남는다.", "Before 불편 1: 경고 카드와 문장이 최대 1,255px 떨어져 있었다."],
+      ["경고는 문장 바로 옆 칩으로. 무엇이 걸렸는지(원문에 없는 이름 Figma)를 본문에서 바로 읽는다.", "원칙 2: 경고는 이유와 함께."],
+    ],
+  },
+  {
+    id: "s2", title: "근거 연결", tag: "구현됨", main: () => frame(
+      progress(0, 3) + collapsed("상단 요약 · 요구사항 표 — 화면 1과 같음") +
+      compare({ only: ["context", "execution", "outcome"], hl: { outcome: [0], context: [1] }, st: { "outcome:0": { sel: true, actions: 3, mk: 1 } }, links: [["outcome:0", "outcome:0"], ["outcome:0", "context:1"]] })),
+    notes: [
+      ["재구성 문장을 호버하면 미리보기, 클릭·Tab 하면 고정. 원문 쪽 근거 문장이 하이라이트된다.", "호버로는 스크롤하지 않는다. 화면이 움직이면 커서 아래 문장이 바뀌어 깜빡인다."],
+      ["연결선은 두 열 사이 여백으로만 다닌다. 근거가 다른 칸(맥락 및 배경)에 있으면 선이 행을 넘어간다.", "근거 문장 끝까지 이으면 같은 줄의 다른 원문을 가로질러 가린다. 위치는 하이라이트가 알려 준다."],
+      ["고정된 문장 아래에 채택 / 거절 / 직접 수정이 나타난다.", "결정 버튼을 늘 보이게 하면 문장 12개에 버튼 36개. 선택한 문장에만."],
+    ],
+    extraNoteMk: 2,
+  },
+  {
+    id: "s3", title: "경고 펼침", main: () => frame(
+      progress(0, 3) + collapsed("상단 요약 · 요구사항 표 — 화면 1과 같음") +
+      compare({ only: ["outcome"], hl: { outcome: [1] }, st: { "outcome:1": { sel: true, mk: 1, expand: { why: "원문에 없는 숫자 30% — 원문에는 '가장 많이 썼다'까지만 있습니다.", src: [SRC.outcome[1], SRC.execution[0]], mk: 2 } } } })),
+    notes: [
+      ["경고 칩을 누르면 문장 아래로 펼쳐진다. 칩은 문장 옆에 그대로.", "높이 확장 220ms. 모션 줄이기에서는 바로 펼침."],
+      ["경고 문장의 결정은 확인했음 / 거절 / 직접 수정. '채택' 대신 '확인했음'.", "오탐일 수 있어 지우지 않고 판단을 맡긴다(원칙 2). 확인했음을 누르면 경고 남은 수가 줄어든다."],
+    ],
+  },
+  {
+    id: "s4", title: "거절 후", main: () => frame(
+      progress(2, 1, { mk1: 3 }) + collapsed("상단 요약 · 요구사항 표 — 화면 1과 같음") +
+      compare({ only: ["outcome", "reflection"], st: { "outcome:1": { rejectTo: 1, mk: 1 }, "reflection:1": { empty: true, mk: 2 } } }) +
+      `<div class="toast" role="status">문장을 원문으로 바꿨습니다 <u>되돌리기</u> <span class="t5">5s</span>${mk(4)}</div>`),
+    notes: [
+      ["근거가 있는 문장을 거절하면 원문 문장으로 바뀐다. '원문으로 바꿈' 표시.", "접힘 200ms → 교체 크로스페이드 160ms."],
+      ["근거가 없는 문장을 거절하면 지우지 않고 빈칸 + 안내. '직접 채우기'는 화면 7로 이어진다.", "결정 사항: 빈칸으로 남기고 '원본에 먼저 적어 주세요'."],
+      ["결정할 때마다 막대가 찬다(300ms). 경고 문장을 거절하면 경고 남은 수도 줄어든다.", ""],
+      ["되돌리기 토스트 5초. 아래에서 슬라이드업.", "원칙 3: 언제든 되돌릴 수 있다."],
+    ],
+  },
+  {
+    id: "s5", title: "직접 수정", main: () => frame(
+      progress(3, 1) + collapsed("상단 요약 · 요구사항 표 — 화면 1과 같음") +
+      compare({ only: ["problem", "execution"], hl: { execution: [1] }, st: { "execution:1": { editing: "글자 크기를 키우고 명도 대비를 4.5:1 이상으로 맞춰 고령 손님도 혼자 주문할 수 있게 했습니다.", mk: 1 }, "problem:0": { edited: true, done: true, text: "단골 손님 8명을 인터뷰해, 같은 메뉴를 매번 처음부터 골라야 하는 불편을 핵심 문제로 정했습니다.", mk: 3 } } })),
+    notes: [
+      ["'직접 수정'을 누르면 문장이 그 자리에서 입력칸으로 바뀐다. 저장 / 취소.", "편집 전환 160ms. 다른 곳으로 이동하지 않는다."],
+      ["편집 중에도 원문 근거 하이라이트는 유지된다. 근거를 보며 고친다.", "면접 질문 '고치고 싶으면요?'에 대한 답이 이 화면."],
+      ["저장하면 '수정함' 표시. 수정한 문장도 원문에 없는 숫자·이름 검증을 다시 거친다.", "열린 질문: 사용자가 고친 문장에 경고가 다시 뜨면 어떻게 보일지 (비주얼 단계에서)."],
+    ],
+    extraNoteMk: 2,
+  },
+  {
+    id: "s6", title: "검토 완료", main: () => frame(
+      title({ saveStrong: true, saveMk: 2 }) + cards() + progress(12, 0, { mk1: 1 }) +
+      `<div class="box"><h4>검토 결과</h4><div class="done-sum"><span>채택 <b>8</b></span><span>확인했음 <b>1</b></span><span>거절 <b>2</b></span><span>직접 수정 <b>1</b></span></div><small style="color:var(--ink-3)">저장하면 위 결정대로 새 포트폴리오가 만들어지고 편집기로 넘어갑니다. 원본은 그대로입니다.</small>${mk(3)}</div>` +
+      compare({ only: ["outcome"], st: { "outcome:0": { done: true }, "outcome:1": { rejectTo: 1 } } })),
+    notes: [
+      ["모든 문장을 결정하면 막대가 다 차고 '경고 모두 확인함'.", ""],
+      ["'새 포트폴리오로 저장'이 주 버튼이 된다. 결정 전에는 보조 버튼과 같은 무게.", "검토를 다 하지 않아도 저장은 막지 않는다. 남은 문장은 AI 문장 그대로 저장된다."],
+      ["결정 요약 한 줄. 저장하면 무엇이 만들어지는지 짧게.", "구현 메모: 지금 저장 함수는 AI 문장을 그대로 복사한다. 결정 반영은 다음 단계(DB 작업 필요)."],
+    ],
+  },
+  {
+    id: "s7", title: "직접 채우기", tag: "설계만", main: () => frame(
+      progress(9, 0) + cards({ full: 4, part: 0 }) +
+      `<div class="states">
+        <div class="state"><small>① 입력</small><b>데이터로 디자인 성과를 검증한 경험 · 일부</b><div class="quote"><span>${esc(SRC.outcome[0])}</span><small>원문 · 핵심 성과</small></div><span style="color:var(--ink-2)">단계 수 감소는 있으나 측정 지표는 없음</span><div class="ta">테스트 때 주문 완료 시간을 재 봤는데 평균 40초에서 15초로 줄었어요</div><div class="actions"><span class="btn sm solid">반영</span><span style="color:var(--ink-3);font-size:10.5px">해본 일이라면 적어 주세요</span>${mk(1)}</div></div>
+        <div class="state"><small>② 반영 중</small><b>데이터로 디자인 성과를 검증한 경험</b><div class="quote direct"><span>테스트 때 주문 완료 시간을 재 봤는데 평균 40초에서 15초로 줄었어요</span><small>직접 입력</small></div><span><span class="spin"></span> 판정과 '핵심 성과' 칸을 다시 쓰는 중… 몇 초 걸립니다</span><div class="ph" style="width:90%"></div><div class="ph" style="width:70%"></div>${mk(2)}</div>
+        <div class="state"><small>③ 반영 후</small><b>데이터로 디자인 성과를 검증한 경험 · <u>충족</u></b><div class="quote"><span>${esc(SRC.outcome[0])}</span><small>원문 · 핵심 성과</small></div><div class="quote direct"><span>주문 완료 시간 평균 40초 → 15초</span><small>직접 입력 · 10/02</small></div>${mk(3)}</div>
+      </div>` +
+      compare({ only: ["outcome"], direct: { outcome: "테스트 때 주문 완료 시간을 재 봤는데 평균 40초에서 15초로 줄었어요" }, st: { "outcome:0": { done: true, proposal: "주문 단계를 6단계에서 3단계로 줄이고, 테스트에서 주문 완료 시간을 평균 40초에서 15초로 단축했습니다.", proposalMk: 4 }, "outcome:1": { rejectTo: 1 } } })),
+    notes: [
+      ["'일부'·'근거 없음' 요구사항을 펼치면 입력칸. 근거 없음 문장을 거절해 생긴 빈칸(화면 4)에서도 여기로.", "자연어로 자유롭게. 예시 문구를 입력칸 안내로."],
+      ["반영 중에는 판정과 입력이 들어간 칸만 다시 쓴다고 알려 준다. AI 호출이라 몇 초.", "다른 칸은 건드리지 않는다."],
+      ["판정이 '일부 → 충족'으로 바뀌고, 근거 목록에 '직접 입력'이 점선으로 구분되어 붙는다.", "어느 것이 원래 있던 사실인지 흐려지지 않게."],
+      ["'핵심 성과' 첫 문장은 이미 채택한 상태라 덮어쓰지 않고 새 문장을 '제안'으로 붙인다. 원문 쪽에도 직접 입력 근거가 점선으로.", "결정 사항(10/2): 이미 결정한 문장은 제안으로, 결정 전 문장만 바로 교체."],
+    ],
+    open: "아직 안 정한 것 — 입력한 내용을 원본 프로젝트에도 남길지. 남기면 결과 화면 하단의 '원본은 그대로' 문구를 고쳐야 한다. 이 결정에 따라 ③의 '직접 입력' 표시 문구가 달라진다.",
+  },
+];
+
+/* ── 그리기 ── */
+const toc = document.querySelector("nav.toc");
+const root = document.getElementById("screens");
+SCREENS.forEach((s, i) => {
+  toc.insertAdjacentHTML("beforeend", `<a href="#${s.id}"><b>${i + 1}</b>${s.title}</a>`);
+  const notes = s.notes.map(([what, why], n) => `<li>${mk(n + 1)}<div>${esc(what)}${why ? `<div class="why">${esc(why)}</div>` : ""}</div></li>`).join("");
+  root.insertAdjacentHTML("beforeend", `
+    <section class="screen" id="${s.id}" aria-labelledby="${s.id}-h">
+      <div class="screen-head"><span class="no">화면 ${i + 1} / 7</span><h2 id="${s.id}-h">${s.title}</h2>${s.tag ? `<span class="tag">${s.tag}</span>` : ""}</div>
+      <div class="frame-box">${s.main()}</div>
+      <div class="notes"><h3>주석</h3><ol>${notes}</ol>${s.open ? `<div class="open">${esc(s.open)}</div>` : ""}</div>
+    </section>`);
+});
+
+/* 화면 2: 연결선. 실제 구현처럼 두 열 사이 여백으로만 */
+function drawLinks() {
+  document.querySelectorAll(".cmp[data-links]").forEach((cmp) => {
+    cmp.querySelector("svg.links")?.remove();
+    const base = cmp.getBoundingClientRect();
+    const paths = JSON.parse(cmp.dataset.links).map(([o, s]) => {
+      const out = cmp.querySelector(`[data-out="${o}"] .txt`);
+      const src = cmp.querySelector(`[data-src="${s}"]`);
+      if (!out || !src) return "";
+      const outCol = out.closest(".out").getBoundingClientRect();
+      const srcCol = src.closest(".src").getBoundingClientRect();
+      const a = out.getClientRects()[0], b = src.getClientRects()[0];
+      const sx = outCol.left - base.left - 4, sy = a.top - base.top + a.height / 2;
+      const tx = srcCol.right - base.left + 4, ty = b.top - base.top + b.height / 2;
+      const bend = Math.max(6, (sx - tx) * 0.5);
+      return `<path d="M ${sx} ${sy} C ${sx - bend} ${sy}, ${tx + bend} ${ty}, ${tx} ${ty}"/>`;
+    }).join("");
+    cmp.insertAdjacentHTML("beforeend", `<svg class="links" width="${base.width}" height="${base.height}" aria-hidden="true">${paths}</svg>`);
+  });
+  // 연결선 주석 번호를 선 옆에
+  const cmp2 = document.querySelector("#s2 .cmp");
+  if (cmp2 && !cmp2.querySelector(".mk-line")) {
+    const src = cmp2.querySelector('[data-src="context:1"]').closest(".src").getBoundingClientRect();
+    const base = cmp2.getBoundingClientRect();
+    const y = cmp2.querySelector('[data-src="context:1"]').getBoundingClientRect().top - base.top + 22;
+    cmp2.insertAdjacentHTML("beforeend", `<span class="mk mk-line" style="position:absolute;left:${src.right - base.left + 4}px;top:${y}px">2</span>`);
+  }
+  const s5 = document.querySelector('#s5 [data-src="execution:1"]');
+  if (s5 && !s5.nextElementSibling?.classList?.contains("mk")) s5.insertAdjacentHTML("afterend", mk(2));
+}
+(document.fonts?.ready || Promise.resolve()).then(drawLinks);
+addEventListener("resize", () => { clearTimeout(drawLinks.t); drawLinks.t = setTimeout(drawLinks, 100); });
+</script>
