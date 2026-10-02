@@ -86,7 +86,15 @@ export default function JobSwitchResult() {
   useEffect(() => {
     if (!runId) return;
     let alive = true;
-    getJobSwitchRun(runId)
+    // [10-02] 개발 중에만 /job-switch/result/demo 로 '근거 보기' 예시 데이터를 띄웁니다.
+    // import.meta.env.DEV 가 배포 빌드에서 false 로 고정돼 이 분기와 JSON 은 배포본에 들어가지 않습니다.
+    const load =
+      import.meta.env.DEV && runId === "demo"
+        ? import("./demo/evidenceDemo.json").then(
+            (m) => m.default as unknown as Awaited<ReturnType<typeof getJobSwitchRun>>,
+          )
+        : getJobSwitchRun(runId);
+    load
       .then((r) => {
         if (!alive) return;
         setRun(r.run);
