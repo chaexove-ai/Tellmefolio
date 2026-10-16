@@ -23,7 +23,7 @@ import {
   type Flag,
   type Match,
 } from "../../supabase/functions/_shared/evidence.ts";
-import { analyzePrompt, matchPrompt, rewritePrompt } from "../../supabase/functions/job-switch/prompts.ts";
+import { analyzePrompt, matchPrompt, rewritePrompt, rewritePromptGraded } from "../../supabase/functions/job-switch/prompts.ts";
 import type { StageModels } from "./config.ts";
 import type { LoadedCase } from "./data.ts";
 
@@ -162,7 +162,7 @@ export async function runCase(
         if (!hasText) return normalizeRewrite(null, pi, evidence, reqIds);
         const s3 = await timed(
           models.s3,
-          rewritePrompt(targetJob, analysis!, matches, pi, project, evidence),
+          (models.rewrite === "graded" ? rewritePromptGraded : rewritePrompt)(targetJob, analysis!, matches, pi, project, evidence),
           MAX_TOKENS.s3,
           `3단계 재작성 · ${project.name || `프로젝트 ${pi + 1}`}`
         );

@@ -18,7 +18,7 @@
 import { CONFIGS, cost, loadEnv, PRICES, type StageModels } from "./config.ts";
 import { arg, loadCase, selectCases, type LoadedCase } from "./data.ts";
 import { goldAnalysis } from "./pipeline.ts";
-import { analyzePrompt, matchPrompt, rewritePrompt } from "../../supabase/functions/job-switch/prompts.ts";
+import { analyzePrompt, matchPrompt, rewritePrompt, rewritePromptGraded } from "../../supabase/functions/job-switch/prompts.ts";
 import type { Match } from "../../supabase/functions/_shared/evidence.ts";
 
 const RETRY = 1.1;
@@ -101,7 +101,7 @@ export async function estimateRun(
     for (let pi = 0; pi < c.portfolio.projects.length; pi++) {
       const own = c.evidence.filter((e) => e.projectIndex === pi).map((e) => e.text).join("\n");
       if (!own) continue;
-      const p = rewritePrompt(c.label.target_job, analysis, matches, pi, c.portfolio.projects[pi], c.evidence);
+      const p = (models.rewrite === "graded" ? rewritePromptGraded : rewritePrompt)(c.label.target_job, analysis, matches, pi, c.portfolio.projects[pi], c.evidence);
       add("s3", models.s3, await tok(models.s3, p), Math.ceil(own.length * 3.9));
     }
   }

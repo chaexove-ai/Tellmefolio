@@ -33,6 +33,8 @@ export interface StageModels {
   s1: string; // 공고 해부
   s2: string; // 근거 매칭
   s3: string; // 재작성
+  /** 3단계 프롬프트. 없으면 운영과 같은 rewritePrompt, "graded" 는 4단계 개선판 */
+  rewrite?: "graded";
 }
 
 /** 3단계 실험(모델 비교)의 조합. baseline 이 운영과 같은 조합입니다. */
@@ -42,6 +44,8 @@ export const CONFIGS: Record<string, StageModels> = {
   "s3-haiku": { s1: PROD.light, s2: PROD.strong, s3: PROD.light },
   "all-haiku": { s1: PROD.light, s2: PROD.light, s3: PROD.light },
   "s1-sonnet": { s1: PROD.strong, s2: PROD.strong, s3: PROD.strong },
+  /** 4단계 개선 실험: 모델은 baseline 과 같고 재작성 프롬프트만 개선판 */
+  graded: { s1: PROD.light, s2: PROD.strong, s3: PROD.strong, rewrite: "graded" },
 };
 
 export function cost(model: string, input: number, output: number): number {

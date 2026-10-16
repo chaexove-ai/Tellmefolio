@@ -121,3 +121,71 @@ export function rewritePrompt(
     `{ "fields": { ${FIELDS.map((f) => `"${f}": [{ "text": "...", "evidence": ["p${projectIndex}:${f}:0"], "requirements": ["r1"] }]`).join(", ")} } }`,
   ].join("\n");
 }
+
+/**
+ * [2026-10-16 실험] 재작성 프롬프트 개선판 — 운영(index.ts)은 아직 rewritePrompt 를 씁니다.
+ *
+ * 원인 판단: rewritePrompt 는 2단계의 full 과 partial 을 똑같이 "근거"로 넘깁니다.
+ * 그래서 근거가 약한(partial) 요구사항에서도 모델이 공고 표현으로 빈 곳을 채웠습니다.
+ * base-iso(24 케이스, LLM 판정)에서 partial 대응 문장의 날조율 19.1%(9/47) 는
+ * full 대응 문장 4.9%(12/243) 의 약 4배였습니다.
+ *
+ * 바꾼 것은 두 가지뿐입니다(한 번에 하나의 원인만 건드리기 위해).
+ *  1) 요구사항 목록에 [직접 근거] / [부분 근거] 를 붙이고, 부분 근거에는 2단계가
+ *     적은 판단 이유(why)를 "부족한 점"으로 함께 넘깁니다.
+ *  2) 규칙 한 줄: 부분 근거 요구사항은 원문이 실제로 한 일까지만 쓴다.
+ * 특정 단어 예시는 넣지 않았습니다. 평가 세트의 금지어를 프롬프트에 흘리면
+ * 개선이 아니라 시험 문제 유출이 되기 때문입니다.
+ */
+export function rewritePromptGraded(
+  targetJob: string,
+  analysis: Analysis,
+  matches: Match[],
+  projectIndex: number,
+  project: SourceProject,
+  evidence: Evidence[]
+) {
+  const mine = evidence.filter((e) => e.projectIndex === projectIndex);
+  const mineIds = new Set(mine.map((e) => e.id));
+  const related = matches
+    .filter((m) => m.level !== "none" && m.evidenceIds.some((id) => mineIds.has(id)))
+    .map((m) => {
+      const req = analysis.requirements.find((r) => r.id === m.requirementId)!;
+      const ids = m.evidenceIds.filter((id) => mineIds.has(id)).join(", ");
+      return m.level === "full"
+        ? `[직접 근거] ${req.id} ${req.text} ← 근거: ${ids}`
+        : `[부분 근거] ${req.id} ${req.text} ← 근거: ${ids}${m.why ? ` · 부족한 점: ${m.why}` : ""}`;
+    });
+
+  return [
+    `지원자의 프로젝트 하나를 "${targetJob}" 직무 공고에 맞게 다시 써 주세요.`,
+    "새로 쓰는 것이 아니라 **같은 사실을 그 직무의 언어로 옮기는 것**입니다.",
+    "",
+    `## 프로젝트: ${project.name || "(이름 없음)"}`,
+    "원문 문장 (id: 문장). id 의 가운데 부분이 필드입니다.",
+    evidenceLines(mine),
+    "",
+    "## 이 프로젝트로 대응할 수 있는 공고 요구사항",
+    "[직접 근거] 는 원문이 요구사항을 직접 보여 주는 것, [부분 근거] 는 관련은 있지만 요구사항의 핵심이 원문에 없는 것입니다.",
+    related.length > 0 ? related.join("\n") : "(없음 — 그래도 공고 어휘로 옮겨 쓰세요)",
+    "",
+    "## 공고가 쓰는 어휘",
+    analysis.vocabulary.join(", ") || "(없음)",
+    "",
+    "## 반드시 지킬 것",
+    "- **사실을 더하지 마세요.** 원문에 없는 성과·기능·도구·역할을 쓰지 않습니다. 어휘와 강조만 바꿉니다.",
+    "- **[부분 근거] 요구사항에 대응하는 문장은 원문이 실제로 한 일까지만 씁니다.** 부족한 부분을 공고 표현으로 채우지 마세요. 직무 언어로 옮겨 쓰는 것은 [직접 근거] 요구사항에서만 합니다.",
+    "- **숫자는 원문에 있는 것만.** 새 숫자를 만들거나 반올림하지 마세요.",
+    "- **원문에 없는 기술·제품 이름을 쓰지 마세요.** 공고에 나온 도구라도 원문에 없으면 쓰지 않습니다.",
+    "- 위 목록에 없는 요구사항은 채우려 하지 마세요. 그건 부족한 부분으로 따로 알립니다.",
+    "- 문장마다 evidence 에 근거 원문 id 를 1개 이상 답니다. 위 목록의 id 만 쓰세요.",
+    "- 문장이 특정 요구사항에 대응하면 requirements 에 그 id(r1 등)를 답니다.",
+    "- 각 사실은 원래 필드에 둡니다. 원문에서 비어 있는 필드는 빈 배열로 둡니다.",
+    "- role 은 한 문장, 나머지 필드는 원문과 비슷한 분량으로.",
+    "- 한국어, 채용 담당자가 읽는 담백한 문체.",
+    "",
+    "## 출력",
+    "설명 없이 JSON 만. 코드펜스 없이.",
+    `{ "fields": { ${FIELDS.map((f) => `"${f}": [{ "text": "...", "evidence": ["p${projectIndex}:${f}:0"], "requirements": ["r1"] }]`).join(", ")} } }`,
+  ].join("\n");
+}
