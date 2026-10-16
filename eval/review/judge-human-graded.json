@@ -1,0 +1,1854 @@
+{
+ "about": "개선판(graded-iso) 판정을 사람이 블라인드로 다시 본 기록(2차 검수). 사람은 판정을 보기 전에 결정했고, 결정 뒤에만 LLM 판정이 공개됐습니다.",
+ "run": "graded-iso (격리 모드, 24 케이스 × 2회, 재작성 프롬프트 개선판)",
+ "judge_model": "gemini-3.6-flash",
+ "reviewer": "채환",
+ "population": {
+  "sentences": 1212,
+  "llm_fabricated": 35,
+  "llm_clean": 1177
+ },
+ "sample": {
+  "llm_fabricated": "35개 전부",
+  "llm_clean": "1,177개 중 무작위 40개 (seed 2026)"
+ },
+ "decision_rule": "eval/cases/AUTHORING.md '판정 기준' — 1차 검수와 같은 기준",
+ "items": [
+  {
+   "id": "design-01a.r1__p1-execution-2",
+   "case": "design-01a",
+   "rep": 1,
+   "sentence": "프론트엔드 개발자 2명과 토큰 이름을 맞춰 구현 단계까지 함께 확인했고, 개발자들이 Storybook에 같은 이름으로 컴포넌트를 올렸습니다.",
+   "cited": [
+    "p1:execution:2"
+   ],
+   "reqs": [
+    [
+     "r7",
+     "full"
+    ]
+   ],
+   "llm": {
+    "fabricated": true,
+    "category": "other",
+    "span": "구현 단계까지 함께 확인했고"
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "fab",
+    "comment": "“구현 단계까지 함께 확인했고”는 원문에 없는 행동입니다. 개발자와 토큰 이름을 맞춘 사실과 개발자들이 Storybook에 등록한 사실만으로, 지원자가 구현 결과까지 함께 확인했다고 볼 수는 없습니다.",
+    "at": "2026-10-16T07:41:21.879Z"
+   }
+  },
+  {
+   "id": "design-01a.r2__p1-execution-3",
+   "case": "design-01a",
+   "rep": 2,
+   "sentence": "컴포넌트마다 쓰는 경우와 쓰지 않는 경우를 적은 사용 가이드 페이지를 만들었습니다.",
+   "cited": [
+    "p1:execution:3"
+   ],
+   "reqs": [
+    [
+     "r6",
+     "full"
+    ]
+   ],
+   "llm": {
+    "fabricated": false,
+    "category": "none",
+    "span": ""
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "ok",
+    "comment": null,
+    "at": "2026-10-16T07:24:15.749Z"
+   }
+  },
+  {
+   "id": "design-01a.r2__p1-role-0",
+   "case": "design-01a",
+   "rep": 2,
+   "sentence": "디자이너 3명 중 한 명으로 컴포넌트 정리와 사용 가이드 문서화를 맡았으며, 시스템 구조와 작업 우선순위는 디자인 팀장이 정했습니다.",
+   "cited": [
+    "p1:role:0",
+    "p1:role:1"
+   ],
+   "reqs": [],
+   "llm": {
+    "fabricated": false,
+    "category": "none",
+    "span": ""
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "ok",
+    "comment": null,
+    "at": "2026-10-16T07:30:10.030Z"
+   }
+  },
+  {
+   "id": "design-01b.r1__p1-execution-2",
+   "case": "design-01b",
+   "rep": 1,
+   "sentence": "프론트엔드 개발자 2명과 토큰 이름을 맞춰 개발 조직과 함께 디자인 시스템을 운영했고, 개발자들이 Storybook에 같은 이름으로 컴포넌트를 올렸습니다.",
+   "cited": [
+    "p1:execution:2"
+   ],
+   "reqs": [
+    [
+     "r2",
+     "full"
+    ],
+    [
+     "r9",
+     "full"
+    ]
+   ],
+   "llm": {
+    "fabricated": true,
+    "category": "method",
+    "span": "개발 조직과 함께 디자인 시스템을 운영했고"
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "ok",
+    "comment": "컴포넌트 통합, 토큰 정의, 사용 가이드 작성에 더해 개발자와 이름을 맞추고 Storybook에 반영한 근거가 있습니다. 이를 ‘개발 조직과 함께 디자인 시스템을 운영했다’고 요약할 수 있으며, 전체 구조나 우선순위를 본인이 총괄했다고 주장하지도 않습니다.",
+    "at": "2026-10-16T07:30:02.231Z"
+   }
+  },
+  {
+   "id": "design-01b.r2__p1-execution-2",
+   "case": "design-01b",
+   "rep": 2,
+   "sentence": "프론트엔드 개발자 2명과 토큰 이름을 맞춰 개발 조직과 디자인 토큰 체계를 함께 운영했고, 개발자들이 Storybook에 같은 이름으로 컴포넌트를 올렸습니다.",
+   "cited": [
+    "p1:execution:1",
+    "p1:execution:2"
+   ],
+   "reqs": [
+    [
+     "r2",
+     "full"
+    ],
+    [
+     "r9",
+     "full"
+    ]
+   ],
+   "llm": {
+    "fabricated": true,
+    "category": "other",
+    "span": "개발 조직과 디자인 토큰 체계를 함께 운영했고"
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "fab",
+    "comment": null,
+    "at": "2026-10-16T07:39:11.107Z"
+   }
+  },
+  {
+   "id": "design-02a.r1__p0-execution-1",
+   "case": "design-02a",
+   "rep": 1,
+   "sentence": "인터뷰 결과를 반영해 학습 목표를 고르는 화면을 온보딩 맨 앞에 배치하고, 이후 추천 레슨이 달라지도록 설계했습니다.",
+   "cited": [
+    "p0:execution:1"
+   ],
+   "reqs": [
+    [
+     "r2",
+     "full"
+    ],
+    [
+     "r4",
+     "full"
+    ]
+   ],
+   "llm": {
+    "fabricated": true,
+    "category": "other",
+    "span": "인터뷰 결과를 반영해"
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "fab",
+    "comment": null,
+    "at": "2026-10-16T07:57:33.888Z"
+   }
+  },
+  {
+   "id": "design-02a.r1__p1-role-0",
+   "case": "design-02a",
+   "rep": 1,
+   "sentence": "디자이너는 저 혼자였고 기획자 1명, 개발자 2명과 함께 강사용 웹 화면을 설계했습니다.",
+   "cited": [
+    "p1:role:0"
+   ],
+   "reqs": [
+    [
+     "r8",
+     "partial"
+    ]
+   ],
+   "llm": {
+    "fabricated": false,
+    "category": "none",
+    "span": ""
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "ok",
+    "comment": null,
+    "at": "2026-10-16T07:44:27.117Z"
+   }
+  },
+  {
+   "id": "design-02a.r2__p0-execution-1",
+   "case": "design-02a",
+   "rep": 2,
+   "sentence": "인터뷰에서 확인한 니즈를 반영해 학습 목표를 고르는 화면을 온보딩 맨 앞에 배치하고, 이후 추천 레슨이 달라지도록 설계했습니다.",
+   "cited": [
+    "p0:execution:1"
+   ],
+   "reqs": [
+    [
+     "r2",
+     "full"
+    ]
+   ],
+   "llm": {
+    "fabricated": true,
+    "category": "other",
+    "span": "인터뷰에서 확인한 니즈를 반영해"
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "fab",
+    "comment": null,
+    "at": "2026-10-16T07:43:20.410Z"
+   }
+  },
+  {
+   "id": "design-02b.r1__p1-context-0",
+   "case": "design-02b",
+   "rep": 1,
+   "sentence": "말틀은 기업 고객에게 화상 영어 수업을 판매하는 B2B SaaS였고, 강사 120명이 엑셀로 수업 일정과 출결을 관리하고 있었습니다.",
+   "cited": [
+    "p1:context:0"
+   ],
+   "reqs": [
+    [
+     "r1",
+     "full"
+    ],
+    [
+     "r6",
+     "partial"
+    ]
+   ],
+   "llm": {
+    "fabricated": true,
+    "category": "domain",
+    "span": "B2B SaaS"
+   },
+   "server_flag": true,
+   "human": {
+    "decision": "fab",
+    "comment": null,
+    "at": "2026-10-16T07:12:59.424Z"
+   }
+  },
+  {
+   "id": "design-02b.r1__p1-execution-2",
+   "case": "design-02b",
+   "rep": 1,
+   "sentence": "출결은 수업이 끝날 때 버튼 한 번으로 입력되도록 업무 흐름을 단순화했습니다.",
+   "cited": [
+    "p1:execution:2"
+   ],
+   "reqs": [],
+   "llm": {
+    "fabricated": false,
+    "category": "none",
+    "span": ""
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "ok",
+    "comment": null,
+    "at": "2026-10-16T07:32:50.068Z"
+   }
+  },
+  {
+   "id": "design-02b.r1__p1-role-0",
+   "case": "design-02b",
+   "rep": 1,
+   "sentence": "디자이너는 저 혼자였고, 기획자 1명·개발자 2명과 함께 B2B 관리자 화면(데스크톱 웹)을 설계했습니다.",
+   "cited": [
+    "p1:role:0"
+   ],
+   "reqs": [
+    [
+     "r1",
+     "full"
+    ]
+   ],
+   "llm": {
+    "fabricated": true,
+    "category": "domain",
+    "span": "B2B 관리자 화면"
+   },
+   "server_flag": true,
+   "human": {
+    "decision": "fab",
+    "comment": null,
+    "at": "2026-10-16T07:41:38.008Z"
+   }
+  },
+  {
+   "id": "design-02b.r2__p0-problem-1",
+   "case": "design-02b",
+   "rep": 2,
+   "sentence": "이탈 사용자 8명을 대상으로 현장 리서치를 진행한 결과, 대부분 공부를 시작하기도 전에 시험을 보는 느낌이라고 답했습니다.",
+   "cited": [
+    "p0:problem:1"
+   ],
+   "reqs": [],
+   "llm": {
+    "fabricated": true,
+    "category": "method",
+    "span": "현장 리서치"
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "fab",
+    "comment": "“현장 리서치”는 원문에 없는 조사 환경과 방식을 추가합니다. 원문에는 사용자 8명을 인터뷰했다고만 되어 있어, 실제 사용 현장에서 조사했는지는 확인할 수 없습니다.",
+    "at": "2026-10-16T07:46:40.698Z"
+   }
+  },
+  {
+   "id": "design-02b.r2__p0-role-0",
+   "case": "design-02b",
+   "rep": 2,
+   "sentence": "UX/UI 디자이너로서 온보딩 업무 흐름의 리서치, 설계, UI 디자인을 담당했습니다.",
+   "cited": [
+    "p0:role:0"
+   ],
+   "reqs": [],
+   "llm": {
+    "fabricated": false,
+    "category": "none",
+    "span": ""
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "ok",
+    "comment": null,
+    "at": "2026-10-16T07:44:35.609Z"
+   }
+  },
+  {
+   "id": "design-02b.r2__p1-context-0",
+   "case": "design-02b",
+   "rep": 2,
+   "sentence": "말틀은 기업 고객을 대상으로 화상 영어 수업을 제공하는 B2B SaaS였고, 강사 120명이 엑셀로 수업 일정과 출결을 관리하고 있었습니다.",
+   "cited": [
+    "p1:context:0"
+   ],
+   "reqs": [
+    [
+     "r1",
+     "full"
+    ],
+    [
+     "r6",
+     "partial"
+    ]
+   ],
+   "llm": {
+    "fabricated": true,
+    "category": "domain",
+    "span": "B2B SaaS"
+   },
+   "server_flag": true,
+   "human": {
+    "decision": "fab",
+    "comment": null,
+    "at": "2026-10-16T07:16:17.389Z"
+   }
+  },
+  {
+   "id": "design-02b.r2__p1-outcome-1",
+   "case": "design-02b",
+   "rep": 2,
+   "sentence": "월간 리포트가 처음으로 매달 1일에 맞춰 나갔습니다.",
+   "cited": [
+    "p1:outcome:1"
+   ],
+   "reqs": [
+    [
+     "r5",
+     "full"
+    ]
+   ],
+   "llm": {
+    "fabricated": false,
+    "category": "none",
+    "span": ""
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "ok",
+    "comment": null,
+    "at": "2026-10-16T07:45:09.208Z"
+   }
+  },
+  {
+   "id": "design-03a.r1__p1-execution-2",
+   "case": "design-03a",
+   "rep": 1,
+   "sentence": "Figma로 화면을 제작해 개발자에게 전달하며 디자이너·개발자 간 협업을 통해 기능을 출시했습니다.",
+   "cited": [
+    "p1:execution:2"
+   ],
+   "reqs": [
+    [
+     "r7",
+     "full"
+    ],
+    [
+     "r11",
+     "full"
+    ]
+   ],
+   "llm": {
+    "fabricated": true,
+    "category": "outcome",
+    "span": "기능을 출시했습니다"
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "fab",
+    "comment": null,
+    "at": "2026-10-16T07:30:18.664Z"
+   }
+  },
+  {
+   "id": "design-03a.r2__p1-execution-1",
+   "case": "design-03a",
+   "rep": 2,
+   "sentence": "품절 상품을 회색 처리하여 목록 하단으로 내리는 개선안을 기획자에게 제안하였고, 해당 안이 반영되어 사용자 흐름이 개선되었습니다.",
+   "cited": [
+    "p1:execution:1"
+   ],
+   "reqs": [
+    [
+     "r8",
+     "full"
+    ]
+   ],
+   "llm": {
+    "fabricated": false,
+    "category": "none",
+    "span": ""
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "ok",
+    "comment": null,
+    "at": "2026-10-16T07:57:42.396Z"
+   }
+  },
+  {
+   "id": "design-03a.r2__p2-context-0",
+   "case": "design-03a",
+   "rep": 2,
+   "sentence": "2024년 여름 빙수 시즌 프로모션의 키비주얼과 매장 내 POP물을 기획 및 디자인했습니다.",
+   "cited": [
+    "p2:context:0"
+   ],
+   "reqs": [],
+   "llm": {
+    "fabricated": true,
+    "category": "role",
+    "span": "기획 및 "
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "fab",
+    "comment": null,
+    "at": "2026-10-16T07:47:32.172Z"
+   }
+  },
+  {
+   "id": "design-03b.r1__p1-outcome-0",
+   "case": "design-03b",
+   "rep": 1,
+   "sentence": "개편 후 기획자가 공유한 자료에서 상품 상세 화면 진입 대비 장바구니 담기 비율이 18%에서 23%로 상승했습니다.",
+   "cited": [
+    "p1:outcome:0"
+   ],
+   "reqs": [],
+   "llm": {
+    "fabricated": false,
+    "category": "none",
+    "span": ""
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "ok",
+    "comment": null,
+    "at": "2026-10-16T07:45:37.211Z"
+   }
+  },
+  {
+   "id": "design-03b.r2__p2-outcome-0",
+   "case": "design-03b",
+   "rep": 2,
+   "sentence": "마케팅팀 집계 기준으로 시즌 빙수 판매량은 전년 대비 1.4배 증가한 2.1만 그릇을 기록했습니다.",
+   "cited": [
+    "p2:outcome:0"
+   ],
+   "reqs": [],
+   "llm": {
+    "fabricated": false,
+    "category": "none",
+    "span": ""
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "ok",
+    "comment": null,
+    "at": "2026-10-16T07:37:37.375Z"
+   }
+  },
+  {
+   "id": "dev-01a.r1__p0-outcome-0",
+   "case": "dev-01a",
+   "rep": 1,
+   "sentence": "응답 시간 성능 지표인 결제 응답 시간의 95번째 백분위가 4.2초에서 0.8초로 줄었습니다.",
+   "cited": [
+    "p0:outcome:0"
+   ],
+   "reqs": [
+    [
+     "r10",
+     "full"
+    ]
+   ],
+   "llm": {
+    "fabricated": false,
+    "category": "none",
+    "span": ""
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "ok",
+    "comment": null,
+    "at": "2026-10-16T07:33:01.643Z"
+   }
+  },
+  {
+   "id": "dev-01a.r2__p0-context-0",
+   "case": "dev-01a",
+   "rep": 2,
+   "sentence": "숙소 예약 플랫폼에서 결제 직후 예약 확정 문자가 늦게 발송되는 문제가 반복적으로 발생했습니다.",
+   "cited": [
+    "p0:context:0"
+   ],
+   "reqs": [],
+   "llm": {
+    "fabricated": false,
+    "category": "none",
+    "span": ""
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "ok",
+    "comment": null,
+    "at": "2026-10-16T07:37:19.042Z"
+   }
+  },
+  {
+   "id": "dev-01a.r2__p1-execution-0",
+   "case": "dev-01a",
+   "rep": 2,
+   "sentence": "비개발 조직인 운영팀과 함께 기존 스크립트의 계산 규칙을 표로 정리하고 하나씩 확인하며 합의했습니다.",
+   "cited": [
+    "p1:execution:0"
+   ],
+   "reqs": [
+    [
+     "r9",
+     "full"
+    ]
+   ],
+   "llm": {
+    "fabricated": false,
+    "category": "none",
+    "span": ""
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "ok",
+    "comment": null,
+    "at": "2026-10-16T07:13:36.744Z"
+   }
+  },
+  {
+   "id": "dev-01b.r1__p1-reflection-0",
+   "case": "dev-01b",
+   "rep": 1,
+   "sentence": "코드 작성보다 정산 규칙을 운영팀과 합의하는 데 더 많은 시간이 들었습니다.",
+   "cited": [
+    "p1:reflection:0"
+   ],
+   "reqs": [],
+   "llm": {
+    "fabricated": false,
+    "category": "none",
+    "span": ""
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "ok",
+    "comment": null,
+    "at": "2026-10-16T07:57:25.854Z"
+   }
+  },
+  {
+   "id": "dev-02a.r1__p0-execution-3",
+   "case": "dev-02a",
+   "rep": 1,
+   "sentence": "상세 페이지를 서버에서 렌더링하도록 Next.js SSR(서버 사이드 렌더링)로 전환했습니다.",
+   "cited": [
+    "p0:execution:3"
+   ],
+   "reqs": [
+    [
+     "r4",
+     "full"
+    ],
+    [
+     "r1",
+     "partial"
+    ]
+   ],
+   "llm": {
+    "fabricated": false,
+    "category": "none",
+    "span": ""
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "ok",
+    "comment": null,
+    "at": "2026-10-16T07:45:43.844Z"
+   }
+  },
+  {
+   "id": "dev-02a.r1__p0-outcome-0",
+   "case": "dev-02a",
+   "rep": 1,
+   "sentence": "모바일 LCP가 4.8초에서 1.9초로 줄어 Core Web Vitals 기준을 충족했습니다.",
+   "cited": [
+    "p0:outcome:0"
+   ],
+   "reqs": [
+    [
+     "r3",
+     "full"
+    ]
+   ],
+   "llm": {
+    "fabricated": true,
+    "category": "outcome",
+    "span": "Core Web Vitals 기준을 충족했습니다"
+   },
+   "server_flag": true,
+   "human": {
+    "decision": "fab",
+    "comment": "1. 날조 있음이 맞습니다.\n1.9초는 LCP의 ‘좋음’ 기준에 해당하지만, “Core Web Vitals 기준 충족”은 INP·CLS까지 포함한 전체 통과를 뜻합니다. 원문에는 나머지 지표 결과가 없어 성과를 확대한 표현입니다.\n**“모바일 LCP가 4.8초에서 1.9초로 줄어 LCP ‘좋음’ 기준에 해당하는 수준으로 개선했습니다.”**라면 정상입니다.",
+    "at": "2026-10-16T07:35:44.736Z"
+   }
+  },
+  {
+   "id": "dev-02a.r1__p2-context-0",
+   "case": "dev-02a",
+   "rep": 1,
+   "sentence": "화면마다 버튼과 입력창 모양이 조금씩 달랐습니다.",
+   "cited": [
+    "p2:context:0"
+   ],
+   "reqs": [],
+   "llm": {
+    "fabricated": false,
+    "category": "none",
+    "span": ""
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "ok",
+    "comment": null,
+    "at": "2026-10-16T07:24:04.858Z"
+   }
+  },
+  {
+   "id": "dev-02a.r2__p0-reflection-0",
+   "case": "dev-02a",
+   "rep": 2,
+   "sentence": "첫 시도에서는 수치를 재지 않고 짐작으로 코드를 고쳤다가 효과가 없었습니다.",
+   "cited": [
+    "p0:reflection:0"
+   ],
+   "reqs": [],
+   "llm": {
+    "fabricated": false,
+    "category": "none",
+    "span": ""
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "ok",
+    "comment": null,
+    "at": "2026-10-16T07:24:33.090Z"
+   }
+  },
+  {
+   "id": "dev-02b.r1__p2-outcome-0",
+   "case": "dev-02b",
+   "rep": 1,
+   "sentence": "2024년 하반기에 새로 만든 화면 9개가 모두 이 디자인 시스템의 공통 컴포넌트로 만들어졌습니다.",
+   "cited": [
+    "p2:outcome:0"
+   ],
+   "reqs": [
+    [
+     "r8",
+     "full"
+    ]
+   ],
+   "llm": {
+    "fabricated": true,
+    "category": "method",
+    "span": "이 디자인 시스템의"
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "fab",
+    "comment": null,
+    "at": "2026-10-16T07:14:45.508Z"
+   }
+  },
+  {
+   "id": "dev-02b.r1__p2-role-0",
+   "case": "dev-02b",
+   "rep": 1,
+   "sentence": "프론트엔드 리드가 방향을 정한 디자인 시스템 작업에서, 저는 폼 컴포넌트 12종 작성을 맡아 운영했습니다.",
+   "cited": [
+    "p2:role:0"
+   ],
+   "reqs": [
+    [
+     "r8",
+     "full"
+    ]
+   ],
+   "llm": {
+    "fabricated": true,
+    "category": "role",
+    "span": "운영했습니다"
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "fab",
+    "comment": "폼 컴포넌트 정리와 디자인시스템 작업은 다른것임.",
+    "at": "2026-10-16T07:15:50.587Z"
+   }
+  },
+  {
+   "id": "dev-02b.r2__p1-reflection-0",
+   "case": "dev-02b",
+   "rep": 2,
+   "sentence": "시안을 선택할 때 팀원 의견에만 의존했던 점이 아쉬웠습니다.",
+   "cited": [
+    "p1:reflection:0"
+   ],
+   "reqs": [
+    [
+     "r7",
+     "partial"
+    ]
+   ],
+   "llm": {
+    "fabricated": false,
+    "category": "none",
+    "span": ""
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "ok",
+    "comment": null,
+    "at": "2026-10-16T07:45:49.719Z"
+   }
+  },
+  {
+   "id": "dev-02b.r2__p2-outcome-0",
+   "case": "dev-02b",
+   "rep": 2,
+   "sentence": "2024년 하반기에 새로 만든 화면 9개가 모두 이 디자인 시스템의 공통 컴포넌트로 만들어졌습니다.",
+   "cited": [
+    "p2:outcome:0"
+   ],
+   "reqs": [
+    [
+     "r8",
+     "full"
+    ]
+   ],
+   "llm": {
+    "fabricated": true,
+    "category": "method",
+    "span": "디자인 시스템"
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "fab",
+    "comment": null,
+    "at": "2026-10-16T07:33:11.335Z"
+   }
+  },
+  {
+   "id": "dev-03a.r1__p0-outcome-0",
+   "case": "dev-03a",
+   "rep": 1,
+   "sentence": "온보딩을 4단계로 줄여 출시한 뒤 가입 후 첫 기록 비율 지표가 41%에서 58%로 상승했습니다.",
+   "cited": [
+    "p0:outcome:0"
+   ],
+   "reqs": [
+    [
+     "r10",
+     "full"
+    ]
+   ],
+   "llm": {
+    "fabricated": false,
+    "category": "none",
+    "span": ""
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "ok",
+    "comment": null,
+    "at": "2026-10-16T07:25:02.940Z"
+   }
+  },
+  {
+   "id": "dev-03a.r1__p0-problem-0",
+   "case": "dev-03a",
+   "rep": 1,
+   "sentence": "온보딩의 어느 단계에서 사용자가 이탈하는지 팀 안에서 명확히 정의되어 있지 않아, 이를 문제로 규정하고 원인 가설을 세우는 작업부터 시작했습니다.",
+   "cited": [
+    "p0:problem:0"
+   ],
+   "reqs": [
+    [
+     "r2",
+     "full"
+    ]
+   ],
+   "llm": {
+    "fabricated": true,
+    "category": "method",
+    "span": "원인 가설을 세우는 작업부터 시작했습니다"
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "fab",
+    "comment": null,
+    "at": "2026-10-16T07:57:49.495Z"
+   }
+  },
+  {
+   "id": "dev-03a.r2__p0-problem-0",
+   "case": "dev-03a",
+   "rep": 2,
+   "sentence": "사용자가 온보딩의 어느 단계에서 이탈하는지에 대한 정의가 팀 내에 없었다는 점을 문제로 삼았습니다.",
+   "cited": [
+    "p0:problem:0"
+   ],
+   "reqs": [
+    [
+     "r2",
+     "full"
+    ]
+   ],
+   "llm": {
+    "fabricated": true,
+    "category": "other",
+    "span": "정의가 없었다는 점을 문제로 삼았습니다"
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "ok",
+    "comment": "팀이 이탈 단계를 파악하지 못했고, 본인이 단계별 데이터를 추출해 공유했다는 사실을 문제의식으로 정리한 표현입니다. 새로운 역할이나 행동을 추가하지 않았습니다.\n다만 ‘정의가 없었다’보다는 **‘어느 단계에서 이탈하는지 팀이 정확히 파악하지 못한 점을 문제로 삼았습니다’**가 더 정확합니다.",
+    "at": "2026-10-16T07:31:34.615Z"
+   }
+  },
+  {
+   "id": "dev-03a.r2__p0-role-0",
+   "case": "dev-03a",
+   "rep": 2,
+   "sentence": "PM 1명, 디자이너 1명과 한 스쿼드로 작업했고, 저는 사용자 행동 데이터 추출과 구현을 맡았습니다.",
+   "cited": [
+    "p0:role:0"
+   ],
+   "reqs": [
+    [
+     "r7",
+     "full"
+    ]
+   ],
+   "llm": {
+    "fabricated": true,
+    "category": "other",
+    "span": "한 스쿼드로"
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "fab",
+    "comment": "스쿼드는 보통 다음 특징이 있습니다.\n- 공통 목표: 온보딩 개선, 구매 전환 개선 등 같은 목표를 책임짐\n- 여러 직무의 팀 구성: 필요한 직무가 한 팀으로 묶여 일함\n- 일정 수준의 자율성: 목표 달성을 위한 우선순위와 해결 방법을 팀 안에서 결정함\n다만 회사마다 쓰는 방식은 다릅니다. PM·디자이너·개발자와 협업했다는 사실만으로 스쿼드였다고 단정하기는 어렵습니다. 특정 프로젝트에서 업무를 주고받은 관계일 수도 있기 때문입니다.",
+    "at": "2026-10-16T07:27:16.867Z"
+   }
+  },
+  {
+   "id": "dev-03a.r2__p1-execution-1",
+   "case": "dev-03a",
+   "rep": 2,
+   "sentence": "PM이 정한 알림 문구 3종을 운영자가 관리 화면에서 직접 바꿀 수 있도록 운영 정책을 마련했습니다.",
+   "cited": [
+    "p1:execution:1"
+   ],
+   "reqs": [],
+   "llm": {
+    "fabricated": true,
+    "category": "method",
+    "span": "운영 정책을 마련했습니다"
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "fab",
+    "comment": null,
+    "at": "2026-10-16T07:36:10.380Z"
+   }
+  },
+  {
+   "id": "dev-03a.r2__p1-outcome-0",
+   "case": "dev-03a",
+   "rep": 2,
+   "sentence": "출시 후 하루 1.2만 건의 알림이 예정 시각 1분 안에 나가는 것을 지표로 확인했습니다.",
+   "cited": [
+    "p1:outcome:0"
+   ],
+   "reqs": [
+    [
+     "r10",
+     "full"
+    ]
+   ],
+   "llm": {
+    "fabricated": false,
+    "category": "none",
+    "span": ""
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "ok",
+    "comment": null,
+    "at": "2026-10-16T07:37:32.091Z"
+   }
+  },
+  {
+   "id": "dev-03a.r2__p1-role-0",
+   "case": "dev-03a",
+   "rep": 2,
+   "sentence": "서버와 앱 양쪽 구현을 맡아 알림 기능의 기획부터 출시까지 담당했습니다.",
+   "cited": [
+    "p1:role:0"
+   ],
+   "reqs": [
+    [
+     "r7",
+     "full"
+    ]
+   ],
+   "llm": {
+    "fabricated": true,
+    "category": "role",
+    "span": "기획부터 출시까지"
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "fab",
+    "comment": null,
+    "at": "2026-10-16T07:32:54.668Z"
+   }
+  },
+  {
+   "id": "dev-03b.r1__p0-execution-2",
+   "case": "dev-03b",
+   "rep": 1,
+   "sentence": "퍼널 분석 결과 알림 권한을 묻는 단계에서 이탈이 가장 많다는 것을 확인해 PM에게 공유했습니다.",
+   "cited": [
+    "p0:execution:2"
+   ],
+   "reqs": [
+    [
+     "r2",
+     "full"
+    ]
+   ],
+   "llm": {
+    "fabricated": true,
+    "category": "method",
+    "span": "퍼널 분석 결과"
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "ok",
+    "comment": "단계별 이벤트와 가입 데이터를 묶어 이탈을 분석한 것을 “퍼널 분석”으로 표현한 것은 정상적인 직무 용어 변환입니다. 알림 권한 단계의 최다 이탈을 확인해 PM에게 공유했다는 행동도 원문과 일치합니다.",
+    "at": "2026-10-16T07:39:44.996Z"
+   }
+  },
+  {
+   "id": "dev-03b.r1__p2-outcome-0",
+   "case": "dev-03b",
+   "rep": 1,
+   "sentence": "1차 출시는 계획보다 1주 늦은 2025년 3월에 나갔습니다.",
+   "cited": [
+    "p2:outcome:0"
+   ],
+   "reqs": [],
+   "llm": {
+    "fabricated": false,
+    "category": "none",
+    "span": ""
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "ok",
+    "comment": null,
+    "at": "2026-10-16T07:37:12.442Z"
+   }
+  },
+  {
+   "id": "dev-03b.r2__p2-execution-1",
+   "case": "dev-03b",
+   "rep": 2,
+   "sentence": "디자이너가 진행한 사용자 인터뷰 3건에 참관해 전환 과정에서 나온 질문과 답을 메모로 정리했습니다.",
+   "cited": [
+    "p2:execution:1"
+   ],
+   "reqs": [],
+   "llm": {
+    "fabricated": true,
+    "category": "other",
+    "span": "전환 과정에서 나온"
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "fab",
+    "comment": null,
+    "at": "2026-10-16T07:51:10.383Z"
+   }
+  },
+  {
+   "id": "dev-03b.r2__p2-reflection-0",
+   "case": "dev-03b",
+   "rep": 2,
+   "sentence": "명세를 쓰면서 이 기능이 전환에 어떻게 기여하는지 답하지 못하는 부분이 많았습니다.",
+   "cited": [
+    "p2:reflection:0"
+   ],
+   "reqs": [],
+   "llm": {
+    "fabricated": true,
+    "category": "other",
+    "span": "전환에 어떻게 기여하는지"
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "fab",
+    "comment": null,
+    "at": "2026-10-16T07:54:25.589Z"
+   }
+  },
+  {
+   "id": "marketing-01b.r1__p1-execution-0",
+   "case": "marketing-01b",
+   "rep": 1,
+   "sentence": "구매 이벤트가 결제 완료 응답 시점에 발생하도록 개발자와 함께 이벤트 스키마를 설계하고 Google Tag Manager에서 검증해 데이터 정합성을 맞췄습니다.",
+   "cited": [
+    "p1:execution:0"
+   ],
+   "reqs": [
+    [
+     "r7",
+     "full"
+    ],
+    [
+     "r8",
+     "full"
+    ]
+   ],
+   "llm": {
+    "fabricated": true,
+    "category": "method",
+    "span": "이벤트 스키마를 설계하고"
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "fab",
+    "comment": null,
+    "at": "2026-10-16T07:50:49.779Z"
+   }
+  },
+  {
+   "id": "marketing-01b.r1__p1-problem-0",
+   "case": "marketing-01b",
+   "rep": 1,
+   "sentence": "간편결제로 결제하면 완료 페이지를 거치지 않아 구매 전환 이벤트가 누락되는 문제가 있었습니다.",
+   "cited": [
+    "p1:problem:0"
+   ],
+   "reqs": [],
+   "llm": {
+    "fabricated": false,
+    "category": "none",
+    "span": ""
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "ok",
+    "comment": null,
+    "at": "2026-10-16T07:51:22.324Z"
+   }
+  },
+  {
+   "id": "marketing-01b.r2__p0-reflection-1",
+   "case": "marketing-01b",
+   "rep": 2,
+   "sentence": "다만 소재 비교를 기간을 나눠 진행해 통계적 유의성을 확보하지 못했고, 요일 차이가 결과에 섞였을 가능성은 아쉬운 지점입니다.",
+   "cited": [
+    "p0:reflection:1"
+   ],
+   "reqs": [
+    [
+     "r6",
+     "partial"
+    ]
+   ],
+   "llm": {
+    "fabricated": true,
+    "category": "method",
+    "span": "통계적 유의성을 확보하지 못했고"
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "fab",
+    "comment": "“통계적 유의성을 확보하지 못했고”는 원문에 없는 통계적 판단을 추가합니다. 기간을 나눠 비교해 요일 영향이 섞였을 가능성과, 통계적 유의성 확보 여부는 별개입니다. 원문에는 유의성을 검정하거나 판단했다는 근거가 없습니다.",
+    "at": "2026-10-16T07:50:42.464Z"
+   }
+  },
+  {
+   "id": "marketing-02a.r1__p0-execution-0",
+   "case": "marketing-02a",
+   "rep": 1,
+   "sentence": "마지막 주문 시점과 반려동물 나이를 기준으로 휴면 회원을 네 개 세그먼트로 나눴습니다.",
+   "cited": [
+    "p0:execution:0"
+   ],
+   "reqs": [
+    [
+     "r2",
+     "full"
+    ]
+   ],
+   "llm": {
+    "fabricated": false,
+    "category": "none",
+    "span": ""
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "ok",
+    "comment": null,
+    "at": "2026-10-16T07:51:15.716Z"
+   }
+  },
+  {
+   "id": "marketing-02a.r1__p0-role-0",
+   "case": "marketing-02a",
+   "rep": 1,
+   "sentence": "CRM 담당자로 메시지 시나리오 기획과 발송, 결과 분석을 혼자 맡았습니다.",
+   "cited": [
+    "p0:role:0"
+   ],
+   "reqs": [
+    [
+     "r3",
+     "full"
+    ]
+   ],
+   "llm": {
+    "fabricated": false,
+    "category": "none",
+    "span": ""
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "ok",
+    "comment": null,
+    "at": "2026-10-16T07:39:51.825Z"
+   }
+  },
+  {
+   "id": "marketing-02b.r2__p0-problem-0",
+   "case": "marketing-02b",
+   "rep": 2,
+   "sentence": "휴면 회원 전체에게 같은 할인 쿠폰 문자를 한 달에 한 번 일괄 발송하고 있었습니다.",
+   "cited": [
+    "p0:problem:0"
+   ],
+   "reqs": [],
+   "llm": {
+    "fabricated": false,
+    "category": "none",
+    "span": ""
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "ok",
+    "comment": null,
+    "at": "2026-10-16T07:31:48.749Z"
+   }
+  },
+  {
+   "id": "marketing-02b.r2__p1-execution-2",
+   "case": "marketing-02b",
+   "rep": 2,
+   "sentence": "고객 동의를 받아 후기 사진을 재게시하는 UGC 코너를 운영했습니다.",
+   "cited": [
+    "p1:execution:2"
+   ],
+   "reqs": [
+    [
+     "r9",
+     "full"
+    ]
+   ],
+   "llm": {
+    "fabricated": false,
+    "category": "none",
+    "span": ""
+   },
+   "server_flag": true,
+   "human": {
+    "decision": "ok",
+    "comment": null,
+    "at": "2026-10-16T07:23:52.867Z"
+   }
+  },
+  {
+   "id": "marketing-03a.r1__p0-reflection-0",
+   "case": "marketing-03a",
+   "rep": 1,
+   "sentence": "비교한 두 기간의 시기가 달라 성수기 효과가 섞였을 수 있고, 동시 분할 실험이 아닌 순차 비교였던 만큼 개선 폭을 그대로 믿기는 어렵습니다.",
+   "cited": [
+    "p0:reflection:0"
+   ],
+   "reqs": [],
+   "llm": {
+    "fabricated": true,
+    "category": "method",
+    "span": "동시 분할 실험이 아닌 순차 비교였던 만큼"
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "ok",
+    "comment": "적용 전 2주와 적용 후 2주를 비교했으므로 “동시 분할 실험이 아닌 순차 비교”는 원문의 방식을 정확히 설명한 표현입니다. 성수기 효과와 개선 폭에 대한 한계도 원문에 명시돼 있습니다.",
+    "at": "2026-10-16T07:43:05.999Z"
+   }
+  },
+  {
+   "id": "marketing-03a.r2__p0-reflection-1",
+   "case": "marketing-03a",
+   "rep": 2,
+   "sentence": "그래도 VOC 기록이 화면 개선 가설의 출발점이 될 수 있다는 것을 배웠습니다.",
+   "cited": [
+    "p0:reflection:1"
+   ],
+   "reqs": [],
+   "llm": {
+    "fabricated": false,
+    "category": "none",
+    "span": ""
+   },
+   "server_flag": true,
+   "human": {
+    "decision": "ok",
+    "comment": null,
+    "at": "2026-10-16T07:54:34.915Z"
+   }
+  },
+  {
+   "id": "marketing-03a.r2__p1-outcome-0",
+   "case": "marketing-03a",
+   "rep": 2,
+   "sentence": "1년 만에 구독자 1.2만 명을 확보했고, 핵심 지표인 평균 오픈율은 41%로 올랐습니다.",
+   "cited": [
+    "p1:outcome:0"
+   ],
+   "reqs": [],
+   "llm": {
+    "fabricated": false,
+    "category": "none",
+    "span": ""
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "ok",
+    "comment": null,
+    "at": "2026-10-16T07:13:47.786Z"
+   }
+  },
+  {
+   "id": "marketing-03a.r2__p2-context-0",
+   "case": "marketing-03a",
+   "rep": 2,
+   "sentence": "느린여행 인스타그램 계정을 운영하며 매달 12건 안팎의 카드뉴스를 게시했습니다. 여행·숙박 서비스를 알리는 콘텐츠였습니다.",
+   "cited": [
+    "p2:context:0"
+   ],
+   "reqs": [
+    [
+     "r11",
+     "full"
+    ]
+   ],
+   "llm": {
+    "fabricated": true,
+    "category": "domain",
+    "span": "여행·숙박 서비스를 알리는 콘텐츠였습니다."
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "ok",
+    "comment": "앞서 제공된 동일한 ‘느린여행’ 프로젝트까지 근거 범위에 포함하면 2 정상으로 볼 수 있습니다. 앞 원문에 느린여행이 ‘소도시 숙소 예약 서비스’라고 명시돼 있어 여행·숙박 도메인은 근거가 있습니다. 카드뉴스 제작·게시를 “계정 운영”으로 표현한 것도 이 문맥에서는 무리하지 않습니다.\n다만 이번에 붙인 원문만으로 평가한다면 1 날조 있음입니다. 계정 이름만으로 카드뉴스가 여행·숙박 서비스를 알리는 내용이었다고 확정할 수는 없습니다.\n이 사례는 근거 범위를 개별 프로젝트로 제한하는지, 지원자의 전체 원문으로 보는지에 따라 판정이 달라집니다.",
+    "at": "2026-10-16T07:57:21.490Z"
+   }
+  },
+  {
+   "id": "marketing-03a.r2__p2-execution-1",
+   "case": "marketing-03a",
+   "rep": 2,
+   "sentence": "색상은 브랜드 색 두 가지와 회색만 사용하도록 규칙을 정했습니다.",
+   "cited": [
+    "p2:execution:1"
+   ],
+   "reqs": [],
+   "llm": {
+    "fabricated": false,
+    "category": "none",
+    "span": ""
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "ok",
+    "comment": null,
+    "at": "2026-10-16T07:13:15.753Z"
+   }
+  },
+  {
+   "id": "marketing-03b.r1__p0-outcome-0",
+   "case": "marketing-03b",
+   "rep": 1,
+   "sentence": "예약 전환율이 2.1%에서 3.4%로 올랐습니다.",
+   "cited": [
+    "p0:outcome:0"
+   ],
+   "reqs": [],
+   "llm": {
+    "fabricated": false,
+    "category": "none",
+    "span": ""
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "ok",
+    "comment": null,
+    "at": "2026-10-16T07:44:40.596Z"
+   }
+  },
+  {
+   "id": "marketing-03b.r1__p0-reflection-0",
+   "case": "marketing-03b",
+   "rep": 1,
+   "sentence": "비교한 두 기간의 시기가 달라 성수기 효과가 섞였을 수 있어 개선 폭을 그대로 믿기는 어렵습니다.",
+   "cited": [
+    "p0:reflection:0"
+   ],
+   "reqs": [],
+   "llm": {
+    "fabricated": false,
+    "category": "none",
+    "span": ""
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "ok",
+    "comment": null,
+    "at": "2026-10-16T07:37:02.284Z"
+   }
+  },
+  {
+   "id": "marketing-03b.r1__p1-execution-1",
+   "case": "marketing-03b",
+   "rep": 1,
+   "sentence": "Canva로 표지 이미지 템플릿을 제작해, 매 호 같은 틀 안에서 색상과 사진만 바꿔 적용하는 방식으로 제작 시간을 줄였습니다.",
+   "cited": [
+    "p1:execution:1"
+   ],
+   "reqs": [
+    [
+     "r2",
+     "full"
+    ],
+    [
+     "r6",
+     "partial"
+    ],
+    [
+     "r10",
+     "full"
+    ]
+   ],
+   "llm": {
+    "fabricated": true,
+    "category": "outcome",
+    "span": "제작 시간을 줄였습니다"
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "fab",
+    "comment": null,
+    "at": "2026-10-16T07:35:56.301Z"
+   }
+  },
+  {
+   "id": "marketing-03b.r2__p0-execution-1",
+   "case": "marketing-03b",
+   "rep": 2,
+   "sentence": "가격과 환불 규정을 첫 화면 레이아웃에 배치한 와이어프레임을 Figma로 그려 디자이너에게 전달했습니다.",
+   "cited": [
+    "p0:execution:1"
+   ],
+   "reqs": [],
+   "llm": {
+    "fabricated": false,
+    "category": "none",
+    "span": ""
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "ok",
+    "comment": null,
+    "at": "2026-10-16T07:45:29.161Z"
+   }
+  },
+  {
+   "id": "planning-01a.r2__p0-context-0",
+   "case": "planning-01a",
+   "rep": 2,
+   "sentence": "핏모아는 요가·필라테스 같은 동네 운동 클래스를 예약하는 서비스입니다.",
+   "cited": [
+    "p0:context:0"
+   ],
+   "reqs": [
+    [
+     "r9",
+     "full"
+    ]
+   ],
+   "llm": {
+    "fabricated": false,
+    "category": "none",
+    "span": ""
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "ok",
+    "comment": null,
+    "at": "2026-10-16T07:39:58.931Z"
+   }
+  },
+  {
+   "id": "planning-01b.r1__p1-context-0",
+   "case": "planning-01b",
+   "rep": 1,
+   "sentence": "강사 정산 내역은 운영팀이 매달 엑셀로 정리해 메일로 발송하는 방식으로 운영되고 있었습니다.",
+   "cited": [
+    "p1:context:0"
+   ],
+   "reqs": [],
+   "llm": {
+    "fabricated": false,
+    "category": "none",
+    "span": ""
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "ok",
+    "comment": null,
+    "at": "2026-10-16T07:37:24.891Z"
+   }
+  },
+  {
+   "id": "planning-01b.r2__p1-context-0",
+   "case": "planning-01b",
+   "rep": 2,
+   "sentence": "강사 정산 내역은 운영팀이 매달 엑셀로 정리해 메일로 전달하는 방식으로 운영되고 있었습니다.",
+   "cited": [
+    "p1:context:0"
+   ],
+   "reqs": [],
+   "llm": {
+    "fabricated": false,
+    "category": "none",
+    "span": ""
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "ok",
+    "comment": null,
+    "at": "2026-10-16T07:27:25.409Z"
+   }
+  },
+  {
+   "id": "planning-02a.r1__p1-role-0",
+   "case": "planning-02a",
+   "rep": 1,
+   "sentence": "선임 기획자가 정한 범위 안에서 화면 설계와 QA를 담당했습니다.",
+   "cited": [
+    "p1:role:0"
+   ],
+   "reqs": [],
+   "llm": {
+    "fabricated": false,
+    "category": "none",
+    "span": ""
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "ok",
+    "comment": null,
+    "at": "2026-10-16T07:16:32.118Z"
+   }
+  },
+  {
+   "id": "planning-02a.r2__p1-context-0",
+   "case": "planning-02a",
+   "rep": 2,
+   "sentence": "단어장은 학습한 문장을 모아 다시 보는 화면으로, 출시 후 3년 동안 구조 변경 없이 운영된 학습 콘텐츠 앱의 핵심 기능이었습니다.",
+   "cited": [
+    "p1:context:0"
+   ],
+   "reqs": [
+    [
+     "r9",
+     "full"
+    ]
+   ],
+   "llm": {
+    "fabricated": true,
+    "category": "other",
+    "span": "학습 콘텐츠 앱의 핵심 기능"
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "ok",
+    "comment": "‘학습 콘텐츠 앱’은 문장을 학습하고 다시 보는 기능의 맥락에 부합하고, ‘핵심 기능’도 그 중요성을 설명하는 정성적 표현입니다. 이용률 1위 같은 구체적인 위상이나 성과를 추가한 것은 아니므로, 면접에서도 원문의 용도를 근거로 설명할 수 있습니다.\n앞서 유사 문장에서 ‘핵심’이라는 표현만으로 날조라고 판정한 것은 지나치게 엄격했습니다.",
+    "at": "2026-10-16T07:19:02.567Z"
+   }
+  },
+  {
+   "id": "planning-02b.r1__p0-execution-2",
+   "case": "planning-02b",
+   "rep": 1,
+   "sentence": "이 결과를 팀에 공유해 이해관계자들의 합의를 이끌었고, 회원이 발송 시간을 직접 선택하도록 우선순위를 조정하기로 결정했습니다.",
+   "cited": [
+    "p0:execution:2"
+   ],
+   "reqs": [
+    [
+     "r9",
+     "full"
+    ]
+   ],
+   "llm": {
+    "fabricated": true,
+    "category": "role",
+    "span": "이해관계자들의 합의를 이끌었고"
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "fab",
+    "comment": "“이해관계자들의 합의를 이끌었고”는 팀에 결과를 공유한 역할을 합의 주도로 부풀렸습니다. “우선순위를 조정하기로 결정”한 행동도 원문에 없습니다. 원문에서 발송 시간 선택 기능을 도입하기로 결정한 주체는 팀입니다.",
+    "at": "2026-10-16T07:44:19.190Z"
+   }
+  },
+  {
+   "id": "planning-02b.r1__p1-context-0",
+   "case": "planning-02b",
+   "rep": 1,
+   "sentence": "단어장은 학습한 문장을 모아 다시 보는 화면으로, 학습 앱의 핵심 기능 중 하나이며 출시 후 3년 동안 구조가 바뀌지 않았습니다.",
+   "cited": [
+    "p1:context:0"
+   ],
+   "reqs": [
+    [
+     "r7",
+     "full"
+    ]
+   ],
+   "llm": {
+    "fabricated": true,
+    "category": "other",
+    "span": "학습 앱의 핵심 기능 중 하나이며"
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "fab",
+    "comment": "“학습 앱의 핵심 기능 중 하나”는 원문에 없는 중요도 판단을 추가합니다. 단어장의 용도와 3년간 구조가 바뀌지 않았다는 사실만으로 핵심 기능이라고 단정할 근거는 없습니다.",
+    "at": "2026-10-16T07:47:18.082Z"
+   }
+  },
+  {
+   "id": "planning-02b.r1__p1-execution-2",
+   "case": "planning-02b",
+   "rep": 1,
+   "sentence": "출시 전 테스트 케이스 86개를 작성해 디자이너·개발자와 함께 iOS, 안드로이드 환경에서 QA를 진행하고 출시를 완료했습니다.",
+   "cited": [
+    "p1:execution:2"
+   ],
+   "reqs": [
+    [
+     "r5",
+     "full"
+    ]
+   ],
+   "llm": {
+    "fabricated": true,
+    "category": "role",
+    "span": "디자이너·개발자와 함께"
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "fab",
+    "comment": null,
+    "at": "2026-10-16T07:29:12.629Z"
+   }
+  },
+  {
+   "id": "planning-02b.r1__p2-execution-1",
+   "case": "planning-02b",
+   "rep": 1,
+   "sentence": "매주 월요일 유형별 VOC 건수를 정리해 기획 회의에서 이해관계자들과 공유하며, 데이터에 근거해 논의가 이뤄지도록 했습니다.",
+   "cited": [
+    "p2:execution:1"
+   ],
+   "reqs": [
+    [
+     "r8",
+     "full"
+    ],
+    [
+     "r9",
+     "full"
+    ]
+   ],
+   "llm": {
+    "fabricated": true,
+    "category": "outcome",
+    "span": "데이터에 근거해 논의가 이뤄지도록 했습니다"
+   },
+   "server_flag": true,
+   "human": {
+    "decision": "ok",
+    "comment": null,
+    "at": "2026-10-16T07:24:41.098Z"
+   }
+  },
+  {
+   "id": "planning-02b.r2__p0-role-0",
+   "case": "planning-02b",
+   "rep": 2,
+   "sentence": "선임 기획자를 도와 알림 시나리오 표를 정리하고 알림 문구 20종을 작성하는 기획 보조 역할을 맡았습니다.",
+   "cited": [
+    "p0:role:0"
+   ],
+   "reqs": [],
+   "llm": {
+    "fabricated": false,
+    "category": "none",
+    "span": ""
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "ok",
+    "comment": null,
+    "at": "2026-10-16T07:45:19.566Z"
+   }
+  },
+  {
+   "id": "planning-02b.r2__p1-problem-0",
+   "case": "planning-02b",
+   "rep": 2,
+   "sentence": "저장한 문장이 날짜순으로만 쌓여 원하는 문장을 찾기 어렵다는 사용자 문의(VOC)가 이어졌고, 이를 개선 과제로 연결했습니다.",
+   "cited": [
+    "p1:problem:0"
+   ],
+   "reqs": [
+    [
+     "r8",
+     "full"
+    ]
+   ],
+   "llm": {
+    "fabricated": true,
+    "category": "other",
+    "span": "이를 개선 과제로 연결했습니다"
+   },
+   "server_flag": true,
+   "human": {
+    "decision": "fab",
+    "comment": "“이를 개선 과제로 연결했습니다”는 지원자가 문의를 바탕으로 개선 과제를 도출했다는 행동을 추가합니다. 원문에서 지원자는 선임 기획자가 정한 범위 안에서 화면 설계와 QA를 담당했으며, 과제를 선정하거나 연결한 주체라는 근거는 없습니다.",
+    "at": "2026-10-16T07:45:03.708Z"
+   }
+  },
+  {
+   "id": "planning-02b.r2__p2-role-0",
+   "case": "planning-02b",
+   "rep": 2,
+   "sentence": "CS 담당자 1명과 함께 진행했으며, VOC 분류 기준 설계를 맡았습니다.",
+   "cited": [
+    "p2:role:0"
+   ],
+   "reqs": [],
+   "llm": {
+    "fabricated": false,
+    "category": "none",
+    "span": ""
+   },
+   "server_flag": true,
+   "human": {
+    "decision": "ok",
+    "comment": null,
+    "at": "2026-10-16T07:14:20.456Z"
+   }
+  },
+  {
+   "id": "planning-03a.r1__p1-role-0",
+   "case": "planning-03a",
+   "rep": 1,
+   "sentence": "기획자로 문제 파악과 개선안 정리를 맡았고, 화면 디자인은 디자이너와 협업해 진행했습니다.",
+   "cited": [
+    "p1:role:0"
+   ],
+   "reqs": [
+    [
+     "r10",
+     "full"
+    ]
+   ],
+   "llm": {
+    "fabricated": false,
+    "category": "none",
+    "span": ""
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "ok",
+    "comment": null,
+    "at": "2026-10-16T07:54:30.073Z"
+   }
+  },
+  {
+   "id": "planning-03a.r2__p0-role-0",
+   "case": "planning-03a",
+   "rep": 2,
+   "sentence": "CRM 기획자로서 알림 메시지 시나리오와 발송 조건을 설계했고, 실제 캠페인 발송은 마케팅팀이 맡았습니다.",
+   "cited": [
+    "p0:role:0"
+   ],
+   "reqs": [],
+   "llm": {
+    "fabricated": true,
+    "category": "role",
+    "span": "CRM"
+   },
+   "server_flag": true,
+   "human": {
+    "decision": "ok",
+    "comment": "지원분야가 목표 직무 CRM 마케터",
+    "at": "2026-10-16T07:32:24.755Z"
+   }
+  },
+  {
+   "id": "planning-03a.r2__p1-execution-1",
+   "case": "planning-03a",
+   "rep": 2,
+   "sentence": "6명 중 4명이 진료 항목 선택 단계에서 멈추는 것을 확인했습니다.",
+   "cited": [
+    "p1:execution:1"
+   ],
+   "reqs": [],
+   "llm": {
+    "fabricated": false,
+    "category": "none",
+    "span": ""
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "ok",
+    "comment": null,
+    "at": "2026-10-16T07:46:48.168Z"
+   }
+  },
+  {
+   "id": "planning-03a.r2__p1-role-0",
+   "case": "planning-03a",
+   "rep": 2,
+   "sentence": "기획자로서 문제 파악과 개선안 정리를 맡았고, 화면 디자인은 디자이너가 담당했습니다.",
+   "cited": [
+    "p1:role:0"
+   ],
+   "reqs": [],
+   "llm": {
+    "fabricated": false,
+    "category": "none",
+    "span": ""
+   },
+   "server_flag": false,
+   "human": {
+    "decision": "ok",
+    "comment": null,
+    "at": "2026-10-16T07:24:26.465Z"
+   }
+  }
+ ]
+}

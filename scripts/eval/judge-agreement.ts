@@ -30,7 +30,7 @@ function wilson(k: number, n: number, z = 1.96): [number, number] {
   if (n === 0) return [0, 1];
   const p = k / n, d = 1 + (z * z) / n, c = p + (z * z) / (2 * n);
   const m = z * Math.sqrt((p * (1 - p)) / n + (z * z) / (4 * n * n));
-  return [(c - m) / d, (c + m) / d];
+  return [Math.max(0, (c - m) / d), Math.min(1, (c + m) / d)];
 }
 const pct = (x: number) => `${(x * 100).toFixed(1)}%`;
 const range = ([a, b]: [number, number]) => `${pct(a)}~${pct(b)}`;
