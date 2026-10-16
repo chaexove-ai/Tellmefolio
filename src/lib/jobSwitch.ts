@@ -77,9 +77,24 @@ export interface Match {
 }
 
 export interface Sentence {
+  /** 지금 보여 줄 최종 문장. 사용자가 고치거나 원문으로 되돌리면 바뀝니다 */
   text: string;
   evidence: string[];
   requirements: string[];
+  /**
+   * [10-16] 사용자의 문장별 결정. 없으면 미결정. 서버 함수는 이 필드를 쓰지 않습니다.
+   * 설계: docs/sentence-review-design.md
+   */
+  review?: SentenceReview;
+}
+
+export type ReviewStatus = "accepted" | "edited" | "reverted" | "deleted";
+
+export interface SentenceReview {
+  status: ReviewStatus;
+  /** 결정 전 AI 문장. "결정 취소"로 되돌릴 때 씁니다 */
+  ai_text: string;
+  at: string;
 }
 
 export interface Flag {
@@ -296,6 +311,57 @@ export async function updateRunLead(runId: string, lead: LeadField): Promise<voi
   const sb = await requireClient();
   const { error } = await sb.from("job_switch_runs").update({ lead }).eq("id", runId);
   if (error) throw new JobSwitchError("순서를 저장하지 못했습니다.");
+}
+
+/**
+ * 한 필드의 문장 목록을 이어 붙인 글. 서버의 joinField 와 같은 규칙에,
+ * 사용자가 지운 문장(deleted)만 건너뜁니다. 새 포트폴리오로 저장할 때는
+ * 이 글이 복사됩니다(saveRunAsPortfolio 는 sentences 를 보지 않음).
+ */
+export function joinSentences(sentences: Sentence[]): string {
+  return sentences
+    .filter((s) => s.review?.status !== "deleted")
+    .map((s) => s.text.trim())
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+}
+
+/**
+ * 문장 결정 저장. sentences 와 그 필드의 이어 붙인 글을 한 번에 바꿉니다.
+ * 문장을 배열에서 빼지 않습니다 — flags 의 sentenceIndex 가 순서에 기대기 때문입니다.
+ */
+export async function updateProjectSentences(
+  projectId: string,
+  field: RewriteField,
+  sentences: Record<RewriteField, Sentence[]>
+): Promise<void> {
+  const sb = await requireClient();
+  const { error } = await sb
+    .from("job_switch_projects")
+    .update({ sentences, [field]: joinSentences(sentences[field] ?? []) })
+    .eq("id", projectId);
+  if (error) throw new JobSwitchError("문장 결정을 저장하지 못했습니다.");
+}
+
+/* 고친 문장 다시 검사 — supabase/functions/_shared/evidence.ts 의 numbersIn / termsIn
+   과 같은 규칙입니다(빌드가 따로라 옮겨 적음). 한쪽을 바꾸면 다른 쪽도 바꾸세요. */
+export function numbersIn(text: string): string[] {
+  return (text.match(/\d+(?:[.,]\d+)*/g) ?? []).map((n) => n.replace(/,/g, ""));
+}
+export function termsIn(text: string): string[] {
+  return (text.match(/[A-Za-z][A-Za-z0-9+#.\-]*[A-Za-z0-9+#]/g) ?? [])
+    .map((t) => t.replace(/\.+$/, ""))
+    .filter((t) => t.length >= 2);
+}
+/** 원문(whole)에 없는 숫자·영문 이름. 서버 4단계와 같은 판정입니다 */
+export function unsupportedTokens(text: string, whole: string): { kind: "number" | "term"; detail: string }[] {
+  const nums = new Set(numbersIn(whole));
+  const lower = whole.toLowerCase();
+  return [
+    ...[...new Set(numbersIn(text))].filter((n) => !nums.has(n)).map((detail) => ({ kind: "number" as const, detail })),
+    ...[...new Set(termsIn(text))].filter((t) => !lower.includes(t.toLowerCase())).map((detail) => ({ kind: "term" as const, detail })),
+  ];
 }
 
 export async function deleteJobSwitchRun(runId: string): Promise<void> {
