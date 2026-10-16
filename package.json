@@ -18,6 +18,7 @@
     "eval:score": "node --experimental-transform-types --no-warnings scripts/eval/score.ts",
     "eval:review": "node --experimental-transform-types --no-warnings scripts/eval/review.ts",
     "eval:unit": "node --experimental-transform-types --no-warnings scripts/eval/unit.ts",
+    "eval:agreement": "node --experimental-transform-types --no-warnings scripts/eval/judge-agreement.ts",
     "eval:selftest": "node --experimental-transform-types --no-warnings scripts/eval/selftest.ts"
   },
   "dependencies": {
