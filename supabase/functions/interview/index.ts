@@ -38,6 +38,10 @@ import {
   answerEvidence,
   applyTurn,
   canDraft,
+  dropUnsupportedFields,
+  experienceAnswers,
+  looksLikeJobPosting,
+  POSTING_NOTICE,
   fieldsFromProject,
   filledCount,
   firstEmpty,
@@ -133,7 +137,12 @@ async function loadSession(sb: SupabaseClient, id: string, userId: string) {
     .select("position, role, text, answer_no, target_field, follow_up, skipped")
     .eq("session_id", id)
     .order("position", { ascending: true });
-  return { session: session as Session, messages: (messages ?? []) as Message[] };
+  const msgs = (messages ?? []) as Message[];
+  const s = session as Session;
+  // 공고로 보이는 답에서 온 칸은 비웁니다(rules.ts dropUnsupportedFields 참고).
+  // 여기서 한 번 하면 상태 표시·턴·초안이 모두 같은 칸 상태를 봅니다.
+  const ids = new Set(answerEvidence(experienceAnswers(answersOf(msgs))).map((e) => e.id));
+  return { session: { ...s, fields: dropUnsupportedFields(s.fields ?? {}, ids) }, messages: msgs };
 }
 
 /** 기존 프로젝트의 빈 칸을 채우는 대화인가 (start 에서 project_id 를 받은 경우) */
@@ -194,8 +203,10 @@ function turnPrompt(opts: {
   currentAnswer: Array<{ id: string; text: string }>;
   currentField: Field | null;
   followUps: Partial<Record<Field, number>>;
+  /** 방금 답이 채용 공고로 보이는가 — 서버가 판정해 근거에서 이미 뺐습니다 */
+  isPosting: boolean;
 }) {
-  const { isStart, fields, recent, currentAnswer, currentField, followUps } = opts;
+  const { isStart, fields, recent, currentAnswer, currentField, followUps, isPosting } = opts;
   return [
     "당신은 채용용 포트폴리오를 함께 만드는 인터뷰어입니다. 글을 대신 쓰지 않고, 사용자가 자기 프로젝트를 말하도록 **묻습니다**.",
     "케이스 스터디 칸 6개를 채우는 것이 목표입니다: context(맥락 및 배경), role(역할), problem(문제 정의), execution(실행 내용), outcome(핵심 성과), reflection(배운 점).",
@@ -209,12 +220,16 @@ function turnPrompt(opts: {
     "## 방금 사용자 답 (문장 id: 문장)",
     currentAnswer.map((a) => `${a.id}: ${a.text}`).join("\n") || "(없음)",
     currentField ? `\n방금 질문은 ${currentField} 칸을 겨냥했습니다.` : "",
+    isPosting
+      ? "\n**방금 답은 채용 공고(요구사항 목록)입니다. 사용자의 경험이 아니므로 fills 는 빈 배열로 두세요.** next 는 방금 질문과 같은 칸을 다시 물으세요(공고 안내 문구는 서버가 붙입니다)."
+      : "",
     "",
     "## 할 일",
     "1. 방금 답이 채우는 칸을 모두 fills 에 적으세요. 한 답이 여러 칸을 채울 수 있습니다. 이미 채움/건너뜀인 칸은 적지 마세요.",
     "   - summary 는 **사용자가 말한 사실만** 한 문장으로 요약. 답에 없는 숫자·이름·성과를 더하지 마세요.",
     "   - answerIds 에는 근거가 된 위 문장 id 를 적으세요. 위 목록에 없는 id 는 쓰지 마세요.",
     "   - 답이 모호해서 칸을 채우기엔 부족하면 fills 에 넣지 말고 되물으세요.",
+    "   - 채용 공고·자격 요건·우대 사항·직무 설명은 사용자의 경험이 아닙니다. 어떤 칸에도 채우지 마세요.",
     "2. 다음 질문 하나를 next 에 적으세요.",
     "   - 비어 있는 칸을 겨냥합니다. 되묻기라면 followUp: true (칸당 한 번만 가능. 이미 되물은 칸: " +
       (Object.entries(followUps).filter(([, n]) => (n ?? 0) >= 1).map(([f]) => f).join(", ") || "없음") +
@@ -277,10 +292,14 @@ async function runTurn(
   messages: Message[],
   opts: { isStart: boolean; usage: Usage }
 ) {
-  const answers = answersOf(messages);
+  const allAnswers = answersOf(messages);
+  // 근거로 쓰는 답 — 채용 공고로 보이는 답은 뺍니다(rules.ts looksLikeJobPosting)
+  const answers = experienceAnswers(allAnswers);
   const all = answerEvidence(answers);
-  const last = answers[answers.length - 1];
-  const currentAnswer = last ? all.filter((e) => e.id.startsWith(`a${last.no}:`)) : [];
+  const last = allAnswers[allAnswers.length - 1];
+  const isPosting = last ? looksLikeJobPosting(last.text) : false;
+  // 모델에게는 방금 답을 보여 주되(대답은 해야 하니까), 공고면 근거 id 는 근거 목록에 없습니다
+  const currentAnswer = last ? answerEvidence([last]) : [];
 
   const { data, usage } = await callModel(
     LIGHT_MODEL,
@@ -292,6 +311,7 @@ async function runTurn(
       currentAnswer,
       currentField: session.current_field,
       followUps: session.follow_ups,
+      isPosting,
     }),
     1200
   );
@@ -305,6 +325,9 @@ async function runTurn(
     evidence: new Map(all.map((e) => [e.id, e.text])),
     wholeAnswers: answers.map((a) => a.text).join("\n"),
   });
+  if (isPosting && turn.next && !turn.next.question.includes("직무 전환")) {
+    turn.next = { ...turn.next, question: `${POSTING_NOTICE} ${turn.next.question}` };
+  }
   return turn;
 }
 
@@ -508,7 +531,7 @@ async function modeDraft(sb: SupabaseClient, userId: string, payload: Record<str
     if (!p || p.user_id !== userId) throw new UserFacingError("포트폴리오를 찾을 수 없습니다.", 404);
   }
 
-  const answers = answersOf(messages);
+  const answers = experienceAnswers(answersOf(messages));
   const evidence = answerEvidence(answers);
   const known = new Set(evidence.map((e) => e.id));
   const textById = new Map(evidence.map((e) => [e.id, e.text]));
@@ -608,7 +631,7 @@ async function modeDraft(sb: SupabaseClient, userId: string, payload: Record<str
  * 이미 적혀 있던 칸은 모델에게 참고로만 주고 결과에서 버립니다.
  */
 async function draftFill(sb: SupabaseClient, userId: string, session: Session, messages: Message[], usage: Usage) {
-  const answers = answersOf(messages);
+  const answers = experienceAnswers(answersOf(messages));
   const evidence = answerEvidence(answers);
   const known = new Set(evidence.map((e) => e.id));
   const textById = new Map(evidence.map((e) => [e.id, e.text]));

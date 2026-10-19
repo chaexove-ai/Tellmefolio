@@ -191,3 +191,65 @@ export function skipField(fields: Fields, field: Field | null): Fields {
   if (!field || fields[field]) return fields;
   return { ...fields, [field]: { state: "skipped", summary: "", answerIds: [] } };
 }
+
+/* ------------------------------------------------------------------ */
+/* 채용 공고 붙여넣기 막기                                              */
+/* ------------------------------------------------------------------ */
+
+/**
+ * [2026-10-19] 사용자가 "이 공고에 맞춰 만들어 줘"라며 채용 공고를 붙여 넣으면,
+ * 그 문장이 답변 근거로 잡혀 "맥락 및 배경" 칸에 들어갔습니다(실사용에서 확인).
+ * 서버는 "근거 id 가 실제 답변 문장인가"만 보고 "그 문장이 사용자의 경험인가"는
+ * 보지 않기 때문입니다. 그대로 초안을 만들면 공고 요구사항이 본인 경험처럼
+ * 쓰입니다 — 평가(eval/REPORT.md)에서 막으려던 날조가 이 경로로 들어옵니다.
+ *
+ * 그래서 공고로 보이는 답은 근거에서 뺍니다. 모델에게 부탁만 하면 어길 수 있어서
+ * 프롬프트 규칙과 별도로 여기서 막습니다.
+ *
+ * 판정은 보수적으로: 공고에만 나오는 표지어가 2종 이상이거나, 목록 기호가 3개
+ * 이상이면서 표지어가 1종 이상. "필수로 해야 했던 일" 같은 경험 서술 한 문장이
+ * 걸리지 않도록 표지어 1종만으로는 걸지 않습니다.
+ */
+const POSTING_MARKERS: RegExp[] = [
+  /우대\s*(사항|조건)?/,
+  /자격\s*요건|지원\s*자격|필수\s*요건/,
+  /필수\s*제출|제출\s*필수|포트폴리오\s*(필수|제출)/,
+  /모집\s*(부문|분야|요강)?|채용\s*(공고|절차|형태)?/,
+  /경력\s*\d+\s*년\s*(이상|↑)|\d+\s*년\s*이상\s*(의\s*)?경력/,
+  /주요\s*업무|담당\s*업무|근무\s*(지|조건|형태)/,
+  /능력\s*우수|우수자|전공자?\s*(우대)?$/m,
+];
+
+export function looksLikeJobPosting(text: string): boolean {
+  const hits = POSTING_MARKERS.filter((re) => re.test(text)).length;
+  const bullets = (text.match(/(^|\s)[•·▪■◦\-\*]\s?\S/gm) ?? []).length;
+  return hits >= 2 || (bullets >= 3 && hits >= 1);
+}
+
+/** 근거로 쓸 답변 — 공고로 보이는 답은 뺍니다(답변 번호는 그대로) */
+export function experienceAnswers(answers: Answer[]): Answer[] {
+  return answers.filter((a) => !looksLikeJobPosting(a.text));
+}
+
+/**
+ * 근거가 모두 사라진 칸은 비웁니다. 이미 공고로 채워진 칸이 있는 대화(이 가드 전에
+ * 시작한 대화)도 다음 턴에 그 칸을 다시 묻게 됩니다. existing(원래 프로젝트 글)과
+ * skipped 는 건드리지 않습니다.
+ */
+export function dropUnsupportedFields(fields: Fields, evidenceIds: Set<string>): Fields {
+  const out: Fields = {};
+  for (const f of ORDER) {
+    const st = fields[f];
+    if (!st) continue;
+    if (st.state === "filled") {
+      const ids = st.answerIds.filter((id) => evidenceIds.has(id));
+      if (ids.length === 0) continue;
+      out[f] = { ...st, answerIds: ids };
+    } else out[f] = st;
+  }
+  return out;
+}
+
+/** 공고를 붙여 넣었을 때 질문 앞에 붙이는 안내 */
+export const POSTING_NOTICE =
+  "붙여 주신 건 채용 공고라서 경험 칸에는 넣지 않았어요. 공고에 맞춰 고치는 건 포트폴리오를 만든 뒤 ‘직무 전환’에서 할 수 있어요.";
